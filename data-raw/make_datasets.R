@@ -28,7 +28,7 @@ for(ticker in list_of_tickers){
     YC_Euro <- merge(YC_Euro,x_reduced,by="date")
   }
 }
-save(YC_Euro,file="data-raw/YC_Euro.rda")
+save(YC_Euro,file="data/YC_Euro.rda")
 
 
 
@@ -64,7 +64,7 @@ for(i in 1:length(list.variables)){
     YC_US = merge(YC_US,data.var.frame,by="date",all=TRUE)
   }
 }
-save(YC_US,file="data-raw/YC_US.rda")
+save(YC_US,file="data/YC_US.rda")
 
 
 
@@ -117,7 +117,7 @@ DAT_GSW_nom <- data.frame(date=DAT_mthly$Date,
                           SVENY29=DAT_mthly$SVENY29,
                           SVENY30=DAT_mthly$SVENY30)
 
-save(DAT_GSW_nom,file="data-raw/DAT_GSW_nom.rda")
+save(DAT_GSW_nom,file="data/DAT_GSW_nom.rda")
 
 
 #===============================================================================
@@ -158,7 +158,7 @@ DAT_GSW_real <- data.frame(date=DAT_mthly$Date,
                            TIPSY19=DAT_mthly$TIPSY19,
                            TIPSY20=DAT_mthly$TIPSY20)
 
-save(DAT_GSW_real,file="data-raw/DAT_GSW_real.rda")
+save(DAT_GSW_real,file="data/DAT_GSW_real.rda")
 
 
 
