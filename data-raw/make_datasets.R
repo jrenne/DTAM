@@ -179,3 +179,5 @@ YC_LW$date <- as.character(YC_LW_raw[,1])
 YC_LW$date <- as.Date(paste(substr(YC_LW$date,1,4),"-",substr(YC_LW$date,5,6),"-01",sep=""))
 YC_LW <- cbind(YC_LW[,1],YC_LW[,1:(dim(YC_LW)[2]-1)])
 names(YC_LW)[1] <- "date"
+
+save(YC_LW,file="data/DAT_LW.rda")
