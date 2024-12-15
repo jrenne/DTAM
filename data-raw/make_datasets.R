@@ -44,7 +44,7 @@ f <- function(ticker,freq){
         frequency = freq,aggregation_method = "avg")
 }
 
-list.variables <- c("DTB4WK","DTB3",
+list.variables <- c("DTB4WK","DTB3","DTB6",
                     "THREEFY1","THREEFY2","THREEFY3","THREEFY4","THREEFY5",
                     "THREEFY6","THREEFY7","THREEFY8","THREEFY9","THREEFY10")
 
