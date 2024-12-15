@@ -1,7 +1,7 @@
 {
     "id": "BCBA9845",
-    "path": "~/Dropbox/Book_AssetPricing_DT_AffineProcesses_MPRR/DTAM/data-raw/essai.R",
-    "project_path": "data-raw/essai.R",
+    "path": "~/Dropbox/Book_AssetPricing_DT_AffineProcesses_MPRR/DTAM/data-raw/make_datasets.R",
+    "project_path": "data-raw/make_datasets.R",
     "type": "r_source",
     "hash": "0",
     "contents": "",
@@ -13,15 +13,15 @@
         "tempName": "Untitled1",
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "8,0",
-        "scrollLine": "0"
+        "cursorPosition": "65,1",
+        "scrollLine": "53"
     },
     "folds": "",
-    "lastKnownWriteTime": 1734248737,
+    "lastKnownWriteTime": 1734251052,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1734248737345,
+    "last_content_update": 1734251052517,
     "read_only": false,
     "read_only_alternatives": []
 }
