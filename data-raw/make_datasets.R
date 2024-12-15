@@ -162,3 +162,20 @@ save(DAT_GSW_real,file="data/DAT_GSW_real.rda")
 
 
 
+#===============================================================================
+# Data from Cynthia Wu's website
+# https://sites.google.com/view/jingcynthiawu/yield-data
+# https://docs.google.com/spreadsheets/d/1-wmStGZHLx55dSYi3gQK2vb3F8dMw_Nb/edit?gid=378310471#gid=378310471
+#===============================================================================
+
+YC_LW_raw <- csv.get(file = "data-raw/LW_monthly.csv", skip = 8)
+maturities_in_month <- matrix(c(1,3,6,9,12*(1:30)),ncol=1)
+maturities <- apply(maturities_in_month,1,function(x){ifelse(x<12,
+                                                             paste(x,"m",sep=""),
+                                                             paste(x/12,"y",sep=""))})
+YC_LW <- cbind(YC_LW_raw[,1+maturities_in_month])
+names(YC_LW) <- paste("yld_",maturities,sep="")
+YC_LW$date <- as.character(YC_LW_raw[,1])
+YC_LW$date <- as.Date(paste(substr(YC_LW$date,1,4),"-",substr(YC_LW$date,5,6),"-01",sep=""))
+YC_LW <- cbind(YC_LW[,1],YC_LW[,1:(dim(YC_LW)[2]-1)])
+names(YC_LW)[1] <- "date"
