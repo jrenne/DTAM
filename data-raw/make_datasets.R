@@ -117,7 +117,6 @@ DAT_GSW_nom <- data.frame(date=DAT_mthly$Date,
                           SVENY29=DAT_mthly$SVENY29,
                           SVENY30=DAT_mthly$SVENY30)
 
-save(DAT_GSW_nom,file="data/DAT_GSW_nom.rda")
 
 
 #===============================================================================
@@ -158,7 +157,8 @@ DAT_GSW_real <- data.frame(date=DAT_mthly$Date,
                            TIPSY19=DAT_mthly$TIPSY19,
                            TIPSY20=DAT_mthly$TIPSY20)
 
-save(DAT_GSW_real,file="data/DAT_GSW_real.rda")
+DAT_GSW <- merge(DAT_GSW_nom,DAT_GSW_nom,by="date",all=TRUE)
+save(DAT_GSW,file="data/DAT_GSW.rda")
 
 
 
