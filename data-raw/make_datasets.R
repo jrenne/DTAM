@@ -179,3 +179,48 @@ YC_LW$date <- as.character(YC_LW_raw[,1])
 YC_LW$date <- as.Date(paste(substr(YC_LW$date,1,4),"-",substr(YC_LW$date,5,6),"-01",sep=""))
 
 save(YC_LW,file="data/DAT_LW.rda")
+
+
+#===============================================================================
+# Surveys of Professional Forecasters
+#===============================================================================
+
+# 1 year CPI -------------------------------------------------------------------
+download.file("https://www.philadelphiafed.org/-/media/frbp/assets/surveys-and-data/survey-of-professional-forecasters/data-files/files/mean_cpi_level.xlsx",
+              "data-raw/mean_cpi_level.xlsx")
+SPF <- readxl::read_xlsx(path="data-raw/mean_cpi_level.xlsx")
+SPF$date <- as.Date(paste(SPF$YEAR,"-",1+3*(SPF$QUARTER-1),"-01",sep=""))
+SPF <- data.frame(date=SPF$date,CPI1=as.numeric(SPF$CPI6))
+SPF.CPI <- data.frame(date=SPF$date,CPI1=SPF$CPI1)
+
+# 10 year CPI-------------------------------------------------------------------
+download.file("https://www.philadelphiafed.org/-/media/frbp/assets/surveys-and-data/survey-of-professional-forecasters/data-files/files/mean_cpi10_level.xlsx",
+              "data-raw/mean_cpi10_level.xlsx")
+SPF <- readxl::read_xlsx(path="data-raw/mean_cpi10_level.xlsx")
+SPF$date <- as.Date(paste(SPF$YEAR,"-",1+3*(SPF$QUARTER-1),"-01",sep=""))
+SPF <- data.frame(date=SPF$date,CPI10=as.numeric(SPF$CPI10))
+SPF.CPI10<- data.frame(date=SPF$date,CPI10=SPF$CPI10)
+
+# 1 year TBILL -----------------------------------------------------------------
+download.file("https://www.philadelphiafed.org/-/media/frbp/assets/surveys-and-data/survey-of-professional-forecasters/data-files/files/mean_tbill_level.xlsx",
+              "data-raw/mean_tbill_level.xlsx")
+SPF <- readxl::read_xlsx(path="data-raw/mean_tbill_level.xlsx")
+SPF$date <- as.Date(paste(SPF$YEAR,"-",1+3*(SPF$QUARTER-1),"-01",sep=""))
+SPF <- data.frame(date=SPF$date,BILL1=as.numeric(SPF$TBILL6))
+SPF.BILL <- data.frame(date=SPF$date,BILL1=SPF$BILL1)
+
+# 10 year TBILL-----------------------------------------------------------------
+download.file("https://www.philadelphiafed.org/-/media/frbp/assets/surveys-and-data/survey-of-professional-forecasters/data-files/files/mean_bill10_level.xlsx",
+              "data-raw/mean_bill10_level.xlsx")
+SPF <- readxl::read_xlsx(path="data-raw/mean_bill10_level.xlsx")
+SPF$date <- as.Date(paste(SPF$YEAR,"-",1+3*(SPF$QUARTER-1),"-01",sep=""))
+SPF <- data.frame(date=SPF$date,BILL10=as.numeric(SPF$BILL10))
+SPF.BILL10<- data.frame(date=SPF$date,BILL10=SPF$BILL10)
+
+SPF <- merge(SPF.CPI,SPF.CPI10,by="date",all = TRUE)
+SPF <- merge(SPF,SPF.BILL,by="date",all = TRUE)
+SPF <- merge(SPF,SPF.BILL10,by="date",all = TRUE)
+
+save(SPF,file="data/SPF.rda")
+
+
