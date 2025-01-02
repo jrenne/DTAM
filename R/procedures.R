@@ -1,11 +1,14 @@
 
-reverse.MHLT <- function(psi,u1,u2,H,psi.parameterization){
+reverse.MHLT <- function(psi,u1,u2=NULL,H,psi.parameterization){
   # compute the multi-horizon Laplace transform in the reverse-order case
-  # That is we consider:
+  # That is, we consider:
   # E_t(exp(u_2'w_{t+1}+...+u_2'w_{t+h-1}+u_1'w_{t+h}))
   # Inputs: psi is the (one-period) conditional Laplace transform of process w_t
   # The function can evaluate the MHLT in parallel for k different vectors
   #    u1 and u2 (i.e., u1 and u2, as inputs can be of dimension n x k with k > 1)
+  if(length(u2)==0){# in that case, u2 <- u1
+    u2 <- u1
+  }
   A = NULL
   B = NULL
   A.h_1 <- 0
