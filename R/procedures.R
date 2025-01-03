@@ -163,3 +163,56 @@ simul.MS.AR <- function(nb.sim,mu.1,mu.2,rho.1,rho.2,sigma.1,sigma.2,P,w0=NaN){
   }
   return(list(S=S,W=W,Pk=Pk))
 }
+
+make.pdf <- function(model,values.of.variable,
+                     psi,
+                     max_x = 10000,
+                     min_x = 10^(-8),nb_x=5000){
+  # psi is a function calculating the Laplace transform (LT) of a univariate random variable
+  # psi admits 2 arguments: model and u. model is a list of parameters; u is the
+  # vector of points where one wants to evaluate the LT.
+
+  x <- matrix(exp(seq(log(min_x),log(max_x),length.out=nb_x)),ncol=1)
+  gamma <- matrix(values.of.variable,nrow=1)
+
+  cdf.values <- Fourier.psi(model,gamma,x,psi)
+
+  nb.values.variable <- length(values.of.variable)
+
+  scale.variable.values <- seq(c(values.of.variable)[1],
+                               tail(c(values.of.variable),1),
+                               length.out = nb.values.variable+1)
+
+  cdf <- pmax(pmin(cdf.values,1),0)
+  for(i in 2:length(cdf)){
+    if(cdf[i]<cdf[i-1]){
+      cdf[i] <- cdf[i-1]
+    }
+  }
+
+  tmp <- splinefun(x=values.of.variable, y=cdf, method="hyman")
+
+  fitted.cdf.values <- tmp(scale.variable.values)
+  fitted.pdf.values <- diff(fitted.cdf.values)
+
+  return(fitted.pdf.values)
+}
+
+Fourier.psi <- function(model,gamma,x,
+                        psi){
+  # x has to be a column vector
+  # gamma has to be a row vector
+  u <- c(1i*x)
+  psi_eval <- matrix(psi(model,u),length(x),length(gamma))
+  dx <- matrix(x-c(0,x[1:length(x)-1]),length(x),length(gamma))
+  fx <- Im(psi_eval*exp(-1i*x %*% gamma))/matrix(x,length(x),length(gamma))*dx
+
+  f  <- 1/2 - 1/pi * apply(fx,2,sum)
+
+  f.cdf <- pmax(pmin(f,1),0)
+  for(i in 2:length(f)){
+    if(f.cdf[i]<f.cdf[i-1]){
+      f.cdf[i] <- f.cdf[i-1]}}
+
+  return(f.cdf)
+}
