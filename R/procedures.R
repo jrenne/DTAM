@@ -193,7 +193,7 @@ make.pdf <- function(model,values.of.variable,
   tmp <- splinefun(x=values.of.variable, y=cdf, method="hyman")
 
   fitted.cdf.values <- tmp(scale.variable.values)
-  fitted.pdf.values <- diff(fitted.cdf.values)
+  fitted.pdf.values <- diff(fitted.cdf.values)*mean(diff(values.of.variable,1))
 
   return(fitted.pdf.values)
 }
