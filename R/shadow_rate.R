@@ -7,7 +7,7 @@ simul.var <- function(Model,nb.sim,x0=NaN){
   X <- c(x0)
   x <- x0
   for(t in 2:nb.sim){
-    x <- Model$mu + Model$rho %*% x + Sigma %*% rnorm(n)
+    x <- Model$mu + Model$rho %*% x + Model$Sigma %*% rnorm(n)
     X <- rbind(X,c(x))
   }
   return(X)

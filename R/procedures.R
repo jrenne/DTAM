@@ -217,7 +217,7 @@ Fourier.psi <- function(model,gamma,x,
   return(f.cdf)
 }
 
-simul.var <- function (Model, nb.sim, x0 = NaN)
+simul.VAR <- function (Model, nb.sim, x0 = NaN)
 {
   n <- dim(Model$Phi)[1]
   if (is.na(x0[1])) {
