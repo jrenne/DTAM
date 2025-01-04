@@ -216,3 +216,18 @@ Fourier.psi <- function(model,gamma,x,
 
   return(f.cdf)
 }
+
+simul.var <- function (Model, nb.sim, x0 = NaN)
+{
+  n <- dim(Model$Phi)[1]
+  if (is.na(x0[1])) {
+    x0 <- solve(diag(n) - Model$Phi) %*% Model$mu
+  }
+  X <- c(x0)
+  x <- x0
+  for (t in 2:nb.sim) {
+    x <- Model$mu + Model$Phi %*% x + Model$Sigma %*% rnorm(n)
+    X <- rbind(X, c(x))
+  }
+  return(X)
+}
