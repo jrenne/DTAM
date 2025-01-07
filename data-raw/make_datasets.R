@@ -255,7 +255,7 @@ end_date   <- as.Date(end.date)
 
 # Monthly data:
 
-list.variables <- c("DTB4WK","DTB3","CPIAUCSL","BBKMGDP","PCE")
+list.variables <- c("DTB4WK","DTB3","CPIAUCSL","BBKMGDP","PCE","PCEPI")
 for(i in 1:length(list.variables)){
   data.var <- f(list.variables[i],"m")
   eval(parse(text = gsub(" ","",paste("data.var.frame = data.frame(date=data.var$date,",
@@ -299,9 +299,10 @@ DATA$pi[(lag+1):dim(DATA)[1]] <- log(DATA$CPIAUCSL[(lag+1):dim(DATA)[1]]/
 DATA$dy <- log(1 + DATA$BBKMGDP/12/100)
 
 # Consumption growth:
+DATA$RCONS <- DATA$PCE/DATA$PCEPI
 DATA$dc <- NaN
-DATA$dc[(lag+1):dim(DATA)[1]] <- log(DATA$PCE[(lag+1):dim(DATA)[1]]/
-                                       DATA$PCE[1:(dim(DATA)[1]-lag)])
+DATA$dc[(lag+1):dim(DATA)[1]] <- log(DATA$RCONS[(lag+1):dim(DATA)[1]]/
+                                       DATA$RCONS[1:(dim(DATA)[1]-lag)])
 
 Data_Macro_US_monthly <- DATA
 save(Data_Macro_US_monthly,file="data/Data_Macro_US_monthly.rda")
@@ -313,7 +314,7 @@ save(Data_Macro_US_monthly,file="data/Data_Macro_US_monthly.rda")
 # Quarterly U.S. Macroeconomic data, from FRED database
 #===============================================================================
 
-list.q.variables <- c("DTB4WK","DTB3","CPIAUCSL","GDPPOT","GDPC1","PCE")
+list.q.variables <- c("DTB4WK","DTB3","CPIAUCSL","GDPPOT","GDPC1","PCE","PCEPI")
 for(i in 1:length(list.q.variables)){
   data.var <- f(list.q.variables[i],"q")
   eval(parse(text = gsub(" ","",paste("data.var.frame = data.frame(date=data.var$date,",
@@ -340,9 +341,11 @@ DATA$dy <- NaN
 DATA$dy[(lag+1):dim(DATA)[1]] <- log(DATA$GDPC1[(lag+1):dim(DATA)[1]]/
                                        DATA$GDPC1[1:(dim(DATA)[1]-lag)])
 
+# Consumption growth:
+DATA$RCONS <- DATA$PCE/DATA$PCEPI
 DATA$dc <- NaN
-DATA$dc[(lag+1):dim(DATA)[1]] <- log(DATA$PCE[(lag+1):dim(DATA)[1]]/
-                                       DATA$PCE[1:(dim(DATA)[1]-lag)])
+DATA$dc[(lag+1):dim(DATA)[1]] <- log(DATA$RCONS[(lag+1):dim(DATA)[1]]/
+                                       DATA$RCONS[1:(dim(DATA)[1]-lag)])
 
 Data_Macro_US_quarterly <- DATA
 save(Data_Macro_US_quarterly,file="data/Data_Macro_US_quarterly.rda")
