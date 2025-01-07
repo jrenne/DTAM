@@ -201,6 +201,23 @@ SPF$date <- as.Date(paste(SPF$YEAR,"-",1+3*(SPF$QUARTER-1),"-01",sep=""))
 SPF <- data.frame(date=SPF$date,CPI10=as.numeric(SPF$CPI10))
 SPF.CPI10<- data.frame(date=SPF$date,CPI10=SPF$CPI10)
 
+# 1 year GDP growth ------------------------------------------------------------
+download.file("https://www.philadelphiafed.org/-/media/frbp/assets/surveys-and-data/survey-of-professional-forecasters/data-files/files/mean_rgdp_level.xlsxs",
+              "data-raw/mean_rgdp_level.xlsxs")
+SPF <- readxl::read_xlsx(path="data-raw/mean_rgdp_level.xlsxs")
+SPF$date <- as.Date(paste(SPF$YEAR,"-",1+3*(SPF$QUARTER-1),"-01",sep=""))
+SPF <- data.frame(date=SPF$date,
+                  RGDP1=100*log(as.numeric(SPF$RGDP6)/as.numeric(SPF$RGDP2)))
+SPF.GDP <- data.frame(date=SPF$date,GDP1=SPF$RGDP1)
+
+# 10 year GDP growth------------------------------------------------------------
+download.file("https://www.philadelphiafed.org/-/media/frbp/assets/surveys-and-data/survey-of-professional-forecasters/data-files/files/mean_rgdp10_level.xlsx",
+              "data-raw/mean_rgdp10_level.xlsx")
+SPF <- readxl::read_xlsx(path="data-raw/mean_rgdp10_level.xlsx")
+SPF$date <- as.Date(paste(SPF$YEAR,"-",1+3*(SPF$QUARTER-1),"-01",sep=""))
+SPF <- data.frame(date=SPF$date,GDP10=as.numeric(SPF$RGDP10))
+SPF.GDP10<- data.frame(date=SPF$date,GDP10=SPF$GDP10)
+
 # 1 year TBILL -----------------------------------------------------------------
 download.file("https://www.philadelphiafed.org/-/media/frbp/assets/surveys-and-data/survey-of-professional-forecasters/data-files/files/mean_tbill_level.xlsx",
               "data-raw/mean_tbill_level.xlsx")
@@ -218,9 +235,66 @@ SPF <- data.frame(date=SPF$date,BILL10=as.numeric(SPF$BILL10))
 SPF.BILL10<- data.frame(date=SPF$date,BILL10=SPF$BILL10)
 
 SPF <- merge(SPF.CPI,SPF.CPI10,by="date",all = TRUE)
+SPF <- merge(SPF,SPF.GDP,by="date",all = TRUE)
+SPF <- merge(SPF,SPF.GDP10,by="date",all = TRUE)
 SPF <- merge(SPF,SPF.BILL,by="date",all = TRUE)
 SPF <- merge(SPF,SPF.BILL10,by="date",all = TRUE)
 
 save(SPF,file="data/SPF.rda")
+
+
+
+#===============================================================================
+# U.S. Macroeconomic data, from FRED database
+#===============================================================================
+
+start.date <- "1959-01-01"
+end.date   <- "2024-10-01"
+
+fredr_set_key("df65e14c054697a52b4511e77fcfa1f3")
+start_date <- as.Date(start.date)
+end_date   <- as.Date(end.date)
+f <- function(ticker,freq){
+  fredr(series_id = ticker,
+        observation_start = start_date,observation_end = end_date,
+        frequency = freq,aggregation_method = "avg")
+}
+
+list.variables <- c("DTB4WK","DTB3","CPIAUCSL","BBKMGDP")
+
+for(i in 1:length(list.variables)){
+  data.var <- f(list.variables[i],"m")
+  eval(parse(text = gsub(" ","",paste("data.var.frame = data.frame(date=data.var$date,",
+                                      list.variables[i],"=data.var$value)",
+                                      sep=""))))
+  if(i==1){
+    DATA = data.var.frame
+  }else{
+    DATA = merge(DATA,data.var.frame,by="date",all=TRUE)
+  }
+}
+
+list.q.variables <- c("GDPPOT","GDPC1")
+for(i in 1:length(list.q.variables)){
+  data.var <- f(list.q.variables[i],"q")
+  eval(parse(text = gsub(" ","",paste("data.var.frame = data.frame(date=data.var$date,",
+                                      list.q.variables[i],"=data.var$value)",
+                                      sep=""))))
+  data.var.frame$date <- as.Date(paste(format(data.var$date,"%Y"),"-",
+                                       as.numeric(format(data.var$date,"%m"))+2,"-01",sep=""))
+  DATA = merge(DATA,data.var.frame,by="date",all=TRUE)
+}
+# Output gap:
+DATA$z <- log(DATA$GDPC1/DATA$GDPPOT)
+# Inflation:
+lag <- 1
+DATA$pi <- NaN
+DATA$pi[(lag+1):dim(DATA)[1]] <- log(DATA$CPIAUCSL[(lag+1):dim(DATA)[1]]/
+                                       DATA$CPIAUCSL[1:(dim(DATA)[1]-lag)])
+# GDP growth:
+DATA$dy <- log(1 + DATA$BBKMGDP/12/100)
+
+Data_Macro_US <- DATA
+save(Data_Macro_US,file="data/Data_Macro_US.rda")
 
 
