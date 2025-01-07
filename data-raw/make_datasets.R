@@ -298,6 +298,11 @@ DATA$pi[(lag+1):dim(DATA)[1]] <- log(DATA$CPIAUCSL[(lag+1):dim(DATA)[1]]/
 # GDP growth:
 DATA$dy <- log(1 + DATA$BBKMGDP/12/100)
 
+# Consumption growth:
+DATA$dc <- NaN
+DATA$dc[(lag+1):dim(DATA)[1]] <- log(DATA$PCE[(lag+1):dim(DATA)[1]]/
+                                       DATA$PCE[1:(dim(DATA)[1]-lag)])
+
 Data_Macro_US_monthly <- DATA
 save(Data_Macro_US_monthly,file="data/Data_Macro_US_monthly.rda")
 
@@ -334,6 +339,10 @@ DATA$pi[(lag+1):dim(DATA)[1]] <- log(DATA$CPIAUCSL[(lag+1):dim(DATA)[1]]/
 DATA$dy <- NaN
 DATA$dy[(lag+1):dim(DATA)[1]] <- log(DATA$GDPC1[(lag+1):dim(DATA)[1]]/
                                        DATA$GDPC1[1:(dim(DATA)[1]-lag)])
+
+DATA$dc <- NaN
+DATA$dc[(lag+1):dim(DATA)[1]] <- log(DATA$PCE[(lag+1):dim(DATA)[1]]/
+                                       DATA$PCE[1:(dim(DATA)[1]-lag)])
 
 Data_Macro_US_quarterly <- DATA
 save(Data_Macro_US_quarterly,file="data/Data_Macro_US_quarterly.rda")
