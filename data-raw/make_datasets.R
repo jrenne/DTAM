@@ -245,23 +245,17 @@ save(SPF,file="data/SPF.rda")
 
 
 #===============================================================================
-# U.S. Macroeconomic data, from FRED database
+# Monthly U.S. Macroeconomic data, from FRED database
 #===============================================================================
 
 start.date <- "1959-01-01"
-end.date   <- "2024-10-01"
-
-fredr_set_key("df65e14c054697a52b4511e77fcfa1f3")
+end.date   <- "2024-09-01"
 start_date <- as.Date(start.date)
 end_date   <- as.Date(end.date)
-f <- function(ticker,freq){
-  fredr(series_id = ticker,
-        observation_start = start_date,observation_end = end_date,
-        frequency = freq,aggregation_method = "avg")
-}
+
+# Monthly data:
 
 list.variables <- c("DTB4WK","DTB3","CPIAUCSL","BBKMGDP")
-
 for(i in 1:length(list.variables)){
   data.var <- f(list.variables[i],"m")
   eval(parse(text = gsub(" ","",paste("data.var.frame = data.frame(date=data.var$date,",
@@ -274,6 +268,8 @@ for(i in 1:length(list.variables)){
   }
 }
 
+# Quarterly data:
+
 list.q.variables <- c("GDPPOT","GDPC1")
 for(i in 1:length(list.q.variables)){
   data.var <- f(list.q.variables[i],"q")
@@ -282,10 +278,18 @@ for(i in 1:length(list.q.variables)){
                                       sep=""))))
   data.var.frame$date <- as.Date(paste(format(data.var$date,"%Y"),"-",
                                        as.numeric(format(data.var$date,"%m"))+2,"-01",sep=""))
-  DATA = merge(DATA,data.var.frame,by="date",all=TRUE)
+  if(i==1){
+    DATA_Q = data.var.frame
+  }else{
+    DATA_Q = merge(DATA_Q,data.var.frame,by="date",all=TRUE)
+  }
 }
-# Output gap:
-DATA$z <- log(DATA$GDPC1/DATA$GDPPOT)
+
+DATA_Q$z <- log(DATA_Q$GDPC1/DATA_Q$GDPPOT)
+
+# Back to monthly database:
+DATA = merge(DATA,DATA_Q,by="date",all=TRUE)
+
 # Inflation:
 lag <- 1
 DATA$pi <- NaN
@@ -294,7 +298,44 @@ DATA$pi[(lag+1):dim(DATA)[1]] <- log(DATA$CPIAUCSL[(lag+1):dim(DATA)[1]]/
 # GDP growth:
 DATA$dy <- log(1 + DATA$BBKMGDP/12/100)
 
-Data_Macro_US <- DATA
-save(Data_Macro_US,file="data/Data_Macro_US.rda")
+Data_Macro_US_monthly <- DATA
+save(Data_Macro_US_monthly,file="data/Data_Macro_US_monthly.rda")
+
+
+
+
+#===============================================================================
+# Quarterly U.S. Macroeconomic data, from FRED database
+#===============================================================================
+
+list.q.variables <- c("DTB4WK","DTB3","CPIAUCSL","GDPPOT","GDPC1")
+for(i in 1:length(list.q.variables)){
+  data.var <- f(list.q.variables[i],"q")
+  eval(parse(text = gsub(" ","",paste("data.var.frame = data.frame(date=data.var$date,",
+                                      list.q.variables[i],"=data.var$value)",
+                                      sep=""))))
+  data.var.frame$date <- as.Date(paste(format(data.var$date,"%Y"),"-",
+                                       as.numeric(format(data.var$date,"%m"))+2,"-01",sep=""))
+  if(i==1){
+    DATA = data.var.frame
+  }else{
+    DATA = merge(DATA,data.var.frame,by="date",all=TRUE)
+  }
+}
+
+DATA$z <- log(DATA$GDPC1/DATA_Q$GDPPOT)
+
+# Inflation:
+lag <- 1
+DATA$pi <- NaN
+DATA$pi[(lag+1):dim(DATA)[1]] <- log(DATA$CPIAUCSL[(lag+1):dim(DATA)[1]]/
+                                       DATA$CPIAUCSL[1:(dim(DATA)[1]-lag)])
+# GDP growth:
+DATA$dy <- NaN
+DATA$dy[(lag+1):dim(DATA)[1]] <- log(DATA$GDPC1[(lag+1):dim(DATA)[1]]/
+                                       DATA$GDPC1[1:(dim(DATA)[1]-lag)])
+
+Data_Macro_US_quarterly <- DATA
+save(Data_Macro_US_quarterly,file="data/Data_Macro_US_quarterly.rda")
 
 
