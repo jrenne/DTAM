@@ -6,7 +6,7 @@ reverse.MHLT <- function(psi,u1,u2=NaN,H,psi.parameterization){
   # Inputs: psi is the (one-period) conditional Laplace transform of process w_t
   # The function can evaluate the MHLT in parallel for k different vectors
   #    u1 and u2 (i.e., u1 and u2, as inputs can be of dimension n x k with k > 1)
-  if(is.na(u2)){# in that case, u2 <- u1
+  if(is.na(u2[1])){# in that case, u2 <- u1
     u2 <- u1
   }
   A = NULL
