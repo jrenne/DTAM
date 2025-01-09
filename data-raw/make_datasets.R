@@ -256,8 +256,8 @@ end_date   <- as.Date(end.date)
 # Monthly data:
 
 list.variables <- c("DTB4WK","DTB3","CPIAUCSL","BBKMGDP","PCE","PCEPI",
-                    "THREEFYTP2","THREEFYTP10","THREEFYTP10",
-                    "THREEFY2",  "THREEFY5",   "THREEFY10")
+                    "THREEFYTP2","THREEFYTP5","THREEFYTP10",
+                    "THREEFY2",  "THREEFY5",  "THREEFY10")
 for(i in 1:length(list.variables)){
   data.var <- f(list.variables[i],"m")
   eval(parse(text = gsub(" ","",paste("data.var.frame = data.frame(date=data.var$date,",
@@ -317,8 +317,8 @@ save(Data_Macro_US_monthly,file="data/Data_Macro_US_monthly.rda")
 #===============================================================================
 
 list.q.variables <- c("DTB4WK","DTB3","CPIAUCSL","GDPPOT","GDPC1","PCE","PCEPI",
-                      "THREEFYTP2","THREEFYTP10","THREEFYTP10",
-                      "THREEFY2",  "THREEFY5",   "THREEFY10")
+                      "THREEFYTP2","THREEFYTP5","THREEFYTP10",
+                      "THREEFY2",  "THREEFY5",  "THREEFY10")
 
 for(i in 1:length(list.q.variables)){
   data.var <- f(list.q.variables[i],"q")
