@@ -381,8 +381,8 @@ ACMTermPremium$DATE <- gsub("Nov","11",ACMTermPremium$DATE)
 ACMTermPremium$DATE <- gsub("Dec","12",ACMTermPremium$DATE)
 
 dates <- as.Date(ACMTermPremium$DATE,"%d-%m-%Y")
-ACMTermPremium$DATE <- as.Date(paste(format(dates,"%Y"),"-",format(dates,"%m"),"-","15",sep=""))
+ACMTermPremium$date <- as.Date(paste(format(dates,"%Y"),"-",format(dates,"%m"),"-","15",sep=""))
 
-save(ACMTermPremium,file="data/data_ACM.Rda")
+save(ACMTermPremium,file="data/ACMTermPremium.rda")
 
 
