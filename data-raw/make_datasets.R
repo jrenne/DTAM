@@ -255,7 +255,9 @@ end_date   <- as.Date(end.date)
 
 # Monthly data:
 
-list.variables <- c("DTB4WK","DTB3","CPIAUCSL","BBKMGDP","PCE","PCEPI")
+list.variables <- c("DTB4WK","DTB3","CPIAUCSL","BBKMGDP","PCE","PCEPI",
+                    "THREEFYTP2","THREEFYTP10","THREEFYTP10",
+                    "THREEFY2",  "THREEFY5",   "THREEFY10")
 for(i in 1:length(list.variables)){
   data.var <- f(list.variables[i],"m")
   eval(parse(text = gsub(" ","",paste("data.var.frame = data.frame(date=data.var$date,",
@@ -314,7 +316,10 @@ save(Data_Macro_US_monthly,file="data/Data_Macro_US_monthly.rda")
 # Quarterly U.S. Macroeconomic data, from FRED database
 #===============================================================================
 
-list.q.variables <- c("DTB4WK","DTB3","CPIAUCSL","GDPPOT","GDPC1","PCE","PCEPI")
+list.q.variables <- c("DTB4WK","DTB3","CPIAUCSL","GDPPOT","GDPC1","PCE","PCEPI",
+                      "THREEFYTP2","THREEFYTP10","THREEFYTP10",
+                      "THREEFY2",  "THREEFY5",   "THREEFY10")
+
 for(i in 1:length(list.q.variables)){
   data.var <- f(list.q.variables[i],"q")
   eval(parse(text = gsub(" ","",paste("data.var.frame = data.frame(date=data.var$date,",
@@ -349,5 +354,35 @@ DATA$dc[(lag+1):dim(DATA)[1]] <- log(DATA$RCONS[(lag+1):dim(DATA)[1]]/
 
 Data_Macro_US_quarterly <- DATA
 save(Data_Macro_US_quarterly,file="data/Data_Macro_US_quarterly.rda")
+
+
+
+#===============================================================================
+# Term Premiums dataset
+#===============================================================================
+
+
+# Load Adrian, Crump and Moench estimates:
+download.file("https://www.newyorkfed.org/medialibrary/media/research/data_indicators/ACMTermPremium.xls",
+              "data/ACMTermPremium.xls")
+ACMTermPremium <- readxl::read_excel("data/ACMTermPremium.xls")
+
+ACMTermPremium$DATE <- gsub("Jan","01",ACMTermPremium$DATE)
+ACMTermPremium$DATE <- gsub("Feb","02",ACMTermPremium$DATE)
+ACMTermPremium$DATE <- gsub("Mar","03",ACMTermPremium$DATE)
+ACMTermPremium$DATE <- gsub("Apr","04",ACMTermPremium$DATE)
+ACMTermPremium$DATE <- gsub("May","05",ACMTermPremium$DATE)
+ACMTermPremium$DATE <- gsub("Jun","06",ACMTermPremium$DATE)
+ACMTermPremium$DATE <- gsub("Jul","07",ACMTermPremium$DATE)
+ACMTermPremium$DATE <- gsub("Aug","08",ACMTermPremium$DATE)
+ACMTermPremium$DATE <- gsub("Sep","09",ACMTermPremium$DATE)
+ACMTermPremium$DATE <- gsub("Oct","10",ACMTermPremium$DATE)
+ACMTermPremium$DATE <- gsub("Nov","11",ACMTermPremium$DATE)
+ACMTermPremium$DATE <- gsub("Dec","12",ACMTermPremium$DATE)
+
+dates <- as.Date(ACMTermPremium$DATE,"%d-%m-%Y")
+ACMTermPremium$DATE <- as.Date(paste(format(dates,"%Y"),"-",format(dates,"%m"),"-","15",sep=""))
+
+save(ACMTermPremium,file="data/data_ACM.Rda")
 
 
