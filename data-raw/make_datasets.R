@@ -386,3 +386,12 @@ ACMTermPremium$date <- as.Date(paste(format(dates,"%Y"),"-",format(dates,"%m"),"
 save(ACMTermPremium,file="data/ACMTermPremium.rda")
 
 
+#===============================================================================
+# Futures
+#===============================================================================
+
+Futures <- read.csv("data-raw/Futures.csv")
+Futures$Date <- as.Date(Futures$Date)
+
+save(Futures,file="data/Futures.rda")
+
