@@ -167,9 +167,9 @@ solve_EZ_stock_return <- function(model,psi,Ew=NaN,z_s_bar_ini=5,
 
   model_solved <- model
 
-  model$mu_rs0 <- mu_rs0
-  model$mu_rs1 <- mu_rs1
-  model$mu_rs2 <- mu_rs2
+  model_solved$mu_rs0 <- mu_rs0
+  model_solved$mu_rs1 <- mu_rs1
+  model_solved$mu_rs2 <- mu_rs2
 
   return(model_solved)
 }
