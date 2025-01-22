@@ -129,6 +129,7 @@ solve_EZ_stock_return <- function(model,psi,Ew=NaN,z_s_bar_ini=5,
 
   n_w <- model$n_w
   Phi <- model$Phi
+  Ew  <- model$Ew
 
   mu_d0 <- model$mu_d0
   mu_d1 <- model$mu_d1
@@ -161,7 +162,7 @@ solve_EZ_stock_return <- function(model,psi,Ew=NaN,z_s_bar_ini=5,
 
   # Deduce specification of r_{s,t+1}:
   mu_rs0 <- kappa0s + kappa1s*mu_s0 - mu_s0 + mu_d0
-  mu_rs1 <- - mu_rs1
+  mu_rs1 <- - mu_s1
   mu_rs2 <- kappa1s * mu_s1 + mu_d1
 
   model_solved <- model
