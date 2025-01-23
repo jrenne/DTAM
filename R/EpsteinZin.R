@@ -177,6 +177,8 @@ solve_EZ_stock_return <- function(model,psi,Ew=NaN,z_s_bar_ini=5,
   model_solved$kappa0s <- kappa0s
   model_solved$kappa1s <- kappa1s
 
+  model_solved$z_s_bar <- z_s_bar
+
   return(model_solved)
 }
 
