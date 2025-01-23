@@ -192,7 +192,7 @@ psi.BansalShaliastovich <- function (u,model){
   u.z <- matrix(u[(n + 1):(n + q), ], nrow = q)
   b <- 0.5 * t(u.x * u.x) %*% matrix(model$chi.0, ncol = 1) +
     0.5 * t(u.z * u.z) %*% matrix(model$sigma.w^2, ncol = 1)
-  a <- rbind(t(model$Pi) %*% u.x, 0.5 * t(model$nu) %*%
+  a <- rbind(t(model$Pi) %*% u.x, 0.5 *
                model$chi.1 %*% (u.x * u.x) + t(model$nu) %*% u.z)
   return(list(a = a,b = b))
 }
