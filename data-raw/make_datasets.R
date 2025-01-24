@@ -402,9 +402,11 @@ save(Futures,file="data/Futures.rda")
 #===============================================================================
 
 Shiller <- read.csv("data-raw/Shiller.csv")
-Shiller$Date <- as.Date(
-  paste(str_sub(Shiller$Date,1,4),"-",str_sub(Shiller$Date,6,7),
-        "-01",sep="")
-)
+
+Shiller$year  <- str_sub(as.character(sprintf("%.2f",Shiller$Date)),1,4)
+Shiller$month <- str_sub(as.character(sprintf("%.2f",Shiller$Date)),6,7)
+Shiller$Date  <- as.Date(paste(Shiller$year,"-",
+                               Shiller$month,"-01",sep=""))
+
 save(Shiller,file="data/Shiller.rda")
 
