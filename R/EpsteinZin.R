@@ -28,6 +28,7 @@ solve_EZ_SDF <- function(model,psi,Ew=NaN,z_bar_ini=5,
   res_moments <- compute_expect_variance(psi,model)
   Ew  <- res_moments$Ew
   Phi <- res_moments$Phi
+  mu  <- res_moments$mu
 
   # Loop on z_bar: -------------------------------------------------------------
   z_bar <- z_bar_ini
@@ -120,6 +121,7 @@ solve_EZ_stock_return <- function(model,psi,Ew=NaN,z_s_bar_ini=5,
   n_w <- model$n_w
   Phi <- model$Phi
   Ew  <- model$Ew
+  Phi <- model$Phi
 
   mu_d0 <- model$mu_d0
   mu_d1 <- model$mu_d1
