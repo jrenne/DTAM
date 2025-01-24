@@ -25,10 +25,9 @@ solve_EZ_SDF <- function(model,psi,Ew=NaN,z_bar_ini=5,
   n_w  <- model$n_w
 
   # Computation of Ew, using the Laplace Transform (Ew = dPsi(u)/du at u=0) ----
-  if(is.na(Ew[1])){
-    res_moments <- compute_expect_variance(psi,model)
-    Ew <- res_moments$Ew
-  }
+  res_moments <- compute_expect_variance(psi,model)
+  Ew  <- res_moments$Ew
+  Phi <- res_moments$Phi
 
   # Loop on z_bar: -------------------------------------------------------------
   z_bar <- z_bar_ini
