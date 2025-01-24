@@ -402,10 +402,15 @@ save(Futures,file="data/Futures.rda")
 #===============================================================================
 
 Shiller <- read.csv("data-raw/Shiller.csv")
+Shiller <- Shiller[1:1848,1:11]
 Shiller$Date <- as.Date(
   paste(str_sub(Shiller$Date,1,4),"-",str_sub(Shiller$Date,6,7),
         "-01",sep="")
 )
+for(i in 2:dim(Shiller)[2]){
+  Shiller[,i] <- str_remove(Shiller[,i],",")
+  Shiller[,i] <- as.numeric(Shiller[,i])
+}
 
 save(Shiller,file="data/Shiller.rda")
 
