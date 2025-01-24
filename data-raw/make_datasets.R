@@ -6,6 +6,7 @@ library(zoo)
 library(fredr)
 library(Hmisc)
 library(dplyr)
+library(stringr)
 
 
 #===============================================================================
@@ -394,4 +395,17 @@ Futures <- read.csv("data-raw/Futures.csv")
 Futures$Date <- as.Date(Futures$Date)
 
 save(Futures,file="data/Futures.rda")
+
+
+#===============================================================================
+# Shiller's financial returns
+#===============================================================================
+
+Shiller <- read.csv("data-raw/Shiller.csv")
+Shiller$Date <- as.Date(
+  paste(str_sub(Shiller$Date,1,4),"-",str_sub(Shiller$Date,6,7),
+        "-01",sep="")
+)
+
+save(Shiller,file="data/Shiller.rda")
 
