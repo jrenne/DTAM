@@ -27,6 +27,7 @@ solve_EZ_SDF <- function(model,psi,Ew=NaN,z_bar_ini=5,
   # Computation of Ew, using the Laplace Transform (Ew = dPsi(u)/du at u=0) ----
   res_moments <- compute_expect_variance(psi,model)
   Ew  <- res_moments$Ew
+  Vw  <- res_moments$Vw
   Phi <- res_moments$Phi
   mu  <- res_moments$mu
 
@@ -63,12 +64,13 @@ solve_EZ_SDF <- function(model,psi,Ew=NaN,z_bar_ini=5,
   model_solved <- model
 
   model_solved$Ew     <- Ew
+  model_solved$Vw     <- Vw
   model_solved$Phi    <- Phi
   model_solved$mu     <- mu
-  model_solved$mu_z0  <- mu_z0
+  model_solved$mu_z0  <- c(mu_z0)
   model_solved$mu_z1  <- mu_z1
   model_solved$z_bar  <- z_bar
-  model_solved$eta0   <- eta0
+  model_solved$eta0   <- c(eta0)
   model_solved$eta1   <- eta1
   model_solved$alpha  <- alpha
   model_solved$kappa0 <- kappa0
@@ -159,11 +161,11 @@ solve_EZ_stock_return <- function(model,psi,Ew=NaN,z_s_bar_ini=5,
 
   model_solved <- model
 
-  model_solved$mu_rs0 <- mu_rs0
+  model_solved$mu_rs0 <- c(mu_rs0)
   model_solved$mu_rs1 <- mu_rs1
   model_solved$mu_rs2 <- mu_rs2
 
-  model_solved$mu_s0 <- mu_s0
+  model_solved$mu_s0 <- c(mu_s0)
   model_solved$mu_s1 <- mu_s1
 
   model_solved$kappa0s <- kappa0s
