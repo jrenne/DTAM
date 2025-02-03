@@ -231,3 +231,81 @@ simul.VAR <- function (Model, nb.sim, x0 = NaN)
   }
   return(X)
 }
+
+compute_expect_variance <- function(psi,model){
+  # This function computes the conditional and unconditional expectations and
+  # varances of an affine process.
+  # ----------------------------------------------------------------------------
+  # The conditional mean is given by:
+  # E_t(w_{t+1}) = mu + Phi.w_t
+  # The conditional variance is given by:
+  # vec[Var_t(w_{t+1})] = Gamma_0 + Gamma_1.w_t
+  # ----------------------------------------------------------------------------
+
+  n_w  <- model$n_w
+
+  # Computation of Ew, using the Laplace Transform (Ew = dPsi(u)/du at u=0) ----
+  du   <- 10^(-9)
+  mu <- matrix(0,n_w,1)
+  Phi <- matrix(0,n_w,n_w)
+  Gamma0 <- matrix(0,n_w*n_w,1)
+  Gamma1 <- matrix(0,n_w*n_w,n_w)
+
+  for(i in 1:n_w){
+    u_plus_i <- matrix(0,model$n_w,1)
+    u_plus_i[i] <- du
+    u_minu_i <- matrix(0,model$n_w,1)
+    u_minu_i[i] <- -du
+    psi_plus_i <- psi(u_plus_i,model)
+    psi_minu_i <- psi(u_minu_i,model)
+    # Compute specification of first-order conditional moment:
+    mu[i]   <- .5 * (psi_plus_i$b - psi_minu_i$b)/du
+    Phi[i,] <- .5 * (psi_plus_i$a - psi_minu_i$a)/du
+    for(j in 1:n_w){
+      u_plus_i_plus_j <- u_plus_i
+      u_plus_i_minu_j <- u_plus_i
+      u_plus_i_plus_j[j] <- u_plus_i_plus_j[j] + du
+      u_plus_i_minu_j[j] <- u_plus_i_minu_j[j] - du
+      u_minu_i_plus_j <- u_minu_i
+      u_minu_i_minu_j <- u_minu_i
+      u_minu_i_plus_j[j] <- u_minu_i_plus_j[j] + du
+      u_minu_i_minu_j[j] <- u_minu_i_minu_j[j] - du
+      psi_plus_i_plus_j <- psi(u_plus_i_plus_j,model)
+      psi_plus_i_minu_j <- psi(u_plus_i_minu_j,model)
+      psi_minu_i_plus_j <- psi(u_minu_i_plus_j,model)
+      psi_minu_i_minu_j <- psi(u_minu_i_minu_j,model)
+      # Compute specification of second order moment:
+      Gamma0[n_w*(i-1)+j,1] <-
+        (psi_plus_i_plus_j$b - psi_plus_i_minu_j$b - psi_minu_i_plus_j$b + psi_minu_i_minu_j$b)/
+        (4*du^2)
+      Gamma1[n_w*(i-1)+j,]  <-
+        (psi_plus_i_plus_j$a - psi_plus_i_minu_j$a - psi_minu_i_plus_j$a + psi_minu_i_minu_j$a)/
+        (4*du^2)
+    }
+    # Compute unconditional expectation:
+    Ew <- solve(diag(n_w) - Phi) %*% mu
+    # Compute unconditional variance:
+    Vw <- matrix(solve(diag(n_w^2) - Phi %x% Phi) %*% (Gamma0 + Gamma1 %*% Ew),
+                 n_w,n_w)
+  }
+
+  return(list(
+    mu = mu,
+    Phi = Phi,
+    Gamma0 = Gamma0,
+    Gamma1 = Gamma1,
+    Ew = Ew,
+    Vw = Vw
+  ))
+}
+
+# # Check
+# modelVAR <- list(mu = matrix(c(1,0),2,1),
+#                  Phi = matrix(c(.6,.2,-.3,.8),2,2),
+#                  Sigma = diag(2),
+#                  n_w=2)
+# compute_expect_variance(psi.GaussianVAR,modelVAR)
+# solve(diag(4) - modelVAR$Phi %x% modelVAR$Phi) %*% c(modelVAR$Sigma)
+
+
+
