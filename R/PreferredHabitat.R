@@ -1,114 +1,128 @@
-compute_lambdas <- function(AB,model){
-  # A is of dimension N * 1
-  # B is of dimension N * m
+solve_PH_TSM <- function(model,
+                         max_iter = 100){
+  # Solve preferred-habitat-based (PH) term structure model (TSM)
+  # It can handle 2 yield curves (_star for the parameters defining the 2nd one)
 
-  m <- dim(model$Phi)[1]   # dimension of state vector
-  N <- length(model$Alpha) # maximum maturity
+  # Detect whether one or two yield curves:
+  indic_two_curves <- !is.null(model$alpha_star)
 
-  A      <- AB$A
-  B      <- AB$B
+  # Maximum maturity:
+  H <- length(model$xi)
 
-  # Load relevant objects from model:
-  gamma = model$gamma
-  Sigma = model$Sigma
-  Alpha = model$Alpha
-  Beta  = model$Beta
-  Zeta  = model$Zeta
-  a1    = model$a1
-  b1    = model$b1
+  # Specification of state vector w_t:
+  mu    <- matrix(model$mu,ncol=1)
+  Phi   <- model$Phi
+  Sigma <- model$Sigma # conditional covariance matrix of w_t
+  n     <- sqrt(length(model$Phi)) # number of state variables
 
-  Theta      <- rbind(0,B[1:(N-1),])
+  # Net supply specification:
+  beta   <- matrix(model$beta,ncol=1)
+  alpha  <- matrix(model$alpha,nrow=H)
+  xi     <- model$xi
+  xi_bar <- matrix(c(xi)/(1:H),ncol=1)
 
-  caligA <- Alpha + Zeta/(1:N) * A
-  lambda <- gamma * t(Sigma) %*% t(Theta) %*% caligA
+  if(indic_two_curves){# a second yield curve
+    beta_star   <- matrix(model$beta_star,ncol=1)
+    alpha_star  <- matrix(model$alpha_star,nrow=H)
+    xi_star     <- model$xi_star
+    xi_bar_star <- matrix(c(xi_star)/(1:H),ncol=1)
 
-  caligB <- Beta + ((Zeta/(1:N)) %*% matrix(1,1,m)) * B
-  Lambda <- gamma * t(Sigma) %*% t(Theta) %*% caligB
-
-  # Compute alpha1 and beta1 needed to have sum(z)=1:
-  alpha1 <- 1 - sum(caligA[2:N]) - Zeta[1]*a1
-  beta1  <- - apply(caligB[2:N,],2,sum) - Zeta[1]*b1
-
-  # Update caligA and caligB:
-  Alpha[1] <- alpha1
-  Beta[1,] <- beta1
-  caligA <- Alpha + Zeta/(1:N) * A
-  caligB <- Beta + ((Zeta/(1:N)) %*% matrix(1,1,m)) * B
-
-  return(list(lambda = lambda,
-              Lambda = Lambda,
-              alpha1 = alpha1,
-              beta1  = beta1,
-              Alpha  = Alpha,
-              Beta   = Beta,
-              caligA = caligA,
-              caligB = caligB))
-}
-
-compute_AB_VV <- function(model,lambdas){
-  lambda <- lambdas$lambda
-  Lambda <- lambdas$Lambda
-
-  # Load relevant objects from model:
-  mu_f  = model$mu_f
-  Phi   = model$Phi
-  Sigma = model$Sigma
-  a1    = model$a1
-  b1    = model$b1
-
-  m <- dim(Phi)[2]
-
-  Phi_Q  <- Phi  - Sigma %*% Lambda
-  mu_f_Q <- mu_f - Sigma %*% lambda
-
-  a_n_1 <- 0
-  b_n_1 <- matrix(0,m,1)
-
-  A      <- matrix(NaN,N,1)
-  B      <- matrix(NaN,N,m)
-
-  for(n in 1:N){
-    a_n <- a1 + a_n_1 + t(b_n_1) %*% mu_f_Q +
-      .5 * t(b_n_1) %*% Sigma %*% t(Sigma) %*% b_n_1
-    b_n <- b1 + t(Phi_Q) %*% b_n_1
-
-    a_n_1 <- a_n
-    b_n_1 <- b_n
-
-    A[n]  <- a_n
-    B[n,] <- b_n
+    mu_e0 <- model$mu_e0
+    mu_e1 <- matrix(model$mu_e1,ncol=1)
   }
 
-  a <- - A/1:N
-  b <- - B/matrix(1:N,N,m)
+  # Specification of short-term rate:
+  a1 <- matrix(model$a1,ncol=1)
+  b1 <- model$b1
 
-  return(list(A=A,B=B,a=a,b=b))
-}
+  # Arbitrageurs:
+  gamma <- model$gamma
 
+  Gamma <- matrix(0,H,H)
+  Gamma[2:H,1:(H-1)] <- diag(H-1)
 
-solve_model <- function(model,
-                        ini.lambdas = list(lambda=NaN,Lambda=NaN),
-                        nb.iter = 20,
-                        indic.print = FALSE){
+  vec_1H <- matrix(1,H,1)
+  vec_1n <- matrix(1,n,1)
 
-  # Solve for lambdas:
-  if(is.na(ini.lambdas$lambda[1])){
-    N <- dim(model$Beta)[1]
-    m <- dim(model$Beta)[2]
-    lambdas <- list(lambda = matrix(0,m,1),
-                    Lambda = matrix(0,m,m))
+  Id_Gamma_1    <- solve(diag(H) - Gamma)
+  Id_PhiGamma_1 <- solve(diag(H*n) - t(Phi) %x% Gamma)
+
+  # Initialization (Sigma = 0):
+  A <- matrix(Id_PhiGamma_1 %*% c(-vec_1H %*% t(a1)),H,n)
+  Theta <- Gamma %*% A
+  B <- Id_Gamma_1 %*% (-b1*vec_1H + Theta %*% mu)
+  if(indic_two_curves){# for the second yield curve, if any
+    A_star <- matrix(Id_PhiGamma_1 %*% c(-vec_1H %*% t(a1)),H,n)
+    Theta_star <- Gamma %*% A_star + vec_1H %*% t(mu_e1)
+    B_star <- Id_Gamma_1 %*% (-b1*vec_1H + Theta_star %*% mu)
   }
-  for(i in 1:nb.iter){
-    AB <- compute_AB_VV(model,lambdas)
-    lambdas <- compute_lambdas(AB,model)
-    if(indic.print){
-      print(lambdas$lambda)
+
+  for(i in 1:max_iter){
+
+    mathcalB <- beta  + xi_bar * B
+    mathcalA <- alpha + (xi_bar %*% t(vec_1n)) * A
+    if(indic_two_curves){
+      mathcalB_star <- beta_star  + xi_bar_star * B_star
+      mathcalA_star <- alpha_star + (xi_bar_star %*% t(vec_1n)) * A_star
+    }
+
+    Theta <- Gamma %*% A
+    if(indic_two_curves){
+      # two curves
+      Theta_star <- Gamma %*% A_star + vec_1H %*% t(mu_e1)
+      lambda <- gamma * (t(Theta) %*% mathcalB + t(Theta_star) %*% mathcalB_star)
+      Lambda <- gamma * (t(Theta) %*% mathcalA + t(Theta_star) %*% mathcalA_star)
+    }else{
+      # single curve
+      lambda <- gamma * t(Theta) %*% mathcalB
+      Lambda <- gamma * t(Theta) %*% mathcalA
+    }
+
+    muQ  <- mu -  Sigma %*% lambda
+    PhiQ <- Phi - Sigma %*% Lambda
+
+    M <- - vec_1H %*% t(a1) -  Theta %*% Sigma %*% Lambda
+    A <- matrix(Id_PhiGamma_1 %*% c(M),H,n)
+    B <- Id_Gamma_1 %*%
+      (-b1*vec_1H + Theta %*% muQ +
+         .5 * ((Theta %x% t(vec_1n))*(t(vec_1n) %x% Theta)) %*% c(Sigma) )
+
+    if(indic_two_curves){
+      M_star <- - vec_1H %*% t(a1) - Theta_star %*% Sigma %*% Lambda
+      A_star <- matrix(Id_PhiGamma_1 %*% c(M_star),H,n)
+      B_star <- Id_Gamma_1 %*%
+        (-b1*vec_1H + mu_e0*vec_1H + Theta_star %*% muQ +
+           .5 * ((Theta_star %x% t(vec_1n))*(t(vec_1n) %x% Theta_star)) %*% c(Sigma) )
     }
   }
 
-  return(list(
-    AB = AB,
-    lambdas = lambdas
-  ))
-}
+  a <- - A / matrix(1:H,H,n)
+  b <- - B / matrix(1:H,H,1)
 
+  if(indic_two_curves){
+    a_star <- - A_star / matrix(1:H,H,n)
+    b_star <- - B_star / matrix(1:H,H,1)
+  }else{
+    A_star <- NaN
+    B_star <- NaN
+    a_star <- NaN
+    b_star <- NaN
+  }
+
+  # Determine specification of net supply for short maturity:
+  # (to ensure that sum(z)=1)
+  if(indic_two_curves){
+    aux <- matrix(mathcalA[2:H,],H-1,n)
+    alpha[1,] <- - c(apply(aux,2,sum)) -
+      c(apply(mathcalA_star[1:H,],2,sum)) - c(xi[1] * a1)
+    beta[1]   <- 1 - sum(mathcalB[2:H]) - sum(mathcalB_star[1:H]) - xi[1] * b1
+  } else{
+    aux <- matrix(mathcalA[2:H,],H-1,n)
+    alpha[1,] <- - c(apply(aux,2,sum)) - c(xi[1] * a1)
+    beta[1]   <- 1 - sum(mathcalB[2:H]) - xi[1] * b1
+  }
+  return(list(A=A, B=B, a=a, b=b,
+              alpha=alpha,beta=beta,
+              A_star=A_star, B_star=B_star, a_star=a_star, b_star=b_star,
+              muQ=muQ, PhiQ=PhiQ))
+}
