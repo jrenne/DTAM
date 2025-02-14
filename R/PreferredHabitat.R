@@ -121,8 +121,14 @@ solve_PH_TSM <- function(model,
     alpha[1,] <- - c(apply(aux,2,sum)) - c(xi[1] * a1)
     beta[1]   <- 1 - sum(mathcalB[2:H]) - xi[1] * b1
   }
+
+  # Specification of the prices of risk
+  lambda0 <- - gamma * t(Theta) %*% mathcalB
+  lambda1 <- - gamma * t(Theta) %*% mathcalA
+
   return(list(A=A, B=B, a=a, b=b,
               alpha=alpha,beta=beta,
               A_star=A_star, B_star=B_star, a_star=a_star, b_star=b_star,
-              muQ=muQ, PhiQ=PhiQ))
+              muQ=muQ, PhiQ=PhiQ,
+              lambda0=lambda0, lambda1=lambda1))
 }
