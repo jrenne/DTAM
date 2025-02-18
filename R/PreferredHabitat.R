@@ -83,7 +83,7 @@ solve_PH_TSM <- function(model,
       (- a1 - omega*alpha_K + t(Phi)%*%mu_K1)
     mu_zeta0 <- 1/(1 - kappa1 + omega*xi_K)*
       (- b1 - omega*beta_K + kappa0 + mu_K0 + t(kappa1*mu_zeta1 + mu_K1)%*%mu)
-    zeta_bar <- mu_zeta0 + t(mu_zeta1) %*% Ew
+    zeta_bar <- c(mu_zeta0 + t(mu_zeta1) %*% Ew)
   }
 
   for(i in 1:max_iter){
@@ -140,7 +140,7 @@ solve_PH_TSM <- function(model,
         (- a1 - omega*alpha_K + t(PhiQ)%*%mu_K1)
       mu_zeta0 <- 1/(1 - kappa1 + omega*xi_K)*
         (- b1 - omega*beta_K + kappa0 + mu_K0 + t(kappa1*mu_zeta1 + mu_K1)%*%muQ)
-      zeta_bar <- mu_zeta0 + t(mu_zeta1) %*% Ew
+      zeta_bar <- c(mu_zeta0 + t(mu_zeta1) %*% Ew)
     }
   }
 
