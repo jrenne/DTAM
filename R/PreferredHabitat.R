@@ -79,7 +79,7 @@ solve_PH_TSM <- function(model,
   if(indic_stocks){
     kappa1 <- exp(zeta_bar)/(1+exp(zeta_bar))
     kappa0 <- log(1+exp(zeta_bar)) - kappa1 * zeta_bar
-    mu_zeta1 <- solve((1 + omega*xi_K)*diag(n) - kappa_1*t(Phi)) %*%
+    mu_zeta1 <- solve((1 + omega*xi_K)*diag(n) - kappa1*t(Phi)) %*%
       (- a1 - omega*alpha_K + t(Phi)%*%mu_K1)
     mu_zeta0 <- 1/(1 - kappa1 + omega*xi_K)*
       (- b1 - omega*beta_K + kappa0 + mu_K0 + t(kappa1*mu_zeta1 + mu_K1)%*%mu)
@@ -136,7 +136,7 @@ solve_PH_TSM <- function(model,
     if(indic_stocks){
       kappa1 <- exp(zeta_bar)/(1+exp(zeta_bar))
       kappa0 <- log(1+exp(zeta_bar)) - kappa1 * zeta_bar
-      mu_zeta1 <- solve((1 + omega*xi_K)*diag(n) - kappa_1*t(PhiQ)) %*%
+      mu_zeta1 <- solve((1 + omega*xi_K)*diag(n) - kappa1*t(PhiQ)) %*%
         (- a1 - omega*alpha_K + t(PhiQ)%*%mu_K1)
       mu_zeta0 <- 1/(1 - kappa1 + omega*xi_K)*
         (- b1 - omega*beta_K + kappa0 + mu_K0 + t(kappa1*mu_zeta1 + mu_K1)%*%muQ)
