@@ -1,6 +1,6 @@
 solve_PH_TSM <- function(model,
                          max_iter = 100,
-                         zeta_bar = 6){
+                         zeta_bar = 3){
   # Solve preferred-habitat-based (PH) term structure model (TSM)
   # It can handle 2 yield curves (_star for the parameters defining the 2nd one)
 
@@ -37,8 +37,15 @@ solve_PH_TSM <- function(model,
     xi_star     <- model$xi_star
     xi_bar_star <- matrix(c(xi_star)/(1:H),ncol=1)
 
-    mu_e0 <- model$mu_e0
-    mu_e1 <- matrix(model$mu_e1,ncol=1)
+    if(!is.null(model$mu_e0)){
+      # In that case, mu_e0 and mu_e1 are known, a1_star and b1_star are deduced
+      mu_e0 <- model$mu_e0
+      mu_e1 <- matrix(model$mu_e1,ncol=1)
+    }else{
+      # In that case, a1_star and b1_star are known, mu_e0 and mu_e1 are deduced
+      a1_star <- model$a1_star
+      b1_star <- model$b1_star
+    }
   }
 
   if(indic_stocks){# stocks (or perpetuity) in the model
@@ -72,10 +79,21 @@ solve_PH_TSM <- function(model,
   Theta <- Gamma %*% A
   B <- Id_Gamma_1 %*% (-b1*vec_1H + Theta %*% mu)
   if(indic_two_curves){# for the second yield curve, if any
-    A_star <- matrix(Id_PhiGamma_1 %*% c(-vec_1H %*% t(a1)),H,n)
-    Theta_star <- Gamma %*% A_star + vec_1H %*% t(mu_e1)
-    B_star <- Id_Gamma_1 %*% (-b1*vec_1H + Theta_star %*% mu)
+    if(is.null(model$mu_e0)){
+      mu_e1 <- solve(t(Phi)) %*% (a1 - a1_star)
+      mu_e0 <- c(b1 - b1_star - t(mu_e1) %*% mu)
+    }
+    # A_star <- matrix(Id_PhiGamma_1 %*% c(
+    #   -vec_1H %*% t(a1) + (vec_1H %*% t(mu_e1)) %*% Phi
+    # ),H,n)
+    # Theta_star <- Gamma %*% A_star + vec_1H %*% t(mu_e1)
+    # B_star <- Id_Gamma_1 %*% (-b1*vec_1H + Theta_star %*% mu)
+
+    A_star <- 0*A
+    B_star <- 0*B
+    Theta_star <- 0*Theta
   }
+
   if(indic_stocks){
     kappa1 <- exp(zeta_bar)/(1+exp(zeta_bar))
     kappa0 <- log(1+exp(zeta_bar)) - kappa1 * zeta_bar
@@ -106,6 +124,12 @@ solve_PH_TSM <- function(model,
       Theta_star <- Gamma %*% A_star + vec_1H %*% t(mu_e1)
       lambda0 <- - gamma * (t(Theta) %*% mathcalB + t(Theta_star) %*% mathcalB_star)
       lambda1 <- - gamma * (t(Theta) %*% mathcalA + t(Theta_star) %*% mathcalA_star)
+      if(is.null(model$mu_e0)){
+        mu_e1 <- solve(t(Phi) + t(lambda1) %*% Sigma) %*% (a1 - a1_star)
+        mu_e0 <- c(b1 - b1_star - t(mu_e1) %*% (mu + Sigma %*% lambda0) -
+                     .5 * t(mu_e1) %*% Sigma %*% mu_e1)
+        Theta_star <- Gamma %*% A_star + vec_1H %*% t(mu_e1)
+      }
     }else if(indic_stocks){
       # stock returns
       Theta_K <- matrix(kappa1*mu_zeta1 + mu_K1,nrow=1)
@@ -127,7 +151,8 @@ solve_PH_TSM <- function(model,
          .5 * ((Theta %x% t(vec_1n))*(t(vec_1n) %x% Theta)) %*% c(Sigma) )
 
     if(indic_two_curves){
-      M_star <- - vec_1H %*% t(a1) + Theta_star %*% Sigma %*% lambda1
+      M_star <- - vec_1H %*% t(a1) + Theta_star %*% Sigma %*% lambda1 +
+        (vec_1H %*% t(mu_e1)) %*% Phi
       A_star <- matrix(Id_PhiGamma_1 %*% c(M_star),H,n)
       B_star <- Id_Gamma_1 %*%
         (-b1*vec_1H + mu_e0*vec_1H + Theta_star %*% muQ +
@@ -141,6 +166,7 @@ solve_PH_TSM <- function(model,
       mu_zeta0 <- 1/(1 - kappa1 + omega*xi_K)*
         (- b1 - omega*beta_K + kappa0 + mu_K0 + t(kappa1*mu_zeta1 + mu_K1)%*%muQ)
       zeta_bar <- c(mu_zeta0 + t(mu_zeta1) %*% Ew)
+      #print(zeta_bar)
     }
   }
 
@@ -150,18 +176,34 @@ solve_PH_TSM <- function(model,
   if(indic_two_curves){
     a_star <- - A_star / matrix(1:H,H,n)
     b_star <- - B_star / matrix(1:H,H,1)
+    if(!is.null(model$mu_e0)){
+      a1_star <- matrix(a_star[1,],ncol=1)
+      b1_star <- b_star[1]
+    }
   }else{
-    A_star <- NaN
-    B_star <- NaN
-    a_star <- NaN
-    b_star <- NaN
+    A_star  <- NaN
+    B_star  <- NaN
+    a_star  <- NaN
+    b_star  <- NaN
+    a1_star <- NaN
+    b1_star <- NaN
+    mu_e0   <- NaN
+    mu_e1   <- NaN
   }
 
-  if(!indic_stocks){
+  if(indic_stocks){
+    C_K <- kappa0 + (kappa1-1)*mu_zeta0 + mu_K0
+    D_K <- - t(mu_zeta1)
+    Theta_K <- t(kappa1*mu_zeta1 + mu_K1)
+  }else{
     mu_zeta0 <- NaN
     mu_zeta1 <- NaN
     kappa0 <- NaN
     kappa1 <- NaN
+
+    C_K     <- NaN
+    D_K     <- NaN
+    Theta_K <- NaN
   }
 
   # Determine specification of net supply for short maturity:
@@ -184,5 +226,7 @@ solve_PH_TSM <- function(model,
               A_star=A_star, B_star=B_star, a_star=a_star, b_star=b_star,
               muQ=muQ, PhiQ=PhiQ,
               lambda0=lambda0, lambda1=lambda1, zeta_bar=zeta_bar,
-              mu_zeta0=mu_zeta0, mu_zeta1=mu_zeta1))
+              mu_zeta0=mu_zeta0, mu_zeta1=mu_zeta1, C_K=C_K, D_K=D_K,
+              Theta_K=Theta_K,
+              a1_star=a1_star,b1_star=b1_star,mu_e0=mu_e0,mu_e1=mu_e1))
 }
