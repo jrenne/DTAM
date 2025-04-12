@@ -39,7 +39,7 @@ reverse.MHLT <- function(psi,u1,u2=NaN,H,psi.parameterization){
 psi.GaussianVAR <- function(u,psi.parameterization){
   # Laplace transform of a Gaussian VAR:
   # w_t = mu + Phi w_{t-1} + epsilon_{t}, where epsilon_{t}~N(0,Sigma)
-  # If w_t is n-dimensional, u is of dimension n x k
+  # If w_t is n-dimensional (of dimension n, say), u is of dimension n x k
   #    (i.e., we can compute k LT in parallel)
   # WARNING: Sigma is a covariance matrix.
   mu    <- psi.parameterization$mu
@@ -307,5 +307,231 @@ compute_expect_variance <- function(psi,model){
 # compute_expect_variance(psi.GaussianVAR,modelVAR)
 # solve(diag(4) - modelVAR$Phi %x% modelVAR$Phi) %*% c(modelVAR$Sigma)
 
+
+psi.VARG <- function(u,model){
+  # Laplace transform of a VARG with conditionally independent components.
+  # Conditionally on w_t,w_{t-1},..., the distribution of the jth component is:
+  #  w_{j,t} ~ gamma_{nu_j}(alpha_j + beta_j'w_{t-1},mu_j),
+  # In model, the vectors alpha, nu, mu gather the n values
+  #  of the associated parameters. The rows of matrix beta are the beta_j'
+  # If w_t is n-dimensional (of dimension n, say), u is of dimension n x k
+  #    (i.e., we can compute k LT in parallel)
+  alpha <- model$alpha
+  beta  <- model$beta
+  nu    <- model$nu
+  mu    <- model$mu
+  n <- dim(u)[1]
+  k <- dim(u)[2]
+  mu_matrix <- matrix(mu,n,k)
+  a <- t(beta) %*% ((u * mu_matrix)/(1 - u * mu_matrix))
+  b <- t((u * mu_matrix)/(1 - u * mu_matrix)) %*% alpha -
+    t(log(1 - u * mu_matrix)) %*% nu
+  return(list(a=a,b=b))
+}
+
+compute_P_bar_VARG <- function(model,gamma,H=10,indic_delta1 = NaN){
+  # gamma has to be a vector with the same dimension as w_t
+  # model contains, in particular, the parameterization of the VARG model.
+  # Prices are computed directly for all defaultable entities.
+  # If indic_delta1 is an integer, it indicates the component of w_t that
+  #  corresponds to delta_{e=1}. If NaN, delta_{e=1} is supposed to correspond
+  #  to the first non-zero entry of vector nu.
+  xi0 <- model$xi0
+  xi1 <- model$xi1
+
+  alpha <- model$alpha
+  nu    <- model$nu
+  mu    <- model$mu
+  beta  <- model$beta
+
+  if(is.na(indic_delta1[1])){
+    indic_delta1 <- which(nu==0)[1]
+  }
+  n.w <- dim(beta)[1]
+  n.e <- n.w - indic_delta1 + 1
+  n.y <- n.w - n.e
+
+  e_tilde <- rbind(matrix(0,n.y,n.e),
+                   diag(n.e))
+  gamma_matrix <- matrix(gamma,n.w,n.e)
+  xi1_matrix   <- matrix(xi1,n.w,n.e)
+
+  u <- -10000
+
+  u1 <- gamma_matrix + u*e_tilde
+  u2 <- - xi1_matrix + u*e_tilde
+  res4P_ubar <- reverse.MHLT(psi.VARG,u1,u2,H,psi.parameterization=model)
+  u1 <- gamma_matrix
+  res4P_lbar <- reverse.MHLT(psi.VARG,u1,u2,H,psi.parameterization=model)
+
+  xi1_3Dmatrix <- array(xi1,c(n.w,n.e,H))
+  A_P_ubar <- - xi1_3Dmatrix + res4P_ubar$A
+  A_P_lbar <- - xi1_3Dmatrix + res4P_lbar$A
+
+  xi0_3Dmatrix  <- (- xi0) * array((1:H)%x%rep(1,n.e),c(1,n.e,H))
+  B_P_ubar <- xi0_3Dmatrix + res4P_ubar$B
+  B_P_lbar <- xi0_3Dmatrix + res4P_lbar$B
+
+  return(list(A_P_ubar=A_P_ubar,
+              A_P_lbar=A_P_lbar,
+              B_P_ubar=B_P_ubar,
+              B_P_lbar=B_P_lbar))
+}
+
+
+compute_proba_def_VARG <- function(model,H=10,indic_delta1 = NaN,
+                                   X=NaN){
+  # model contains, in particular, the parameterization of the VARG model.
+  # If indic_delta1 is an integer, it indicates the component of w_t that
+  #  corresponds to delta_{e=1}. If NaN, delta_{e=1} is supposed to correspond
+  #  to the first non-zero entry of vector nu.
+
+  if(is.na(indic_delta1[1])){
+    indic_delta1 <- which(nu==0)[1]
+  }
+  n.w <- dim(model$beta)[1]
+  n.e <- n.w - indic_delta1 + 1
+  n.y <- n.w - n.e
+
+  e_tilde <- rbind(matrix(0,n.y,n.e),
+                   diag(n.e))
+
+  u <- -10000
+
+  u1 <- u*e_tilde
+  u2 <- u*e_tilde
+  res <- reverse.MHLT(psi.VARG,u1,u2,H,psi.parameterization=model)
+
+  A <- res$A
+  B <- res$B
+
+  if(is.na(X[1])){
+    PD <- NaN
+  }else{
+    T <- dim(X)[1]
+    vec1T <- matrix(1,T,1)
+    PD <- array(NaN,c(T,n.e,H))
+    for(h in 1:H){
+      PD[,,h] <- 1 - exp(X %*% A[,,h] + vec1T %*% B[1,,h])
+    }
+  }
+
+  return(list(A = A, B = B,
+              PD = PD))
+}
+
+
+compute_uncondmean_VARG <- function(model){
+  alpha <- model$alpha
+  nu    <- model$nu
+  mu    <- model$mu
+  beta  <- model$beta
+
+  n <- dim(beta)[1]
+  mu_matrix <- matrix(mu,n,n)
+  rho <- mu_matrix * beta
+
+  E <- solve(diag(n) - rho) %*% (mu * (alpha + nu))
+
+  return(E)
+}
+
+simul_VARG <- function(model,nb_periods,w0=NaN){
+  alpha <- model$alpha
+  nu    <- model$nu
+  mu    <- model$mu
+  beta  <- model$beta
+
+  n <- dim(beta)[1] # dimension of state vector
+
+  if(is.na(w0[1])){
+    w0 <- compute_uncondmean_VARG(model)
+  }
+
+  w     <- w0
+  all_w <- w
+  for(t in 1:nb_periods){
+    param.pois <- rpois(n, alpha + beta %*% w)
+    w <- rgamma(n,shape = param.pois + nu, scale = mu)
+    all_w <- cbind(all_w,w)
+  }
+
+  return(all_w)
+}
+
+make_VARG_Q <- function(model){
+  modelQ <- model
+  modelQ$mu    <- model$mu / (1 - model$alpha_w * model$mu)
+  modelQ$alpha <- model$alpha * modelQ$mu/model$mu
+  modelQ$beta  <- diag(c(modelQ$mu/model$mu)) %*% model$beta
+  return(modelQ)
+}
+
+prices_CDS_RFV_VARG <- function(model,H=10,indic_delta1 = NaN,
+                                X=NaN){
+  # Prices are computed directly for all defaultable entities.
+  # If indic_delta1 is an integer, it indicates the component of w_t that
+  #  corresponds to delta_{e=1}. If NaN, delta_{e=1} is supposed to correspond
+  #  to the first non-zero entry of vector nu.
+  # X is a matrix of dimension T x n.w of state vector values.
+
+  #modelQ <- make_VARG_Q(model)
+
+  if(is.na(indic_delta1[1])){
+    indic_delta1 <- which(nu==0)[1]
+  }
+  n.w <- dim(model$beta)[1]
+  n.e <- n.w - indic_delta1 + 1
+  n.y <- n.w - n.e
+
+  mu_R0 <- model$mu_R0
+  mu_R1 <- model$mu_R1
+
+  res_P_bar_0 <- compute_P_bar_VARG(model,
+                                    matrix(0,n.w,1),
+                                    H=H,
+                                    indic_delta1 = indic_delta1)
+  res_P_bar_muR1 <- compute_P_bar_VARG(model,
+                                       matrix(-mu_R1,ncol=1),
+                                       H=H,
+                                       indic_delta1 = indic_delta1)
+
+  if(is.na(X[1,1])){
+    CDS_spreads <- NaN
+  }else{
+    T <- dim(X)[1]
+    vec1T <- matrix(1,T,1)
+
+    CDS_spreads <- array(NaN,c(T,n.e,H))
+
+    numerator <- 0
+    denominat <- 0
+
+    matrix_mu_R0 <- t(matrix(mu_R0,n.e,T))
+
+    for(h in 1:H){
+      P_lb_0 <- exp(vec1T %*% res_P_bar_0$B_P_lbar[1,,h] +
+                      X %*% res_P_bar_0$A_P_lbar[,,h])
+      P_ub_0 <- exp(vec1T %*% res_P_bar_0$B_P_ubar[1,,h] +
+                      X %*% res_P_bar_0$A_P_ubar[,,h])
+      P_lb_muR1 <- exp(vec1T %*% res_P_bar_muR1$B_P_lbar[1,,h] +
+                         X %*% res_P_bar_muR1$A_P_lbar[,,h])
+      P_ub_muR1 <- exp(vec1T %*% res_P_bar_muR1$B_P_ubar[1,,h] +
+                         X %*% res_P_bar_muR1$A_P_ubar[,,h])
+
+      numerator <- numerator + P_lb_0 - P_ub_0 -
+        exp(-matrix_mu_R0) * (P_lb_muR1 - P_ub_muR1)
+      denominat <- denominat + P_ub_0
+
+      CDS_spreads[,,h] <- numerator/denominat
+    }
+  }
+
+  return(list(
+    res_P_bar_0    = res_P_bar_0,
+    res_P_bar_muR1 = res_P_bar_muR1,
+    CDS_spreads    = CDS_spreads
+  ))
+}
 
 
