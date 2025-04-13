@@ -492,7 +492,7 @@ prices_CDS_RFV_VARG <- function(model,H=10,indic_delta1 = NaN,
 
   if(is.null(model$mu_s0)){
     mu_s0 <- 0
-    mu_s1 <- matrix(0,n.w,1)
+    mu_s1 <- matrix(0,n.w,n.e)
   }else{
     mu_s0 <- model$mu_s0
     mu_s1 <- matrix(model$mu_s1,n.w,n.e)
