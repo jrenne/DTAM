@@ -488,14 +488,14 @@ prices_CDS_RFV_VARG <- function(model,H=10,indic_delta1 = NaN,
   n.y <- n.w - n.e
 
   mu_R0 <- model$mu_R0
-  mu_R1 <- matrix(model$mu_R1,ncol=1)
+  mu_R1 <- matrix(model$mu_R1,n.w,n.e)
 
   if(is.null(model$mu_s0)){
     mu_s0 <- 0
     mu_s1 <- matrix(0,n.w,1)
   }else{
     mu_s0 <- model$mu_s0
-    mu_s1 <- matrix(model$mu_s1,ncol=1)
+    mu_s1 <- matrix(model$mu_s1,n.w,n.e)
   }
 
   res_P_bar_0 <- compute_P_bar_VARG(model,
@@ -519,6 +519,7 @@ prices_CDS_RFV_VARG <- function(model,H=10,indic_delta1 = NaN,
     denominat <- 0
 
     matrix_mu_R0 <- t(matrix(mu_R0,n.e,T))
+    matrix_mu_s0 <- t(matrix(mu_s0,n.e,T))
 
     for(h in 1:H){
       P_lb_0 <- exp(vec1T %*% res_P_bar_0$B_P_lbar[1,,h] +
@@ -530,9 +531,9 @@ prices_CDS_RFV_VARG <- function(model,H=10,indic_delta1 = NaN,
       P_ub_muR1 <- exp(vec1T %*% res_P_bar_muR1$B_P_ubar[1,,h] +
                          X %*% res_P_bar_muR1$A_P_ubar[,,h])
 
-      numerator <- numerator + exp(mu_s0) * (P_lb_0 - P_ub_0 -
+      numerator <- numerator + exp(matrix_mu_s0) * (P_lb_0 - P_ub_0 -
         exp(-matrix_mu_R0) * (P_lb_muR1 - P_ub_muR1))
-      denominat <- denominat + exp(mu_s0) * P_ub_0
+      denominat <- denominat + exp(matrix_mu_s0) * P_ub_0
 
       CDS_spreads[,,h] <- numerator/denominat
     }
