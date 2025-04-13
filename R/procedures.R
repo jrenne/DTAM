@@ -469,13 +469,16 @@ make_VARG_Q <- function(model){
 
 prices_CDS_RFV_VARG <- function(model,H=10,indic_delta1 = NaN,
                                 X=NaN){
-  # Prices are computed directly for all defaultable entities.
-  # If indic_delta1 is an integer, it indicates the component of w_t that
-  #  corresponds to delta_{e=1}. If NaN, delta_{e=1} is supposed to correspond
-  #  to the first non-zero entry of vector nu.
   # X is a matrix of dimension T x n.w of state vector values.
-
-  #modelQ <- make_VARG_Q(model)
+  # Prices are computed directly for all defaultable entities considered
+  #      in the VARG model (number = n.e).
+  # If indic_delta1 is an integer, it indicates the component of w_t that
+  #      corresponds to delta_{e=1}. If NaN, delta_{e=1} is supposed to
+  #      correspond to the first non-zero entry of vector nu.
+  # Currency: This function can handle the pricing of CDS written in a currency
+  #           that is different from the currency of denomination of the
+  #           underyling bond. For that model$mu_s0 and model$mu_s1 have
+  #           to be different from 0.
 
   if(is.na(indic_delta1[1])){
     indic_delta1 <- which(nu==0)[1]
@@ -485,14 +488,22 @@ prices_CDS_RFV_VARG <- function(model,H=10,indic_delta1 = NaN,
   n.y <- n.w - n.e
 
   mu_R0 <- model$mu_R0
-  mu_R1 <- model$mu_R1
+  mu_R1 <- matrix(model$mu_R1,ncol=1)
+
+  if(is.na(model$mu_s0)){
+    mu_s0 <- 0
+    mu_s1 <- matrix(0,n.w,1)
+  }else{
+    mu_s0 <- model$mu_s0
+    mu_s1 <- matrix(model$mu_s1,ncol=1)
+  }
 
   res_P_bar_0 <- compute_P_bar_VARG(model,
-                                    matrix(0,n.w,1),
+                                    mu_s1,
                                     H=H,
                                     indic_delta1 = indic_delta1)
   res_P_bar_muR1 <- compute_P_bar_VARG(model,
-                                       matrix(-mu_R1,ncol=1),
+                                       mu_s1 - mu_R1,
                                        H=H,
                                        indic_delta1 = indic_delta1)
 
@@ -519,9 +530,9 @@ prices_CDS_RFV_VARG <- function(model,H=10,indic_delta1 = NaN,
       P_ub_muR1 <- exp(vec1T %*% res_P_bar_muR1$B_P_ubar[1,,h] +
                          X %*% res_P_bar_muR1$A_P_ubar[,,h])
 
-      numerator <- numerator + P_lb_0 - P_ub_0 -
-        exp(-matrix_mu_R0) * (P_lb_muR1 - P_ub_muR1)
-      denominat <- denominat + P_ub_0
+      numerator <- numerator + exp(mu_s0) * (P_lb_0 - P_ub_0 -
+        exp(-matrix_mu_R0) * (P_lb_muR1 - P_ub_muR1))
+      denominat <- denominat + exp(mu_s0) * P_ub_0
 
       CDS_spreads[,,h] <- numerator/denominat
     }
