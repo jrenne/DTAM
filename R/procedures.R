@@ -234,7 +234,7 @@ simul.VAR <- function (Model, nb.sim, x0 = NaN)
   return(X)
 }
 
-compute_expect_variance <- function(psi,model){
+compute_expect_variance <- function(psi,model,du = 1e-08){
   # This function computes the conditional and unconditional expectations and
   # varances of an affine process.
   # ----------------------------------------------------------------------------
@@ -247,7 +247,6 @@ compute_expect_variance <- function(psi,model){
   n_w  <- model$n_w
 
   # Computation of Ew, using the Laplace Transform (Ew = dPsi(u)/du at u=0) ----
-  du   <- 10^(-9)
   mu <- matrix(0,n_w,1)
   Phi <- matrix(0,n_w,n_w)
   Gamma0 <- matrix(0,n_w*n_w,1)
