@@ -673,7 +673,8 @@ simul.TopDown <- function(model,nb_periods,W0=NaN){
 }
 
 
-compute_H_bar_TopDown <- function(model,gamma,H=10,W=NaN){
+compute_H_bar_TopDown <- function(model,gamma,H=10,W=NaN,
+                                  indic_Q = TRUE){
   # gamma has to be a vector with the same dimension as w_t
   # model contains the parameterization of the VARG model.
   # Prices are computed for all segments.
@@ -696,6 +697,11 @@ compute_H_bar_TopDown <- function(model,gamma,H=10,W=NaN){
               gamma*0       - xi1,
               gamma*0       - xi1)
 
+  if(indic_Q){
+    psi <- psi.w.TopDown
+  }else{
+    psi <- psiQ.w.TopDown
+  }
   varphi <- reverse.MHLT(psi.w.TopDown,
                          u1 = u1,
                          u2 = u2,
@@ -750,7 +756,8 @@ compute_H_bar_TopDown <- function(model,gamma,H=10,W=NaN){
 }
 
 
-compute_CDS_TopDown <- function(model,H=10,W,RR=.5){
+compute_CDS_TopDown <- function(model,H=10,W,RR=.5,
+                                indic_Q=TRUE){
 
   alpha.n <- matrix(model$alpha.n,ncol=1)
 
@@ -769,7 +776,8 @@ compute_CDS_TopDown <- function(model,H=10,W,RR=.5){
     I_j <- model$I[j]
     ej_tilde <- matrix(0,n.w,1)
     ej_tilde[n.y+j] <- 1
-    res <- compute_H_bar_TopDown(model,ej_tilde,H=10,W)
+    res <- compute_H_bar_TopDown(model,ej_tilde,H=10,W,
+                                 indic_Q = indic_Q)
     numerator <- 0
     denominat <- 0
     for(h in 1:H){
