@@ -698,11 +698,11 @@ compute_H_bar_TopDown <- function(model,gamma,H=10,W=NaN,
               gamma*0       - xi1)
 
   if(indic_Q){
-    psi <- psi.w.TopDown
-  }else{
     psi <- psiQ.w.TopDown
+  }else{
+    psi <- psi.w.TopDown
   }
-  varphi <- reverse.MHLT(psi.w.TopDown,
+  varphi <- reverse.MHLT(psi,
                          u1 = u1,
                          u2 = u2,
                          H = H,model)
