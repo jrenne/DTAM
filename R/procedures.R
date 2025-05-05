@@ -702,7 +702,7 @@ compute_H_bar_TopDown <- function(model,gamma,H=10,W=NaN,
   }else{
     psi <- psi.w.TopDown
   }
-  varphi <- reverse.MHLT(psi,
+  varphi <- reverse.MHLT(psi.w.TopDown,
                          u1 = u1,
                          u2 = u2,
                          H = H,model)
@@ -801,7 +801,7 @@ varphi4G_TopDown <- function(u,parameterization){
   nw <- dim(u)[1]
   q  <- dim(u)[2]
 
-  u2 <- matrix(gamma - model$xi1, nw, q)
+  u2 <- matrix(gamma - model$xi1, nw, q) + u
   u1 <- u
   if(indic_upper){
     u1    <- u1 + matrix(gamma, nw, q)
@@ -833,8 +833,9 @@ truncated.payoff <- function(model,
                              dx_statio = .1,
                              min_dx = 1e-05,
                              nb_x1 = 1000){
-  # This function calculates the value of payoff(w)·1_{v'w < b}, for different
-  #      values of b (collected in "vector.of.b").
+  # This function calculates the value of
+  #           payoff(w)·1_{v'Sum_h(w_{t+h}) < b},
+  #      for different values of b (collected in "vector.of.b").
   #       "W" is of dimension T x n.w; it contains values of the state vector w
   #          at which we want to evaluate the prices.
   #       "varphi" is a function that takes two arguments:
