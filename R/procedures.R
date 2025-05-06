@@ -702,7 +702,7 @@ compute_H_bar_TopDown <- function(model,gamma,H=10,W=NaN,
   }else{
     psi <- psi.w.TopDown
   }
-  varphi <- reverse.MHLT(psi.w.TopDown,
+  varphi <- reverse.MHLT(psi,
                          u1 = u1,
                          u2 = u2,
                          H = H,model)
@@ -804,7 +804,7 @@ varphi4G_TopDown <- function(u,parameterization){
   u2 <- matrix(gamma - model$xi1, nw, q) + u
   u1 <- u
   if(indic_upper){
-    u1    <- u1 + matrix(gamma, nw, q)
+    u1 <- u1 + matrix(gamma, nw, q)
   }
 
   if(indic_Q){
