@@ -756,7 +756,10 @@ compute_H_bar_TopDown <- function(model,gamma,H=10,W=NaN,
 }
 
 
-compute_CDS_TopDown <- function(model,H=10,W,RR=.5,
+compute_CDS_TopDown <- function(model,
+                                H=10,
+                                W,
+                                RR=.5,
                                 indic_Q=TRUE){
 
   alpha.n <- matrix(model$alpha.n,ncol=1)
@@ -776,13 +779,13 @@ compute_CDS_TopDown <- function(model,H=10,W,RR=.5,
     I_j <- model$I[j]
     ej_tilde <- matrix(0,n.w,1)
     ej_tilde[n.y+j] <- 1
-    res <- compute_H_bar_TopDown(model,ej_tilde,H=10,W,
+    res <- compute_H_bar_TopDown(model,ej_tilde,H=H,W,
                                  indic_Q = indic_Q)
     numerator <- 0
     denominat <- 0
     for(h in 1:H){
       numerator <- numerator + res$H_upper[,h] - res$H_lower[,h]
-      denominat <- denominat + I_j * res$B[,h]       - res$H_lower[,h]
+      denominat <- denominat + I_j * res$B[,h] - res$H_lower[,h]
       CDS[,j,h] <- (1-RR)*(numerator/denominat)
     }
   }
