@@ -1121,4 +1121,102 @@ compute_affine_payoff_TopDown <- function(model,gamma,H,
               r = r))
 }
 
+compute_bond_price_Ratings <- function(model,Y,H,psi){
+  # This function computes bond prices in a context featuring
+  #     credit ratings migration.
+  # H is the maximum maturity considered.
+  # Y is the matrix of y_t realiizations. Dimension: T x n_y.
+  # !!: model$kappa0 is of dimension 1 x K, where K is the number of
+  #     ratings (including "Default"). model$kappa1 is of dimension n_y x K.
+  #     The bottom entries of model$kappa0 and model$kappa1 are zeros.
+  # "psi" is a function computing the Laplace transform of y_t. If this function
+  #     needs arguments (on top of u), it has to be coded as a list
+  #     named "psi.parameterization" included in "model".
+
+  # Specification of stochastic migration probabilities:
+  kappa0 <- matrix(model$kappa0,nrow=1) # of dimension 1 x K. Last entry should be 0.
+  kappa1 <- model$kappa1 # of dimension n_y x K. Last row should be 0.
+  K <- length(kappa0) # number of ratings
+  n_y <- dim(kappa1)[1]
+
+  # Specification of short-term rate:
+  xi0 <- model$xi0
+  xi1 <- matrix(model$xi1,ncol=1)
+
+  u1 <- - kappa1
+  u2 <- - kappa1 - xi1 %*% matrix(1,1,K)
+  res_k <- reverse.MHLT(psi,u1=u1,u2=u2,H,model$psi.parameterization)
+
+  # Adjust for xi0, kappa0, and the first xi1:
+  B <- matrix(res_k$B,1,K*H) -
+    matrix(1:H,nrow=1) %x% (matrix(1,1,K) * xi0) -
+    matrix(1:H,nrow=1) %x% kappa0
+  A <- matrix(res_k$A,n_y,K*H) - matrix(xi1,n_y,K*H)
+
+  if(dim(Y)[2]!=n_y){# to make sure Y is of dimension T x n_y
+    Y <- t(Y)
+  }
+  T <- dim(Y)[1]
+
+  psi_eval <- exp(t(A)  %*% t(Y) + matrix(B, K*H,T))
+  # organized this way: each line for a given date.
+  # And then: h=1, k=1,...,K / h=2, k=1,...,K / h=3, etc.
+
+  # Re-organize in array format (T x K x H):
+  Psi_eval <- array(t(psi_eval),c(T,K,H))
+
+  # Risk-free bond price:
+  RF_bond_price <- Psi_eval[,K,] # of dimension T x H
+
+  V_1 <- solve(model$V)
+  V_1jK <- V_1[,K]
+  V_ijV_1jK <- model$V * (matrix(1,K,1) %*% matrix(V_1jK,nrow=1)) # K x K
+
+  Risky_bond_price   <- array(NaN,c(T,K-1,H))
+  Risky_bond_yields  <- array(NaN,c(T,K-1,H))
+  Risky_bond_spreads <- array(NaN,c(T,K-1,H))
+  for(h in 1:H){
+    bond_prices_h <- - V_ijV_1jK[1:(K-1),1:(K-1)] %*% t(Psi_eval[,1:(K-1),h])
+    Risky_bond_price[,,h] <- t(bond_prices_h)
+    Risky_bond_yields[,,h] <- - log(Risky_bond_price[,,h])/h
+  }
+
+  # compute yields:
+  RF_bond_yields <- - log(RF_bond_price) * (matrix(1,T,1) %*% matrix(1/(1:H),nrow=1))
+
+  # compute credit spreads:
+  for(k in 1:(K-1)){
+    Risky_bond_spreads[,k,] <- Risky_bond_yields[,k,] - RF_bond_yields
+  }
+
+  return(list(RF_bond_price = RF_bond_price,
+              RF_bond_yields = RF_bond_yields,
+              Risky_bond_price = Risky_bond_price,
+              Risky_bond_yields = Risky_bond_yields,
+              Risky_bond_spreads = Risky_bond_spreads))
+}
+
+
+simul.rating.migration <- function(model,Y,tau_ini=1){
+  # This function simulates a trajectory of ratings for a given model and
+  # a trajectory of the exogenous variable Y (of dimension T x n_y).
+
+  T <- dim(Y)[1]
+
+  tau_t <- tau_ini
+  all_tau <- tau_t
+
+  for(t in 2:T){
+    P <-
+      model$V %*%
+      diag(c(exp(-t(model$kappa0) -  t(model$kappa1) %*% c(Y[t,])))) %*%
+      solve(model$V)
+
+    cumPi <- cumsum(P[tau_t,])
+    tau_t <- which(runif(1)<cumPi)[1]
+
+    all_tau <- c(all_tau,tau_t)
+  }
+  return(all_tau)
+}
 
