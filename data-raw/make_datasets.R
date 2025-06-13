@@ -410,3 +410,44 @@ Shiller$Date  <- as.Date(paste(Shiller$year,"-",
 
 save(Shiller,file="data/Shiller.rda")
 
+
+#===============================================================================
+# Default rate and credit spreads
+#===============================================================================
+
+# Load default rates:
+Corporate_defaults <- read.csv("data-raw/Corporate_defaults.csv")
+plot(Corporate_defaults$year,Corporate_defaults$Default.rate,type="l")
+
+
+# Get yields from FRED:
+start_date <- as.Date(paste(Corporate_defaults$year[1],"-01-01",sep=""))
+end_date   <- as.Date(paste(tail(Corporate_defaults$year,1),"-12-31",sep=""))
+
+ticker <- "DAAA"
+AAA_yld <- fredr(series_id = ticker,
+                 observation_start = start_date,observation_end = end_date,
+                 frequency = "a",aggregation_method = "avg")
+AAA_yld <- subset(AAA_yld,select = c("date","value"))
+names(AAA_yld)[2] <- "AAA_yld"
+
+ticker <- "DBAA"
+BBB_yld <- fredr(series_id = ticker,
+                 observation_start = start_date,observation_end = end_date,
+                 frequency = "a",aggregation_method = "avg")
+BBB_yld <- subset(BBB_yld,select = c("date","value"))
+names(BBB_yld)[2] <- "BBB_yld"
+
+Credit_spds <- merge(AAA_yld,BBB_yld,by="date")
+Credit_spds$BBB_AAA_spd <- Credit_spds$BBB_yld - Credit_spds$AAA_yld
+
+Credit_spds$date <- year(Credit_spds$date)
+names(Credit_spds)[1] <- "year"
+
+Credit_spds <- merge(Credit_spds,Corporate_defaults,by="year")
+
+save(Credit_spds,file="data/Credit_spds.rda")
+
+
+
+

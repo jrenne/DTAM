@@ -437,6 +437,23 @@ compute_uncondmean_VARG <- function(model){
   return(E)
 }
 
+compute_uncondvar_VARG <- function(model){
+  alpha <- model$alpha
+  nu    <- model$nu
+  mu    <- model$mu
+  beta  <- model$beta
+
+  n <- dim(beta)[1]
+  mu_matrix <- matrix(mu,n,n)
+  rho <- mu_matrix * beta
+
+  E       <- solve(diag(n) - rho) %*% (mu * (alpha + nu))
+  Sigma_E <- diag(c(mu^2*(nu + 2*alpha) + 2*(mu_matrix^2*beta) %*% E))
+  V       <- matrix(solve(diag(n^2) - rho %x% rho) %*% c(Sigma_E),n,n)
+
+  return(V)
+}
+
 simul_VARG <- function(model,nb_periods,w0=NaN){
   alpha <- model$alpha
   nu    <- model$nu
