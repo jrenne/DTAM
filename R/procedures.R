@@ -1294,3 +1294,24 @@ compute_AB_classical <- function(xi0,xi1,
               a=a,b=b))
 }
 
+
+loglik_Gaussian <- function(std_dev,epsilon){
+  # epsilon is of dimension T x n, and epsilon_t ~ N(0,Omega),
+  # where Omega = diag(std_dev^2).
+  # the function returns the log-likelihood associated with those
+  # observations included in matrix epsilon.
+  # epsilon is of dimension T x n
+  # std_dev is of dimension T x n
+  # !!!: works only when components of epsilon are independent
+
+  if(sum(dim(std_dev)==dim(epsilon))!=2){
+    print("Error in loglik_Gaussian: std_dev and epsilon should have the same dimension.")
+    return(NaN)
+  }
+
+  epsilon_standardized <- epsilon * (1/std_dev)
+  logl <- - log(abs(std_dev)) - .5 * epsilon_standardized^2
+
+  return(sum(logl))
+}
+
