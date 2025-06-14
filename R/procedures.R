@@ -1237,3 +1237,60 @@ simul.rating.migration <- function(model,Y,tau_ini=1){
   return(all_tau)
 }
 
+
+compute_AB_classical <- function(xi0,xi1,
+                                 kappa0=NaN,kappa1=NaN,
+                                 H, # maximum maturity
+                                 psi,psi.parameterization){
+  # This function employs recursive formulas to price risk-free and defaultable
+  # bonds.
+  # If the kappa's are NaN (default), the function prices
+  #    credit-risk-free bonds only.
+  # The risk-free short-term rate is r_t = xi0 + xi1'y_t.
+  # The default intensity is lambda_t = kappa0 + kappa1'y_t.
+  # kappa0 and kappa1 can correspond to different entities, that is, kappa0 can be
+  #    of length E, an kappa1 of dimension n_y x E.
+  # The function returns a list containing A, B, a, and b.
+  # Bond prices are such that B_{t,h} = exp(B_h + A_h'y_t), where
+  #    B_h is a scalar and A_h is a (n_y x 1) vector.
+  # Bond yields are of the form b_h + a_h'y_t.
+
+  n_y <- length(xi1)
+
+  if(!is.na(kappa0[1])){
+    # Pricing of risk-free & defaultable bonds
+    E <- dim(kappa1)[2]
+    u1 <- cbind(0,-kappa1)
+    u2 <- cbind(-xi1,-matrix(xi1,n_y,E)-kappa1)
+    xi0_kappa0 <- c(xi0,kappa0)
+  }else{
+    # Pricing of risk-free bonds only
+    u1 <- matrix(rep(0,n_y),ncol=1)
+    u2 <- matrix(-xi1,ncol=1)
+    xi0_kappa0 <- xi0
+  }
+
+  res_reverse <- reverse.MHLT(psi = psi,
+                              u1 = u1,
+                              u2 = u2,
+                              H = H,
+                              psi.parameterization = psi.parameterization)
+  A <- res_reverse$A
+  B <- res_reverse$B
+  # Adjust for xi0, kappa0, and the first xi1'y_t:
+
+  a <- 0*A
+  b <- 0*B
+
+  for(h in 1:H){
+    A[,,h]  <- A[,,h] - matrix(xi1,dim(A)[1],dim(A)[2])
+    B[1,,h] <- B[1,,h] - h * xi0_kappa0
+
+    a[,,h] <- -A[,,h]/h
+    b[,,h] <- -B[,,h]/h
+  }
+
+  return(list(A=A,B=B,
+              a=a,b=b))
+}
+
