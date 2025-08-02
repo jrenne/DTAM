@@ -326,8 +326,8 @@ for(i in 1:length(list.q.variables)){
   eval(parse(text = gsub(" ","",paste("data.var.frame = data.frame(date=data.var$date,",
                                       list.q.variables[i],"=data.var$value)",
                                       sep=""))))
-  data.var.frame$date <- as.Date(paste(format(data.var$date,"%Y"),"-",
-                                       as.numeric(format(data.var$date,"%m"))+2,"-01",sep=""))
+  # data.var.frame$date <- as.Date(paste(format(data.var$date,"%Y"),"-",
+  #                                      as.numeric(format(data.var$date,"%m")),"-01",sep=""))
   if(i==1){
     DATA = data.var.frame
   }else{
