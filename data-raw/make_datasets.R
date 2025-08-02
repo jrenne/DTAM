@@ -34,7 +34,7 @@ save(YC_Euro,file="data/YC_Euro.rda")
 
 
 #===============================================================================
-# European zero-coupon yields from FRED
+# Zero-coupon yields from FRED
 #===============================================================================
 
 fredr_set_key("df65e14c054697a52b4511e77fcfa1f3")
@@ -50,7 +50,7 @@ list.variables <- c("DTB4WK","DTB3","DTB6",
                     "THREEFY6","THREEFY7","THREEFY8","THREEFY9","THREEFY10")
 
 start_date <- as.Date("1970-01-01")
-end_date   <- as.Date("2024-11-01")
+end_date   <- as.Date("2025-06-01")
 
 freq <- "d"
 
@@ -250,15 +250,15 @@ save(SPF,file="data/SPF.rda")
 #===============================================================================
 
 start.date <- "1959-01-01"
-end.date   <- "2024-09-01"
+end.date   <- "2025-06-01"
 start_date <- as.Date(start.date)
 end_date   <- as.Date(end.date)
 
 # Monthly data:
 
-list.variables <- c("DTB4WK","DTB3","CPIAUCSL","BBKMGDP","PCE","PCEPI",
-                    "THREEFYTP2","THREEFYTP5","THREEFYTP10",
-                    "THREEFY2",  "THREEFY5",  "THREEFY10")
+list.variables <- c("DTB4WK","DTB3","DTB6","DTB1YR","CPIAUCSL","BBKMGDP","PCE","PCEPI",
+                    "THREEFYTP2","THREEFYTP3","THREEFYTP5","THREEFYTP7","THREEFYTP10",
+                    "THREEFY2",  "THREEFY3",  "THREEFY5",   "THREEFY7" ,  "THREEFY10")
 for(i in 1:length(list.variables)){
   data.var <- f(list.variables[i],"m")
   eval(parse(text = gsub(" ","",paste("data.var.frame = data.frame(date=data.var$date,",
@@ -317,9 +317,9 @@ save(Data_Macro_US_monthly,file="data/Data_Macro_US_monthly.rda")
 # Quarterly U.S. Macroeconomic data, from FRED database
 #===============================================================================
 
-list.q.variables <- c("DTB4WK","DTB3","CPIAUCSL","GDPPOT","GDPC1","PCE","PCEPI",
-                      "THREEFYTP2","THREEFYTP5","THREEFYTP10",
-                      "THREEFY2",  "THREEFY5",  "THREEFY10")
+list.q.variables <- c("DTB4WK","DTB3","DTB6","DTB1YR","CPIAUCSL","GDPPOT","GDPC1","PCE","PCEPI",
+                      "THREEFYTP2","THREEFYTP3","THREEFYTP5","THREEFYTP7","THREEFYTP10",
+                      "THREEFY2",  "THREEFY3",  "THREEFY5",   "THREEFY7" ,  "THREEFY10")
 
 for(i in 1:length(list.q.variables)){
   data.var <- f(list.q.variables[i],"q")
