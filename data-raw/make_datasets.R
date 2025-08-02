@@ -256,9 +256,9 @@ end_date   <- as.Date(end.date)
 
 # Monthly data:
 
-list.variables <- c("DTB4WK","DTB3","DTB6","DTB1YR","CPIAUCSL","BBKMGDP","PCE","PCEPI",
-                    "THREEFYTP2","THREEFYTP3","THREEFYTP5","THREEFYTP7","THREEFYTP10",
-                    "THREEFY2",  "THREEFY3",  "THREEFY5",   "THREEFY7" ,  "THREEFY10")
+list.variables <- c("DTB4WK","DTB3","DTB6","CPIAUCSL","BBKMGDP","PCE","PCEPI",
+                    "THREEFYTP1","THREEFYTP2","THREEFYTP3","THREEFYTP5","THREEFYTP7","THREEFYTP10",
+                    "THREEFY1",  "THREEFY2",  "THREEFY3",  "THREEFY5",   "THREEFY7" ,  "THREEFY10")
 for(i in 1:length(list.variables)){
   data.var <- f(list.variables[i],"m")
   eval(parse(text = gsub(" ","",paste("data.var.frame = data.frame(date=data.var$date,",
@@ -317,9 +317,9 @@ save(Data_Macro_US_monthly,file="data/Data_Macro_US_monthly.rda")
 # Quarterly U.S. Macroeconomic data, from FRED database
 #===============================================================================
 
-list.q.variables <- c("DTB4WK","DTB3","DTB6","DTB1YR","CPIAUCSL","GDPPOT","GDPC1","PCE","PCEPI",
-                      "THREEFYTP2","THREEFYTP3","THREEFYTP5","THREEFYTP7","THREEFYTP10",
-                      "THREEFY2",  "THREEFY3",  "THREEFY5",   "THREEFY7" ,  "THREEFY10")
+list.q.variables <- c("DTB4WK","DTB3","DTB6","CPIAUCSL","GDPPOT","GDPC1","PCE","PCEPI",
+                      "THREEFYTP1","THREEFYTP2","THREEFYTP3","THREEFYTP5","THREEFYTP7","THREEFYTP10",
+                      "THREEFY1",  "THREEFY2",  "THREEFY3",  "THREEFY5",   "THREEFY7" ,  "THREEFY10")
 
 for(i in 1:length(list.q.variables)){
   data.var <- f(list.q.variables[i],"q")
