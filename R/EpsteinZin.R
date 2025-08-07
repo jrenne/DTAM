@@ -13,6 +13,7 @@ solve_EZ_SDF <- function(model,psi,Ew=NaN,z_bar_ini=5,
   # Ew is the mean of w_t. If NaN, it is computed numerically.
   # ----------------------------------------------------------------------------
 
+
   rho   <- model$rho
   gamma <- model$gamma
   delta <- model$delta

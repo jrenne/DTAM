@@ -1295,23 +1295,41 @@ compute_AB_classical <- function(xi0,xi1,
 }
 
 
-loglik_Gaussian <- function(std_dev,epsilon){
-  # epsilon is of dimension T x n, and epsilon_t ~ N(0,Omega),
-  # where Omega = diag(std_dev^2).
-  # the function returns the log-likelihood associated with those
-  # observations included in matrix epsilon.
-  # epsilon is of dimension T x n
-  # std_dev is of dimension T x n
-  # !!!: works only when components of epsilon are independent
+# loglik_Gaussian <- function(std_dev,epsilon){
+#   # epsilon is of dimension T x n, and epsilon_t ~ N(0,Omega),
+#   # where Omega = diag(std_dev^2).
+#   # the function returns the log-likelihood associated with those
+#   # observations included in matrix epsilon.
+#   # epsilon is of dimension T x n
+#   # std_dev is of dimension T x n
+#   # !!!: works only when components of epsilon are independent
+#
+#   if(sum(dim(std_dev)==dim(epsilon))!=2){
+#     print("Error in loglik_Gaussian: std_dev and epsilon should have the same dimension.")
+#     return(NaN)
+#   }
+#
+#   epsilon_standardized <- epsilon * (1/std_dev)
+#   logl <- - log(abs(std_dev)) - .5 * epsilon_standardized^2
+#
+#   return(sum(logl))
+# }
 
-  if(sum(dim(std_dev)==dim(epsilon))!=2){
-    print("Error in loglik_Gaussian: std_dev and epsilon should have the same dimension.")
-    return(NaN)
-  }
+log_mvdnorm <- function(X, Sigma){
+  # This function computes the log-likelihood associated with a matrix of observations X.
+  # The rows of X are supposed to be i.i.d., drawn in N(0,Sigma), where
+  # Sigma is a covariance matrix.
 
-  epsilon_standardized <- epsilon * (1/std_dev)
-  logl <- - log(abs(std_dev)) - .5 * epsilon_standardized^2
+  TT <- nrow(X)
+  n <- ncol(X)
 
-  return(sum(logl))
+  Sigma_inv <- solve(Sigma)
+  det_Sigma <- determinant(Sigma, logarithm = TRUE)$modulus
+
+  term1 <- -0.5 * TT * n * log(2 * pi)
+  term2 <- -0.5 * TT * det_Sigma
+  term3 <- -0.5 * sum(((X %x% matrix(1,1,n))*(matrix(1,1,n) %x% X)) %*% c(Sigma_inv))
+
+  logL <- term1 + term2 + term3
+  return(as.numeric(logL))
 }
-
