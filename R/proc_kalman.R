@@ -91,13 +91,8 @@ Kalman_filter <- function(Y_t,nu_t,H,N,mu_t,G,M,Sigma_0,rho_0,indic_pos=0,
     R.aux <- matrix(R.aux,ny.aux,ny.aux)
 
     #Compute gain K:
-    #print(G.aux)
     if(dim(G.aux)[1]>0){
-      if(sum(eigen(R.aux + G.aux %*% aux_Sigma_tp1_t %*% t(G.aux))$values<=0)>0){
-        print("ici")
-      }
       K = aux_Sigma_tp1_t %*% t(G.aux) %*% MASS::ginv(R.aux + G.aux %*% aux_Sigma_tp1_t %*% t(G.aux))
-
 
       lambda_t   = Y_t[t,] - y_tp1_t[t,]
       lambda_t <- matrix(lambda_t[vec.obs.indices],ncol=1)
@@ -108,8 +103,7 @@ Kalman_filter <- function(Y_t,nu_t,H,N,mu_t,G,M,Sigma_0,rho_0,indic_pos=0,
       Id         = diag(1,nrow=nr,ncol=nr)
       Sigma_tt[t,] = matrix( (Id - K %*% G.aux) %*% aux_Sigma_tp1_t,1,nr*nr)
 
-      #calcul de la log-vraisemblance
-      #print(det(omega))
+      # Computation of log-likelihood:
       if(length(c(omega))==1){
         det.omega <- omega
       }else{
@@ -205,7 +199,6 @@ Kalman_smoother <- function(Y_t,nu_t,H,N,mu_t,G,M,Sigma_0,rho_0,indic_pos=0,
                 loglik=output_filter$loglik,
                 loglik.vector=output_filter$loglik.vector,
                 Omega_tp1_t=Omega_tp1_t,
-                #Var.model.implied.obs=Var.model.implied.obs,
                 M=M,
                 Sigma_tt=Sigma_tt,
                 fitted.obs=fitted.obs,G=G,mu_t=mu_t,
