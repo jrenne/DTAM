@@ -1,4 +1,4 @@
-KH_filter_new <- function(F, Omega, Eta){
+KH_filter <- function(F, Omega, Eta){
 
   # Model: ---------------------------------------------------------------------
   # F_{t}|z_{t},I_{t-1} ~ f(z_{t},F_{t-1}),
@@ -114,22 +114,22 @@ simul_RS <- function(Omega,TT,ini_state = NaN){
   return(states)
 }
 
-Omega <- matrix(c(.8,.1,0,.2,.8,.2,0,.1,.8),3,3)
-J <- dim(Omega)[1]
-TT <- 200
-z <- simul_RS(Omega,TT=TT,ini_state = NaN)
-
-nF <- 2
-M <- matrix(c(0,1,1,0,1,1),nF,J)
-N <- .5*matrix(c(.5,1,.3,1,2,.6),nF,J)
-
-F <- z %*% t(M) + (z %*% t(N))*matrix(rnorm(nF*TT),TT,nF)
-
-res_KH <- KH_filter(F, Omega, Eta = f_Eta(F,M,N))
-
-
-par(mfrow=c(2,1))
-plot(z[,1],type="l",lwd=2)
-lines(res_KH$ksi_matrix[,1],col="red")
-plot(z[,2],type="l",lwd=2)
-lines(res_KH$ksi_matrix[,2],col="red")
+# Omega <- matrix(c(.8,.1,0,.2,.8,.2,0,.1,.8),3,3)
+# J <- dim(Omega)[1]
+# TT <- 200
+# z <- simul_RS(Omega,TT=TT,ini_state = NaN)
+#
+# nF <- 2
+# M <- matrix(c(0,1,1,0,1,1),nF,J)
+# N <- .5*matrix(c(.5,1,.3,1,2,.6),nF,J)
+#
+# F <- z %*% t(M) + (z %*% t(N))*matrix(rnorm(nF*TT),TT,nF)
+#
+# res_KH <- KH_filter(F, Omega, Eta = f_Eta(F,M,N))
+#
+#
+# par(mfrow=c(2,1))
+# plot(z[,1],type="l",lwd=2)
+# lines(res_KH$ksi_matrix[,1],col="red")
+# plot(z[,2],type="l",lwd=2)
+# lines(res_KH$ksi_matrix[,2],col="red")
