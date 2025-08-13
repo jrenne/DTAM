@@ -34,7 +34,7 @@ save(YC_Euro,file="data/YC_Euro.rda")
 
 
 #===============================================================================
-# Zero-coupon yields from FRED
+# Zero-coupon yields from FRED (daily)
 #===============================================================================
 
 fredr_set_key("df65e14c054697a52b4511e77fcfa1f3")
@@ -67,6 +67,42 @@ for(i in 1:length(list.variables)){
 }
 save(YC_US,file="data/YC_US.rda")
 
+
+#===============================================================================
+# Zero-coupon yields from FRED (weekly)
+#===============================================================================
+
+fredr_set_key("df65e14c054697a52b4511e77fcfa1f3")
+
+f <- function(ticker,freq){
+  fredr(series_id = ticker,
+        observation_start = start_date,observation_end = end_date,
+        frequency = freq,aggregation_method = "avg")
+}
+
+list.variables <- c("DFF",
+                    "DFEDTAR","DFEDTARU","DFEDTARL",
+                    "DTB3","DTB6",
+                    "THREEFY1","THREEFY2","THREEFY3","THREEFY4","THREEFY5",
+                    "THREEFY6","THREEFY7","THREEFY8","THREEFY9","THREEFY10")
+
+start_date <- as.Date("1970-01-01")
+end_date   <- as.Date("2025-06-01")
+
+freq <- "w"
+
+for(i in 1:length(list.variables)){
+  data.var <- f(list.variables[i],freq)
+  eval(parse(text = gsub(" ","",paste("data.var.frame = data.frame(date=data.var$date,",
+                                      list.variables[i],"=data.var$value)",
+                                      sep=""))))
+  if(i==1){
+    YC_US_weekly = data.var.frame
+  }else{
+    YC_US_weekly = merge(YC_US_weekly,data.var.frame,by="date",all=TRUE)
+  }
+}
+save(YC_US_weekly,file="data/YC_US_weekly.rda")
 
 
 #===============================================================================
