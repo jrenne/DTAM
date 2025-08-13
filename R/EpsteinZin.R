@@ -80,26 +80,6 @@ solve_EZ_SDF <- function(model,psi,Ew=NaN,z_bar_ini=5,
   return(model_solved)
 }
 
-# psi.BansalShaliastovich <- function (u,model){
-#   # This function computes the log Laplace transform associated with
-#   # the model by Bansal and Shaliastovich (2012, RFS)
-#   n <- dim(model$Pi)[1]
-#   q <- dim(model$nu)[1]
-#   K <- dim(u)[2]
-#   u.x <- matrix(u[1:n, ], nrow = n)
-#   u.z <- matrix(u[(n + 1):(n + q), ], nrow = q)
-#   u.epsilon <- matrix(u[(n + q + 1):(n + q + 3), ], nrow = 3)
-#   b <- 0.5 * t(u.x * u.x) %*% matrix(model$chi.0, ncol = 1) +
-#     0.5 * t(u.z * u.z) %*% matrix(model$sigma.w^2, ncol = 1) +
-#     0.5 * ((t(u.epsilon) %*% model$Omega) * t(u.epsilon)) %*%
-#     matrix(1, 3, 1)
-#   a <- rbind(t(model$Pi) %*% u.x, 0.5 * t(model$nu) %*%
-#                model$chi.1 %*% (u.x * u.x) + t(model$nu) %*% u.z, matrix(0,
-#                                                                          3, K))
-#   return(list(a = a,b = b))
-# }
-
-
 
 solve_EZ_stock_return <- function(model,psi,Ew=NaN,z_s_bar_ini=5,
                                   nb_loop_z_bar=20,nb_loop_mu_z1=100){
@@ -108,12 +88,12 @@ solve_EZ_stock_return <- function(model,psi,Ew=NaN,z_s_bar_ini=5,
   # The approach is that of Bansal and Yaron (2004), based on the linearization
   # of returns à la Campbell and Shiller (1988).
   # -- Inputs ------------------------------------------------------------------
-  # model_solved is a list containing the model parameters, including:
+  # model is a list containing the model parameters, including:
   # - the parameterization of preferences, i.e., rho, gamma, delta
   # - the parameterization of consumption growth, i.e., mu_c0 and mu_c1
   # - the parameterization of dividend growth, i.e., mu_d0 and mu_d1.
   # - the dimension of w, parameter: n_w (used to compute Ew numerically)
-  # In addition, model_solved contains the SDF specification, that includes:
+  # In addition, model contains the SDF specification, that includes:
   # - the vector of prices of risk (alpha)
   # - the specification of the short-term rate (scalar eta0 and vector eta1).
   # psi is the log Laplace transform of the state vector w_t; it can itself use
