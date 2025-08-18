@@ -82,7 +82,8 @@ solve_EZ_SDF <- function(model,psi,Ew=NaN,z_bar_ini=5,
 
 
 solve_EZ_stock_return <- function(model,psi,Ew=NaN,z_s_bar_ini=5,
-                                  nb_loop_z_bar=20,nb_loop_mu_z1=100){
+                                  nb_loop_z_bar=20,nb_loop_mu_z1=100,
+                                  mu_s1_ini=NaN){
   # This procedure computes an affine approximation to stock return in
   # the context of Epstein-Zin preferences.
   # The approach is that of Bansal and Yaron (2004), based on the linearization
@@ -122,7 +123,9 @@ solve_EZ_stock_return <- function(model,psi,Ew=NaN,z_s_bar_ini=5,
 
     # Solving for mu_z1 (fixed-point problem recursively solved) ---------------
     # Initial value based on VAR representation of w_t process:
-    mu_s1 = solve(diag(n_w) - kappa1s*t(Phi)) %*% (t(Phi) %*% mu_d1 - eta1)
+    if(is.na(mu_s1_ini[1])){
+      mu_s1 = solve(diag(n_w) - kappa1s*t(Phi)) %*% (t(Phi) %*% mu_d1 - eta1)
+    }
     for(jjj in 1:nb_loop_mu_z1){
       u <- matrix(alpha + kappa1s*mu_s1 + mu_d1,ncol=1)
       psi_w_alpha_plus <- psi(u,model)
