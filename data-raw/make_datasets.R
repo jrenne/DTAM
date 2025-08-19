@@ -444,6 +444,18 @@ Shiller$month <- str_sub(as.character(sprintf("%.2f",Shiller$Date)),6,7)
 Shiller$Date  <- as.Date(paste(Shiller$year,"-",
                                Shiller$month,"-01",sep=""))
 
+# Add short-term rate (3-month, from FRED)
+ticker <- "DTB3"
+DTB3 <- fredr(series_id = ticker,
+                 observation_start = start_date,
+              observation_end = tail(Shiller$Date,1),
+                 frequency = "m",aggregation_method = "avg")
+DTB3 <- subset(DTB3,select = c("date","value"))
+names(DTB3)[1] <- "Date"
+names(DTB3)[2] <- "DTB3"
+
+Shiller <- merge(Shiller,DTB3,by="Date",all = TRUE)
+
 save(Shiller,file="data/Shiller.rda")
 
 
