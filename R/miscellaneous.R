@@ -17,3 +17,21 @@ make_recessions <- function(col="#AA55AA44",indic_US=TRUE){
   }
   return(1)
 }
+
+
+make_Pi_z_kron_z <- function(Pi){
+  # Pi is the matrix of transition probabilties (with rows that sum to one)
+  # This procedure constructs the matrix  of transition probabilities of
+  # z_{t} %x% z_{t-1}.
+  J <- dim(Pi)[1]
+  Id <- diag(J)
+
+  PI <- NULL
+  for(i in 1:J){
+    e_i <- matrix(Id[i,],nrow=1)
+    aux <- matrix(Pi[i,],nrow=1) %x% e_i
+    PI <- rbind(PI,aux)
+  }
+  PI <- PI %x% matrix(1,J,1)
+  return(PI)
+}
