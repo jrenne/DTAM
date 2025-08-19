@@ -117,17 +117,18 @@ solve_EZ_stock_return <- function(model,psi,Ew=NaN,z_s_bar_ini=5,
   # Loop on z_bar: -------------------------------------------------------------
   z_s_bar <- z_s_bar_ini
 
+  if(is.na(mu_s1_ini[1])){
+    mu_s1 <- solve(diag(n_w) - kappa1s*t(Phi)) %*% (t(Phi) %*% mu_d1 - eta1)
+  }else{
+    mu_s1 <- mu_s1_ini
+  }
+
   for(iii in 1:nb_loop_z_bar){
     kappa1s <- c(exp(z_s_bar)/(1 + exp(z_s_bar)))
     kappa0s <- c(log(1 + exp(z_s_bar)) - kappa1s * z_s_bar)
 
     # Solving for mu_z1 (fixed-point problem recursively solved) ---------------
     # Initial value based on VAR representation of w_t process:
-    if(is.na(mu_s1_ini[1])){
-      mu_s1 <- solve(diag(n_w) - kappa1s*t(Phi)) %*% (t(Phi) %*% mu_d1 - eta1)
-    }else{
-      mu_s1 <- mu_s1_ini
-    }
     for(jjj in 1:nb_loop_mu_z1){
       u <- matrix(alpha + kappa1s*mu_s1 + mu_d1,ncol=1)
       psi_w_alpha_plus <- psi(u,model)
