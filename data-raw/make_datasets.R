@@ -447,7 +447,7 @@ Shiller$Date  <- as.Date(paste(Shiller$year,"-",
 # Add short-term rate (3-month, from FRED)
 ticker <- "DTB3"
 DTB3 <- fredr(series_id = ticker,
-                 observation_start = start_date,
+                 observation_start = Shiller$Date[1],
               observation_end = tail(Shiller$Date,1),
                  frequency = "m",aggregation_method = "avg")
 DTB3 <- subset(DTB3,select = c("date","value"))
