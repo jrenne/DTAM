@@ -35,3 +35,21 @@ make_Pi_z_kron_z <- function(Pi){
   PI <- PI %x% matrix(1,J,1)
   return(PI)
 }
+
+
+autocov <- function(X,n){
+  T <- length(X)
+  X.1 <- X[1:(T-n)] - mean(X)
+  X.2 <- X[(n+1):T] - mean(X)
+  return(1/T * sum(X.1 * X.2))
+}
+
+NW.LongRunVariance <- function(X,q){
+  gamma0 <- autocov(X,0)
+  LRV <- gamma0
+  weights <- 1 - (1:q)/(q+1)
+  for(i in 1:q){
+    LRV <- LRV + 2 * weights[i] * autocov(X,i)
+  }
+  return(LRV)
+}
