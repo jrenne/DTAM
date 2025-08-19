@@ -454,7 +454,18 @@ DTB3 <- subset(DTB3,select = c("date","value"))
 names(DTB3)[1] <- "Date"
 names(DTB3)[2] <- "DTB3"
 
+# Add Personal Consumption Expenditures (from FRED)
+ticker <- "PCE"
+PCE <- fredr(series_id = ticker,
+              observation_start = Shiller$Date[1],
+              observation_end = tail(Shiller$Date,1),
+              frequency = "m",aggregation_method = "avg")
+PCE <- subset(PCE,select = c("date","value"))
+names(PCE)[1] <- "Date"
+names(PCE)[2] <- "PCE"
+
 Shiller <- merge(Shiller,DTB3,by="Date",all = TRUE)
+Shiller <- merge(Shiller,PCE, by="Date",all = TRUE)
 
 save(Shiller,file="data/Shiller.rda")
 
