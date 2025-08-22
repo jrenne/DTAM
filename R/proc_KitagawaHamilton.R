@@ -14,7 +14,7 @@ KH_filter <- function(Omega, Eta){
   #       the pdf of the distribution F_{t}|z_{t}=e_j,I_{t-1}.
   # ----------------------------------------------------------------------------
 
-  J         <- ncol(M)  # number of regimes
+  J         <- dim(Omega)[1]  # number of regimes
   nb_dates  <- nrow(Eta)
 
   ksi_matrix   <- matrix(0, nrow = nb_dates, ncol = J)
