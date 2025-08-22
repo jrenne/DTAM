@@ -244,7 +244,12 @@ compute_expect_variance <- function(psi,model,du = 1e-08){
   # vec[Var_t(w_{t+1})] = Gamma_0 + Gamma_1.w_t
   # ----------------------------------------------------------------------------
 
-  n_w  <- model$n_w
+  if(is.null(model$n_w)){
+    print("The 'model' input should contain 'n_w', the dimension of the state vector.")
+    return(0)
+  }else{
+    n_w  <- model$n_w
+  }
 
   # Computation of Ew, using the Laplace Transform (Ew = dPsi(u)/du at u=0) ----
   mu <- matrix(0,n_w,1)

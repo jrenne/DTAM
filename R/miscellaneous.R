@@ -1,5 +1,6 @@
 
-make_recessions <- function(col="#AA55AA44",indic_US=TRUE){
+make_recessions <- function(col="#AA55AA44",indic_US=TRUE,
+                            MIN=-10000,MAX=+10000){
   if(indic_US){
     nber_dates <- nberDates()
     start_recession_dates <- as.Date(as.character(nber_dates[,1]),"%Y%m%d")
@@ -13,7 +14,7 @@ make_recessions <- function(col="#AA55AA44",indic_US=TRUE){
   for(i in 1:length(start_recession_dates)){
     polygon(c(start_recession_dates[i],start_recession_dates[i],
               end_recession_dates[i],end_recession_dates[i]),
-            c(-10000,+10000,+10000,-10000),border=NaN,col=col)
+            c(MIN,MAX,MAX,MIN),border=NaN,col=col)
   }
   return(1)
 }
