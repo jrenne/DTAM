@@ -16,7 +16,7 @@ make_recessions <- function(col="#AA55AA44",indic_US=TRUE,
               end_recession_dates[i],end_recession_dates[i]),
             c(MIN,MAX,MAX,MIN),border=NaN,col=col)
   }
-  return(1)
+  return(NULL)
 }
 
 autocov <- function(X,n){
