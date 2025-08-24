@@ -148,6 +148,42 @@ make_Pi_z_kron_z <- function(Pi){
 }
 
 
+
+compute_LT_RS <- function(alpha,Pi,M){
+  # This function computes A_h s.t.
+  # E_t[exp(alpha'(z_{t+1}+...+z_{t+h}))] = [1,...,1]·A_h'·z_t,
+  # where z_t follows a J-regime Markov-Switching process with matrix of
+  # transition probabilities Pi (rows sum to one).
+  # The A_h vector are collected in matrix A (J*k), where k is the number of
+  # maturities of interest. M determines (and decomposes) these maturities;
+  # it is of dimension kx2. Let us denote its entries by m_{i,1} and
+  # m_{i,2} (for row i), and the i'th horizon by h_{i}. The maturities are
+  # obtained recursively using:
+  #      h_{i+1} = h_{i-1}*m_{i,2} + h_{i-2}*m_{i,1}, with h_1=1 and h_0=0.
+  # By convention, the first row of M is [1,0]. If, for instance:
+  #      M[2,] = [4, 0] => h_2 = 4*1  + 0*0 = 4
+  #      M[3,] = [3, 1] => h_3 = 3*4  + 1*1 = 13
+  #      M[4,] = [4, 0] => h_4 = 4*13 + 0*4 = 52
+  # This decomposition speeds up the calculation.
+
+  J <- dim(Pi)[1]
+  vec1 <- matrix(1,J,1)
+
+  # Compute first column of A:
+  DP_h_1 <- diag(c(exp(alpha))) %*% t(Pi)
+  DP_h_2 <- diag(J)
+  A <- NULL
+  for(i in 1:dim(M)[1]){
+    DP_h <- (DP_h_1 %^% M[i,1]) %*% (DP_h_2 %^% M[i,2])
+    DP_h_2 <- DP_h_1 # for next iteration
+    DP_h_1 <- DP_h   # for next iteration
+    A_h <- t(DP_h) %*% vec1
+    A <- cbind(A,A_h)
+  }
+  return(A)
+}
+
+#
 # Omega <- matrix(c(.8,.1,0,.2,.8,.2,0,.1,.8),3,3)
 # J <- dim(Omega)[1]
 # TT <- 200
@@ -170,3 +206,48 @@ make_Pi_z_kron_z <- function(Pi){
 # plot(z[,2],type="l",lwd=2)
 # lines(res_KH$ksi_matrix[,2],col="red")
 # lines(res_smoother[,2],col="blue")
+#
+# alpha <- c(-.03,-.01,-.05)
+# M <- t(matrix(c(1,0,4,0,3,1,4,0),2,4))
+#
+# A <- compute_LT_RS(alpha,Omega,M)
+#
+# D <- diag(exp(alpha))
+#
+# print(A)
+# print(matrix(1,1,3) %*% ((D %*% t(Omega))%^%52))
+#
+#
+# Phi <- matrix(1:4,2,2)
+#
+#
+# solve(diag(2) - Phi) %*% (diag(2) - Phi%^%3)
+# (diag(2) - Phi%^%3) %*% solve(diag(2) - Phi)
+#
+# t(solve(diag(2) - Phi))
+# solve(diag(2) - t(Phi))
+#
+# mu <- matrix(c(0,1),2,1)
+# Phi <- .9*diag(2)
+# Phi[2,1] <- .4
+# Sigma <- .1*diag(2)
+# Sigma[1,2] <- .005
+# Sigma[2,1] <- .005
+#
+# model <- list(mu=mu,Phi=Phi,Sigma=Sigma)
+#
+# RES <- compute_Gaussian_fast(model,M)
+# maxH <- RES$H[length(RES$H)]
+#
+# u <- matrix(1,2,1)
+# res <- reverse.MHLT(psi.GaussianVAR,u1 = u,H = maxH,psi.parameterization = model)
+#
+# m <- dim(M)[1]
+# mu_h <- matrix(RES$MU[,,m],ncol=1)
+# Phi_h <- RES$PHI[,,m]
+# Sigma_h <- RES$SIGMA[,,m]
+#
+# t(u) %*% mu_h + (t(u) %*% Sigma_h %*% u)/2
+# t(u) %*% Phi_h
+#
+#
