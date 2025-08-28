@@ -10,8 +10,11 @@ KH_filter <- function(Omega, Eta){
   # ----------------------------------------------------------------------------
   # F is a matrix of dimension T x n.
   # Omega is a matrix of dimension J x J (rows sum to 1).
+  #  If it is a 3-dimensional array, then it means that the transition
+  #  probabilities vary (deterministically) over time. The third dimension
+  #  has to be T.
   # Eta is a matrix of dimension T x J, its (t,j) entry is the evaluation of
-  #       the pdf of the distribution F_{t}|z_{t}=e_j,I_{t-1}.
+  #  the pdf of the distribution F_{t}|z_{t}=e_j,I_{t-1}.
   # ----------------------------------------------------------------------------
 
   J         <- dim(Omega)[1]  # number of regimes
@@ -26,29 +29,48 @@ KH_filter <- function(Omega, Eta){
   # Compute stationary distribution:
   Omega_2h <- matrix(0, nrow = J, ncol = J)
   stat_distri <- matrix(0, nrow = J, ncol = 1)
-  Omega_2h <- t(Omega)
+  if(length(dim(Omega))==2){
+    Omega_2h <- t(Omega)
+  }else{
+    Omega_2h <- t(Omega[,,1])
+  }
   for (i in 1:10){
     Omega_2h <- Omega_2h %*% Omega_2h
   }
   stat_distri[] <- Omega_2h[, 1]
   ksi_t[] <- stat_distri
 
+  loglik_vec <- NULL
+
   for (t in 1:nb_dates){
-    ksi_1_matrix[t, ] <- t(ksi_t)  # will be used to compute log-likelihood
+
+    if(length(dim(Omega))==2){
+      Omega_t <- Omega
+    }else{# In that case, Omega changes over time
+      Omega_t <- Omega[,,t]
+    }
+
+    #ksi_1_matrix[t, ] <- t(ksi_t)  # will be used to compute log-likelihood
 
     eta_t <- matrix(Eta[t, ],ncol=1)  # eta_matrix is LOG-likelihood
     eta_t <- exp(eta_t)
+
     # Use update formula:
-    ksi_t <- (t(Omega) %*% ksi_t) * eta_t
+    ksi_t <- (t(Omega_t) %*% ksi_t) * eta_t
+
+    # Compute log-lik for date t:
+    loglik_vec <- c(loglik_vec,log(sum(ksi_t)))
+
     normalisation_factor <- sum(ksi_t)
     ksi_t <- ksi_t / normalisation_factor
 
     ksi_matrix[t, ] <- t(ksi_t)
   }
 
-  # Compute log-likelihood:
-  loglik_mat <- (ksi_1_matrix %*% Omega) * exp(Eta)
-  loglik_vec <- log(loglik_mat %*% vec_1_J)
+  # # Compute log-likelihood:
+  # loglik_mat <- (ksi_1_matrix %*% Omega) * exp(Eta)
+  # loglik_vec <- log(loglik_mat %*% vec_1_J)
+
   loglik <- sum(loglik_vec)
 
   return(list(ksi_matrix = ksi_matrix,
@@ -66,8 +88,15 @@ KH_smoother <- function(Omega, Eta){
   ksi_tT <- res_filter$ksi_matrix
 
   for(t in (nb_dates-1):1){
+
+    if(length(dim(Omega))==2){
+      Omega_t <- Omega
+    }else{# In that case, Omega changes over time
+      Omega_t <- Omega[,,t]
+    }
+
     ksi_tt <- matrix(res_filter$ksi_matrix[t,],ncol=1)
-    ksi_tT[t,] <- (((ksi_tt %*% t(vec1))*Omega)/((vec1 %*% t(ksi_tt))%*%Omega)) %*%
+    ksi_tT[t,] <- (((ksi_tt %*% t(vec1))*Omega_t)/((vec1 %*% t(ksi_tt))%*%Omega_t)) %*%
       matrix(ksi_tT[t+1,],ncol=1)
   }
   return(ksi_tT)
@@ -131,25 +160,39 @@ simul_RS <- function(Omega,TT,ini_state = NaN){
 
 
 make_Pi_z_kron_z <- function(Pi){
-  # Pi is the matrix of transition probabilties (with rows that sum to one)
+  # Pi is the matrix of transition probabilities (with rows that sum to one)
   # This procedure constructs the matrix  of transition probabilities of
   # z_{t} %x% z_{t-1}.
+  # Pi can be an array of dimension J x J x T if the matrix of transition
+  # probabilities depends on time.
+
   J <- dim(Pi)[1]
   Id <- diag(J)
 
-  PI <- NULL
-  for(i in 1:J){
-    e_i <- matrix(Id[i,],nrow=1)
-    aux <- matrix(Pi[i,],nrow=1) %x% e_i
-    PI <- rbind(PI,aux)
+  if(length(dim(Pi))==2){# Pi is a matrix in this case
+    PI <- NULL
+    for(i in 1:J){
+      e_i <- matrix(Id[i,],nrow=1)
+      aux <- matrix(Pi[i,],nrow=1) %x% e_i
+      PI <- rbind(PI,aux)
+    }
+    PI <- PI %x% matrix(1,J,1)
+  }else{
+    # Pi is an array (dimension 3)
+    PI <- array(0,c(J^2,J^2,dim(Pi)[3]))
+    for(i in 1:J){
+      for(j in 1:J){
+        PI[((i-1)*J+1):(i*J),(j-1)*J+i,] <- Pi[i,j,]
+      }
+    }
   }
-  PI <- PI %x% matrix(1,J,1)
   return(PI)
 }
 
 
 
-compute_LT_RS <- function(alpha,Pi,Maturities_decompo){
+compute_LT_RS <- function(alpha,Pi,Maturities_decompo,
+                          indic_add_current=FALSE){
   # This function computes A_h s.t.
   # E_t[exp(alpha'(z_{t+1}+...+z_{t+h}))] = [1,...,1]·A_h'·z_t,
   # where z_t follows a J-regime Markov-Switching process with matrix of
@@ -167,6 +210,10 @@ compute_LT_RS <- function(alpha,Pi,Maturities_decompo){
   #   Maturities_decompo[3,] = [2, 0, 2] => h_3 = 2*1 + 0*2 + 2*5 = 12.
   # This decomposition speeds up the calculation by decreasing the number of
   # matrix multiplications.
+  # ----------------------------------------------------------------------------
+  # If "indic_add_current" is TRUE, then what is actually computed is
+  #     exp(alpha'(z_{t}) * E_t[exp(alpha'(z_{t+1}+...+z_{t+h}))]
+  # ----------------------------------------------------------------------------
 
   J <- dim(Pi)[1]
   k <- dim(Maturities_decompo)[1]
@@ -197,10 +244,15 @@ compute_LT_RS <- function(alpha,Pi,Maturities_decompo){
     A <- cbind(A,A_i)
     H <- c(H,h_i)
   }
+
+  if(indic_add_current){
+    A <- diag(c(exp(alpha))) %*% A
+  }
+
   return(list(A=A,H=H))
 }
 
-#
+
 # library(mvtnorm)
 # library(expm)
 # library(DTAM)
@@ -216,7 +268,10 @@ compute_LT_RS <- function(alpha,Pi,Maturities_decompo){
 #
 # F <- z %*% t(M) + (z %*% t(N))*matrix(rnorm(nF*TT),TT,nF)
 #
+# Omega <- array(Omega,c(3,3,TT))
+#
 # res_KH <- KH_filter(Omega, Eta = f_Eta(F,M,N))
+# #res_KH_new <- KH_filter_new(Omega, Eta = f_Eta(F,M,N))
 #
 # res_smoother <- res_smoother <- KH_smoother(Omega, Eta = f_Eta(F,M,N))
 #
@@ -235,8 +290,9 @@ compute_LT_RS <- function(alpha,Pi,Maturities_decompo){
 # Maturities_decompo[3,1:3] <- c(0,1,3)
 # Maturities_decompo[4,1:4] <- c(1,1,1,4)
 #
-# Pi <- Omega
-# res <- compute_LT_RS(alpha,Pi,Maturities_decompo)
+# Pi <- matrix(Omega,J,J)
+# res <- compute_LT_RS(alpha,Pi,Maturities_decompo,indic_add_current = FALSE)
+#
 #
 # D <- diag(exp(alpha))
 #
