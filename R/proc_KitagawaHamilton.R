@@ -182,7 +182,7 @@ make_Pi_z_kron_z <- function(Pi){
     PI <- array(0,c(J^2,J^2,dim(Pi)[3]))
     for(i in 1:J){
       for(j in 1:J){
-        PI[((i-1)*J+1):(i*J),(j-1)*J+i,] <- Pi[i,j,]
+        PI[((i-1)*J+1):(i*J),(j-1)*J+i,] <- Pi[i,j,] %x% matrix(1,J,1)
       }
     }
   }
