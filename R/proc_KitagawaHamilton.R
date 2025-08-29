@@ -1,5 +1,4 @@
 KH_filter <- function(Omega, Eta){
-
   # Model: ---------------------------------------------------------------------
   # F_{t}|z_{t},I_{t-1} ~ f(z_{t},F_{t-1}),
   #  where I_{t-1} is the information available on date t-1.
@@ -49,27 +48,20 @@ KH_filter <- function(Omega, Eta){
     }else{# In that case, Omega changes over time
       Omega_t <- Omega[,,t]
     }
-
-    #ksi_1_matrix[t, ] <- t(ksi_t)  # will be used to compute log-likelihood
-
-    eta_t <- matrix(Eta[t, ],ncol=1)  # eta_matrix is LOG-likelihood
-    eta_t <- exp(eta_t)
-
-    # Use update formula:
-    ksi_t <- (t(Omega_t) %*% ksi_t) * eta_t
-
-    # Compute log-lik for date t:
-    loglik_vec <- c(loglik_vec,log(sum(ksi_t)))
-
+    eta_t <- matrix(Eta[t, ], ncol = 1)
+    # When all entries of eta_t are small and negative, the risk is that
+    # exp(eta_t) is 0 for some entries. To avoid numerical instability,
+    # we first shift all values of eta_t such that that the max one is
+    # normalized at 0. "cst" is further reintroduced when needed.
+    cst <- max(eta_t)
+    eta_t_minus_max <- eta_t - cst
+    exp_eta_t_minus_max <- exp(eta_t_minus_max)
+    ksi_t <- (t(Omega_t) %*% ksi_t) * exp_eta_t_minus_max
+    loglik_vec <- c(loglik_vec, log(sum(ksi_t)) + cst)
     normalisation_factor <- sum(ksi_t)
-    ksi_t <- ksi_t / normalisation_factor
-
+    ksi_t <- ksi_t/normalisation_factor
     ksi_matrix[t, ] <- t(ksi_t)
   }
-
-  # # Compute log-likelihood:
-  # loglik_mat <- (ksi_1_matrix %*% Omega) * exp(Eta)
-  # loglik_vec <- log(loglik_mat %*% vec_1_J)
 
   loglik <- sum(loglik_vec)
 
@@ -77,6 +69,9 @@ KH_filter <- function(Omega, Eta){
               loglik_vec = loglik_vec,
               loglik = loglik))
 }
+
+
+
 
 KH_smoother <- function(Omega, Eta){
   res_filter <- KH_filter(Omega, Eta)
@@ -253,35 +248,35 @@ compute_LT_RS <- function(alpha,Pi,Maturities_decompo,
 }
 
 
-# library(mvtnorm)
-# library(expm)
-# library(DTAM)
-#
-# Omega <- matrix(c(.8,.1,0,.2,.8,.2,0,.1,.8),3,3)
-# J <- dim(Omega)[1]
-# TT <- 200
-# z <- simul_RS(Omega,TT=TT,ini_state = NaN)
-#
-# nF <- 2
-# M <- matrix(c(0,1,1,0,1,1),nF,J)
-# N <- .5*matrix(c(.5,1,.3,1,2,.6),nF,J)
-#
-# F <- z %*% t(M) + (z %*% t(N))*matrix(rnorm(nF*TT),TT,nF)
-#
-# Omega <- array(Omega,c(3,3,TT))
-#
-# res_KH <- KH_filter(Omega, Eta = f_Eta(F,M,N))
-# #res_KH_new <- KH_filter_new(Omega, Eta = f_Eta(F,M,N))
-#
-# res_smoother <- res_smoother <- KH_smoother(Omega, Eta = f_Eta(F,M,N))
-#
-# par(mfrow=c(2,1))
-# plot(z[,1],type="l",lwd=2)
-# lines(res_KH$ksi_matrix[,1],col="red")
-# lines(res_smoother[,1],col="blue")
-# plot(z[,2],type="l",lwd=2)
-# lines(res_KH$ksi_matrix[,2],col="red")
-# lines(res_smoother[,2],col="blue")
+library(mvtnorm)
+library(expm)
+library(DTAM)
+
+Omega <- matrix(c(.8,.1,0,.2,.8,.2,0,.1,.8),3,3)
+J <- dim(Omega)[1]
+TT <- 200
+z <- simul_RS(Omega,TT=TT,ini_state = NaN)
+
+nF <- 2
+M <- matrix(c(0,1,1,0,1,1),nF,J)
+N <- .5*matrix(c(.5,1,.3,1,2,.6),nF,J)
+
+F <- z %*% t(M) + (z %*% t(N))*matrix(rnorm(nF*TT),TT,nF)
+
+Omega <- array(Omega,c(3,3,TT))
+
+res_KH     <- KH_filter(Omega, Eta = f_Eta(F,M,N))
+#res_KH_new <- KH_filter_new(Omega, Eta = f_Eta(F,M,N))
+
+res_smoother <- res_smoother <- KH_smoother(Omega, Eta = f_Eta(F,M,N))
+
+par(mfrow=c(2,1))
+plot(z[,1],type="l",lwd=2)
+lines(res_KH$ksi_matrix[,1],col="red")
+lines(res_smoother[,1],col="blue")
+plot(z[,2],type="l",lwd=2)
+lines(res_KH$ksi_matrix[,2],col="red")
+lines(res_smoother[,2],col="blue")
 #
 #
 # alpha <- c(-.03,-.01,-.05)
