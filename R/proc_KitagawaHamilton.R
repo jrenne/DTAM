@@ -57,6 +57,7 @@ KH_filter <- function(Omega, Eta){
     eta_t_minus_max <- eta_t - cst
     exp_eta_t_minus_max <- exp(eta_t_minus_max)
     ksi_t <- (t(Omega_t) %*% ksi_t) * exp_eta_t_minus_max
+    ksi_t[ksi_t==0] <- 10^(-60)
     loglik_vec <- c(loglik_vec, log(sum(ksi_t)) + cst)
     normalisation_factor <- sum(ksi_t)
     ksi_t <- ksi_t/normalisation_factor
