@@ -92,8 +92,10 @@ KH_smoother <- function(Omega, Eta){
     }
 
     ksi_tt <- matrix(res_filter$ksi_matrix[t,],ncol=1)
-    ksi_tT[t,] <- (((ksi_tt %*% t(vec1))*Omega_t)/((vec1 %*% t(ksi_tt))%*%Omega_t)) %*%
-      matrix(ksi_tT[t+1,],ncol=1)
+    AUX <- (((ksi_tt %*% t(vec1)) * Omega_t)/((vec1 %*%
+                                                 t(ksi_tt)) %*% Omega_t))
+    AUX[is.na(AUX)] <- 0
+    ksi_tT[t, ] <- AUX %*% matrix(ksi_tT[t + 1,], ncol = 1)
   }
   return(ksi_tT)
 }
