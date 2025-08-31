@@ -118,6 +118,7 @@ solve_EZ_stock_return <- function(model,psi,Ew=NaN,z_s_bar_ini=5,
   z_s_bar <- z_s_bar_ini
 
   if(is.na(mu_s1_ini[1])){
+    kappa1s <- c(exp(z_s_bar)/(1 + exp(z_s_bar)))
     mu_s1 <- solve(diag(n_w) - kappa1s*t(Phi)) %*% (t(Phi) %*% mu_d1 - eta1)
   }else{
     mu_s1 <- mu_s1_ini
