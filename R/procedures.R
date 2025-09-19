@@ -872,6 +872,10 @@ truncated.payoff <- function(W, # values of w_t
   #          and B(u) is of dimension n.u x 1
   # The truncation is of the form v'w < b,
   #          "vector.of.b" collects the b boundaries of interest.
+  # NOTE: De facto, it is varphi that determines whether the condition is
+  #       on Sum_h(w_{t+h}) or on w_{t+h}; i.e., if the indicator is
+  #       1_{v'Sum_h(w_{t+h}) < b} or 1_{v'w_{t+h} < b}.
+  #       (This depends on whether ivx is in u2 or not.)
 
   n_w <- parameterization$model$n_w
 
@@ -886,7 +890,7 @@ truncated.payoff <- function(W, # values of w_t
   i.v.x <- matrix(v,ncol=1) %*% matrix(c(1i*x),nrow=1)
 
   # Add necessary fields in parameterization:
-  parameterization$H     <- H
+  parameterization$H <- H
 
   res_varphi  <- varphi(i.v.x,parameterization)
   res_varphi0 <- varphi(matrix(0,n_w,1),parameterization)
