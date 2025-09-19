@@ -849,8 +849,7 @@ varphi4G_TopDown <- function(u,parameterization){
               B = matrix(res_reverse$B,nrow=1)))
 }
 
-truncated.payoff <- function(model,
-                             W, # values of w_t
+truncated.payoff <- function(W, # values of w_t
                              v,vector.of.b,
                              H,
                              varphi,
@@ -874,7 +873,7 @@ truncated.payoff <- function(model,
   # The truncation is of the form v'w < b,
   #          "vector.of.b" collects the b boundaries of interest.
 
-  n_w <- model$n_w
+  n_w <- parameterization$model$n_w
 
   dx1 <- exp(seq(log(min_dx),log(dx_statio),length.out=nb_x1))
   max_x1 <- tail(cumsum(dx1),1)
@@ -887,14 +886,13 @@ truncated.payoff <- function(model,
   i.v.x <- matrix(v,ncol=1) %*% matrix(c(1i*x),nrow=1)
 
   # Add necessary fields in parameterization:
-  parameterization$model <- model
   parameterization$H     <- H
 
   res_varphi  <- varphi(i.v.x,parameterization)
   res_varphi0 <- varphi(matrix(0,n_w,1),parameterization)
 
-  xi0 <- model$xi0
-  xi1 <- model$xi1
+  xi0 <- parameterization$model$xi0
+  xi1 <- parameterization$model$xi1
 
   # Adjust for current short-term interest rate:
   B <- matrix(res_varphi$B,1,nb_x*H) -
@@ -953,11 +951,12 @@ compute_G <- function(model,W,
                       nb_x1=1000){
   # This computes functions G_lower and G_upper
 
-  parameterization <- list(indic_Q = indic_Q,
+  parameterization <- list(model=model,
+                           indic_Q = indic_Q,
                            indic_upper = indic_upper,
                            gamma = gamma)
 
-  P <- truncated.payoff(model,W,
+  P <- truncated.payoff(W,
                         v,vector.of.b,
                         H,
                         varphi = varphi4G_TopDown,
