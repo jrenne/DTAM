@@ -288,12 +288,13 @@ compute_expect_variance <- function(psi,model,du = 1e-08){
         (psi_plus_i_plus_j$a - psi_plus_i_minu_j$a - psi_minu_i_plus_j$a + psi_minu_i_minu_j$a)/
         (4*du^2)
     }
-    # Compute unconditional expectation:
-    Ew <- solve(diag(n_w) - Phi) %*% mu
-    # Compute unconditional variance:
-    Vw <- matrix(solve(diag(n_w^2) - Phi %x% Phi) %*% (Gamma0 + Gamma1 %*% Ew),
-                 n_w,n_w)
   }
+
+  # Compute unconditional expectation:
+  Ew <- solve(diag(n_w) - Phi) %*% mu
+  # Compute unconditional variance:
+  Vw <- matrix(solve(diag(n_w^2) - Phi %x% Phi) %*% (Gamma0 + Gamma1 %*% Ew),
+               n_w,n_w)
 
   return(list(
     mu = mu,
@@ -850,7 +851,7 @@ varphi4G_TopDown <- function(u,parameterization){
 
 truncated.payoff <- function(model,
                              W, # values of w_t
-                             gamma,v,vector.of.b,
+                             v,vector.of.b,
                              H,
                              varphi,
                              parameterization,
@@ -859,27 +860,21 @@ truncated.payoff <- function(model,
                              min_dx = 1e-05,
                              nb_x1 = 1000){
   # This function calculates the value of
-  #           payoff(w)·1_{v'Sum_h(w_{t+h}) < b},
+  #           payoff(w_{t+1},...,w_{t+h},parameterization) x
+  #                        1_{v'Sum_h(w_{t+h}) < b},
   #      for different values of b (collected in "vector.of.b").
   #       "W" is of dimension T x n.w; it contains values of the state vector w
   #          at which we want to evaluate the prices.
   #       "varphi" is a function that takes two arguments:
-  #          (i) u and (ii) parameterization;
+  #          (i) u and (ii) parameterization (fields of parameterization: model, gamma, H);
   #       it returns matrices A(u) and B(u) that are such that the "price" of
-  #          {payoff x exp(u)} is given by exp(A(u)'w + B(u)),
+  #          the payoff is given by exp(A(u)'w + B(u)),
   #          where A(u) is of dimension n.u x n.w,
   #          and B(u) is of dimension n.u x 1
   # The truncation is of the form v'w < b,
   #          "vector.of.b" collects the b boundaries of interest.
 
   n_w <- model$n_w
-
-  # x <- matrix(exp(seq(log(min_x),log(max_x),length.out=nb_x)),ncol=1)
-  # x <- matrix(seq(min_x,max_x,length.out=nb_x),ncol=1)
-  #
-  # x1 <- matrix(exp(seq(log(min_x),log(max_x_log),length.out=nb_x/2)),ncol=1)
-  # x2 <- matrix(seq(max_x_log,max_x,length.out=nb_x/2),ncol=1)
-  # x <- rbind(x1,x2)
 
   dx1 <- exp(seq(log(min_dx),log(dx_statio),length.out=nb_x1))
   max_x1 <- tail(cumsum(dx1),1)
@@ -893,7 +888,6 @@ truncated.payoff <- function(model,
 
   # Add necessary fields in parameterization:
   parameterization$model <- model
-  parameterization$gamma <- gamma
   parameterization$H     <- H
 
   res_varphi  <- varphi(i.v.x,parameterization)
@@ -902,6 +896,7 @@ truncated.payoff <- function(model,
   xi0 <- model$xi0
   xi1 <- model$xi1
 
+  # Adjust for current short-term interest rate:
   B <- matrix(res_varphi$B,1,nb_x*H) -
     matrix(1:H,nrow=1) %x% matrix(1,1,nb_x) * xi0
   A <- matrix(res_varphi$A,n_w,nb_x*H) - matrix(xi1,n_w,nb_x*H)
@@ -959,10 +954,11 @@ compute_G <- function(model,W,
   # This computes functions G_lower and G_upper
 
   parameterization <- list(indic_Q = indic_Q,
-                           indic_upper = indic_upper)
+                           indic_upper = indic_upper,
+                           gamma = gamma)
 
   P <- truncated.payoff(model,W,
-                        gamma,v,vector.of.b,
+                        v,vector.of.b,
                         H,
                         varphi = varphi4G_TopDown,
                         parameterization,

@@ -86,10 +86,11 @@ make_permut_matrices <- function(n) {
 
 vcov_matrix_Quadratic <- function(mu, Phi, Sigma, BigMats=make_BigMats(dim(Phi)[1])) {
   # The model is:
-  # x_t = mu + Phi·x_{t-1} + Sigma·eps_t, with eps_t ~ N(0,Id).
+  # x_t = mu + Phi·x_{t-1} + eps_t, with eps_t ~ N(0,Sigma).
   # The extended state vector is:
-  # Z_t = [x_t',vec(x_t·x_t')]' or
-  # Z_t = [x_t',vech(x_t·x_t')]' (the outputs then have the "_red" suffix)
+  # w_t = [x_t',vec(x_t·x_t')]' or
+  # w_t = [x_t',vech(x_t·x_t')]' (the outputs then have the "_red" suffix)
+
   n <- nrow(Phi)
   n2 <- n * n
   n4 <- n2 * n2
@@ -121,11 +122,9 @@ vcov_matrix_Quadratic <- function(mu, Phi, Sigma, BigMats=make_BigMats(dim(Phi)[
 
   Phi_tilde_red <- M_YZ %*% Phi_tilde %*% M_ZY
 
-  Omega <- Sigma %*% t(Sigma)
-
   mu_tilde <- matrix(0, n + n2, 1)
   mu_tilde[1:n, ] <- mu
-  aux <- mu %*% t(mu) + Omega
+  aux <- mu %*% t(mu) + Sigma
   mu_tilde[(n + 1):(n + n2), ] <- vecX(aux)
 
   mu_tilde_red <- M_YZ %*% mu_tilde
@@ -139,20 +138,20 @@ vcov_matrix_Quadratic <- function(mu, Phi, Sigma, BigMats=make_BigMats(dim(Phi)[
   Gamma <- (diag(n) %x% cond_exp) + (cond_exp %x% diag(n))
 
   Omega_tilde <- matrix(0, n_total, n_total)
-  Omega_tilde[1:n, 1:n] <- Omega
+  Omega_tilde[1:n, 1:n] <- Sigma
   Omega_tilde[(n + 1):n_total, 1:n] <-
-    M_vech_vec %*% Gamma %*% Omega
+    M_vech_vec %*% Gamma %*% Sigma
   Omega_tilde[1:n, (n + 1):n_total] <-
-    Omega %*% t(Gamma) %*% t(M_vech_vec)
+    Sigma %*% t(Gamma) %*% t(M_vech_vec)
 
   Aux1 <- BigMats$Aux1
   Aux2 <- BigMats$Aux2
 
-  aux3 <- (vecX(Omega) %x% diag(n2))
+  aux3 <- (vecX(Sigma) %x% diag(n2))
   Phi2_tilde <- Phi_tilde[(n + 1):(n + n2), ]
   mumu <- Kronecker_matmat(mu, mu)
   aux4 <- mumu + Phi2_tilde %*% E
-  aux6 <- vecX(Omega %x% Omega)
+  aux6 <- vecX(Sigma %x% Sigma)
 
   vecSigma22 <- Aux1 %*% aux3 %*% aux4 + Aux2 %*% aux6
   Sigma22 <- matrix(0, nnp12, nnp12)
@@ -237,16 +236,21 @@ make_BigMats <- function(n) {
   ))
 }
 
-make_matrices_cond_mean_variance_Quadratic <- function(mu, Phi, Sigma, indic_compute_V) {
+make_matrices_cond_mean_variance_Quadratic <- function(model, indic_compute_V) {
   # The model is:
-  # x_t = mu + Phi·x_{t-1} + Sigma·eps_t, with eps_t ~ N(0,Id).
+  # x_t = mu + Phi·x_{t-1} + eps_t, with eps_t ~ N(0,Sigma).
   # The extended state vector is:
-  # Z_t = [x_t',vec(x_t·x_t')]' or
-  # Z_t = [x_t',vech(x_t·x_t')]' (the outputs then have the "_red" suffix)
+  # w_t = [x_t',vec(x_t·x_t')]' or
+  # w_t = [x_t',vech(x_t·x_t')]' (the outputs then have the "_red" suffix)
   # The function returns vectors and matrices (mu_tilde, Phi_tilde, nu, and Psi)
   #   that are such that:
-  #     E_t(Z_{t+1}) = mu_tilde + Phi_tilde·Z_t
-  #     Var_t(Z_{t+1}) = nu + Psi·Z_t
+  #     E_t(w_{t+1}) = mu_tilde + Phi_tilde·w_t
+  #     Var_t(w_{t+1}) = nu + Psi·w_t
+
+  mu <- model$mu
+  Phi <- model$Phi
+  Sigma <- model$Sigma
+
   n <- nrow(Phi)
   n2 <- n * n
   n4 <- n2 * n2
@@ -297,12 +301,10 @@ make_matrices_cond_mean_variance_Quadratic <- function(mu, Phi, Sigma, indic_com
   # Reduced Phi_tilde
   Phi_tilde_red <- M_YZ %*% Phi_tilde %*% M_ZY
 
-  Omega <- Sigma %*% t(Sigma)
-
   # Construct mu_tilde
   mu_tilde <- matrix(0, n + n2, 1)
   mu_tilde[1:n, ] <- mu
-  aux <- mu %*% t(mu) + Omega
+  aux <- mu %*% t(mu) + Sigma
   mu_tilde[(n + 1):(n + n2), ] <- vecX(aux)
 
   # Reduced mu_tilde
@@ -313,27 +315,27 @@ make_matrices_cond_mean_variance_Quadratic <- function(mu, Phi, Sigma, indic_com
   Phi2_tilde <- Phi_tilde[(n + 1):(n + n2), 1:(n + n2)]
 
   # Compute vecSigma11_const
-  vecSigma11_const <- vecX(Omega)
+  vecSigma11_const <- vecX(Sigma)
 
   # Compute vecSigma12 components
   aux_vecSigma12 <-
-    (Omega %x% (Idn2 + Lambda_n)) %*% (vecX(Idn) %x% Idn)
+    (Sigma %x% (Idn2 + Lambda_n)) %*% (vecX(Idn) %x% Idn)
   vecSigma12_const <- aux_vecSigma12 %*% mu
   vecSigma12_Z <- aux_vecSigma12 %*% Phi1_tilde
 
   # Compute vecSigma21 components
   aux_vecSigma21 <-
-    ((Idn2 + Lambda_n) %x% Omega) %*% (Idn %x% Lambda_n) %*% (vecX(Idn) %x% Idn)
+    ((Idn2 + Lambda_n) %x% Sigma) %*% (Idn %x% Lambda_n) %*% (vecX(Idn) %x% Idn)
   vecSigma21_const <- aux_vecSigma21 %*% mu
   vecSigma21_Z <- aux_vecSigma21 %*% Phi1_tilde
 
   # Compute vecSigma22 components
   aux_vecSigma22 <-
     ((Idn2 + Lambda_n) %x% (Idn2 + Lambda_n)) %*%
-    (Idn %x% (Lambda_n %x% Idn)) %*% (vecX(Omega) %x% Idn2)
+    (Idn %x% (Lambda_n %x% Idn)) %*% (vecX(Sigma) %x% Idn2)
   vecSigma22_const <-
     aux_vecSigma22 %*% (mu %x% mu) +
-    (Idn2 %x% (Idn2 + Lambda_n)) %*% vecX(Omega %x% Omega)
+    (Idn2 %x% (Idn2 + Lambda_n)) %*% vecX(Sigma %x% Sigma)
   vecSigma22_Z <- aux_vecSigma22 %*% Phi2_tilde
 
   # Compute nu and Psi
@@ -390,13 +392,160 @@ make_matrices_cond_mean_variance_Quadratic <- function(mu, Phi, Sigma, indic_com
 }
 
 
+
+psi.GaussianQVAR <- function(u,psi.parameterization){
+  # The model is:
+  # x_t = mu + Phi·x_{t-1} + Sigma^(1/2)·eps_t,
+  #     with eps_t ~ N(0,Id).
+  # Hence, Sigma = Var_t(x_{t+1})
+  # The extended state vector is: w_t = [x_t',vech(x_t·x_t')]'; if the
+  #   dimension of x_t is n, the dimension of w_t is (n + n*(n+1)/2)
+
+  mu <- matrix(psi.parameterization$mu,ncol=1)
+  Phi <- psi.parameterization$Phi
+  Sigma <- psi.parameterization$Sigma
+
+  k <- dim(u)[2] # number of u's on which to evaluate the function
+  n <- dim(Phi)[1]
+
+  Id <- diag(n)
+
+  a <- matrix(NaN,n+n*(n+1)/2,k)
+  b <- matrix(NaN,k,1)
+
+  Mx <- make_Mnx(n) # to go from vech to vec
+  Kx <- make_Knx(n) # to go from vec to vech
+
+  for(i in 1:k){
+    v <- matrix(u[1:n,i],ncol=1)
+    Vred <- u[(n+1):(n+n*(n+1)/2),i]
+    vecV <- Mx %*% Vred
+    V <- matrix(vecV,n,n)
+
+    Sigma_1_2V_1 <- solve(solve(Sigma) - 2*V)
+    Sigma12 <- t(chol(Sigma))
+
+    a1_i <- 2 * t(Phi) %*% V %*% Sigma_1_2V_1 %*% (v + 2*V %*% mu) +
+      t(Phi) %*% v + 2 * t(Phi) %*% V %*% mu
+    a2_i <- 2 * t(Phi) %*% V %*% Sigma_1_2V_1 %*% V %*% Phi +
+      t(Phi) %*% V %*% Phi
+    b_i <- .5 * t(v) %*% Sigma_1_2V_1 %*% v +
+      2*t(v + V %*% mu) %*% Sigma_1_2V_1 %*% V %*% mu -
+      .5*log(det(Id - 2*Sigma %*% V)) +
+      t(v + V %*% mu) %*% mu
+
+    a[,i] <- c(a1_i,Kx %*% c(a2_i))
+    b[i]  <- b_i
+  }
+
+  return(list(a = a, b = b))
+}
+
+make_Knx <- function(n) {
+  S <- matrix(0, nrow = n, ncol = n)
+  aux <- 1:(n * (n + 1) / 2)
+  count <- 0
+
+  # First loop to fill lower triangular part
+  for (j in 1:n) {
+    nb <- n - j + 1
+    S[j:n, j] <- aux[(count + 1):(count + nb)]
+    count <- count + nb
+  }
+
+  # Second loop to fill upper triangular part
+  count <- 0
+  for (j in 1:(n-1)) {
+    nb <- n - j + 1
+    S[j, (j + 1):n] <- aux[(count + 2):(count + nb)]
+    count <- count + nb
+  }
+
+  # Create K matrix (note: original MATLAB code had M but should be K)
+  K <- matrix(0, nrow = n * (n + 1) / 2, ncol = n^2)
+
+  # Fill K matrix
+  for (i in 1:(n^2)) {
+    K[S[i], i] <- 1
+  }
+
+  return(K)
+}
+
+make_Mnx <- function(n) {
+  S <- matrix(0, nrow = n, ncol = n)
+  aux <- 1:(n * (n + 1) / 2)
+  count <- 0
+
+  # First loop to fill lower triangular part
+  for (j in 1:n) {
+    nb <- n - j + 1
+    S[j:n, j] <- aux[(count + 1):(count + nb)]
+    count <- count + nb
+  }
+
+  # Second loop to fill upper triangular part
+  count <- 0
+  for (j in 1:(n-1)) {
+    nb <- n - j + 1
+    S[j, (j + 1):n] <- aux[(count + 2):(count + nb)]
+    count <- count + nb
+  }
+
+  # Create M matrix
+  M <- matrix(0, nrow = n^2, ncol = n * (n + 1) / 2)
+
+  # Fill M with 0.5 values
+  for (i in 1:(n^2)) {
+    M[i, S[i]] <- 0.5
+  }
+
+  # Handle diagonal elements
+  diagS <- diag(S)
+  G <- matrix(1:(n^2), nrow = n, ncol = n)
+  diagG <- diag(G)
+
+  for (i in 1:n) {
+    M[diagG[i], diagS[i]] <- 1
+  }
+
+  return(M)
+}
+
+#
 # mu <- matrix(c(0,1,.2),3,1)
 # Phi <- .9*diag(3)
 # Phi[2,1] <- .3
-# Sigma <- diag(3)
-# Sigma[1,3] <- .5
+# aux <- matrix(.1*rnorm(9),3,3)
+# Sigma <- aux %*% t(aux)
+# #
+# # res1 <- vcov_matrix_Quadratic(mu, Phi, Sigma, BigMats = make_BigMats(dim(Phi)[1]))
+# # res2 <- make_matrices_cond_mean_variance_Quadratic(mu, Phi, Sigma, indic_compute_V=TRUE)
 #
-# res1 <- vcov_matrix_Quadratic(mu, Phi, Sigma, BigMats = make_BigMats(dim(Phi)[1]))
-# res2 <- make_matrices_cond_mean_variance_Quadratic(mu, Phi, Sigma, indic_compute_V=TRUE)
+# model <- list(mu=mu,Phi=Phi,Sigma=Sigma)
+# n <- dim(Phi)[1]
+#
+# Vred <- .1*rnorm(n*(n+1)/2)
+#
+# u <- matrix(c(.1*rnorm(n),Vred),ncol=1)
+#
+# psi_Quad <- psi.GaussianQVAR(u,psi.parameterization=model)
+#
+# model$n_w <- 9
+# res <- compute_expect_variance(psi.GaussianQVAR,model,du = 10^(-6))
+#
+# res2 <- make_matrices_cond_mean_variance_Quadratic(model,indic_compute_V = TRUE)
+#
+# Model <- model
+# Model$Sigma <- t(chol(model$Sigma))
+# x <- simul.VAR(Model,nb.sim = 10000)
+# xx <- (x %x% matrix(1,1,3)) * (matrix(1,1,3) %x% x)
+# w <- cbind(x,xx)
+# Sigma12 <- matrix(rnorm(4),2,2)
+# aux <- matrix(rnorm(4),2,2)
+# V <- aux + t(aux)
+# Sigma12 %*% solve(diag(2) - 2*t(Sigma12) %*% V %*% Sigma12) %*% t(Sigma12)
+# solve(solve(Sigma12%*%t(Sigma12)) - 2*V)
+#
 
 
