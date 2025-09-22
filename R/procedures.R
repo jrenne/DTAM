@@ -960,9 +960,9 @@ truncated.payoff <- function(W, # values of w_t
   res_varphi  <- varphi(i.v.x,parameterization)
   res_varphi0 <- varphi(matrix(0,n_w,1),parameterization)
 
-  xi0 <- parameterization$model$xi0
-  xi1 <- parameterization$model$xi1
-
+  # xi0 <- parameterization$model$xi0
+  # xi1 <- parameterization$model$xi1
+  #
   # # Adjust for current short-term interest rate:
   # B <- matrix(res_varphi$B,1,nb_x*H) -
   #   matrix(1:H,nrow=1) %x% matrix(1,1,nb_x) * xi0
