@@ -908,7 +908,7 @@ varphi4G_TopDown <- function(u,parameterization){
   A <- res_reverse$A
   A <- A - array(matrix(1,q*H,1) %x% matrix(model$xi1,ncol=1),c(nw,q,H))
   B <- res_reverse$B
-  B <- B - model$xi0*array(matrix((1:H),ncol=1) %*% matrix(1,q,1),c(1,q,H))
+  B <- B - model$xi0*array(matrix((1:H),ncol=1) %x% matrix(1,q,1),c(1,q,H))
 
   return(list(A = res_reverse$A,
               B = matrix(res_reverse$B,nrow=1)))
