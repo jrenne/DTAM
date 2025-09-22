@@ -971,6 +971,12 @@ truncated.payoff <- function(W, # values of w_t
   # B0 <- matrix(res_varphi0$B,nrow=1) - (1:H) * xi0
   # A0 <- matrix(res_varphi0$A,n_w,H)  - matrix(xi1,n_w,H)
 
+  # Adjust for current short-term interest rate:
+  B <- matrix(res_varphi$B,1,nb_x*H)
+  A <- matrix(res_varphi$A,n_w,nb_x*H)
+  B0 <- matrix(res_varphi0$B,nrow=1)
+  A0 <- matrix(res_varphi0$A,n_w,H)
+
   if(dim(W)[2]!=n_w){# to make sure W is of dimension T x n.w
     W <- t(W)
   }
