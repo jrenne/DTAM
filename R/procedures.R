@@ -241,7 +241,7 @@ compute_expect_variance <- function(psi,model,du = 1e-08){
   # The conditional mean is given by:
   # E_t(w_{t+1}) = mu + Phi.w_t
   # The conditional variance is given by:
-  # vec[Var_t(w_{t+1})] = Gamma_0 + Gamma_1.w_t
+  # vec[Var_t(w_{t+1})] = Theta0 + Theta1.w_t
   # ----------------------------------------------------------------------------
 
   if(is.null(model$n_w)){
@@ -254,8 +254,8 @@ compute_expect_variance <- function(psi,model,du = 1e-08){
   # Computation of Ew, using the Laplace Transform (Ew = dPsi(u)/du at u=0) ----
   mu <- matrix(0,n_w,1)
   Phi <- matrix(0,n_w,n_w)
-  Gamma0 <- matrix(0,n_w*n_w,1)
-  Gamma1 <- matrix(0,n_w*n_w,n_w)
+  Theta0 <- matrix(0,n_w*n_w,1)
+  Theta1 <- matrix(0,n_w*n_w,n_w)
 
   for(i in 1:n_w){
     u_plus_i <- matrix(0,model$n_w,1)
@@ -281,10 +281,10 @@ compute_expect_variance <- function(psi,model,du = 1e-08){
       psi_minu_i_plus_j <- psi(u_minu_i_plus_j,model)
       psi_minu_i_minu_j <- psi(u_minu_i_minu_j,model)
       # Compute specification of second order moment:
-      Gamma0[n_w*(i-1)+j,1] <-
+      Theta0[n_w*(i-1)+j,1] <-
         (psi_plus_i_plus_j$b - psi_plus_i_minu_j$b - psi_minu_i_plus_j$b + psi_minu_i_minu_j$b)/
         (4*du^2)
-      Gamma1[n_w*(i-1)+j,]  <-
+      Theta1[n_w*(i-1)+j,]  <-
         (psi_plus_i_plus_j$a - psi_plus_i_minu_j$a - psi_minu_i_plus_j$a + psi_minu_i_minu_j$a)/
         (4*du^2)
     }
@@ -293,17 +293,73 @@ compute_expect_variance <- function(psi,model,du = 1e-08){
   # Compute unconditional expectation:
   Ew <- solve(diag(n_w) - Phi) %*% mu
   # Compute unconditional variance:
-  Vw <- matrix(solve(diag(n_w^2) - Phi %x% Phi) %*% (Gamma0 + Gamma1 %*% Ew),
+  Vw <- matrix(solve(diag(n_w^2) - Phi %x% Phi) %*% (Theta0 + Theta1 %*% Ew),
                n_w,n_w)
 
   return(list(
     mu = mu,
     Phi = Phi,
-    Gamma0 = Gamma0,
-    Gamma1 = Gamma1,
+    Theta0 = Theta0,
+    Theta1 = Theta1,
     Ew = Ew,
     Vw = Vw
   ))
+}
+
+
+compute_expect_variance_H <- function(VAR_representation,
+                                      theta1,theta2=theta1,H){
+  # The model is:
+  # w_{t+1} = mu + Phi*w_{t} + eps_{t+1},
+  # with E_t(eps_{t+1}) = 0 and vec[Var_t(eps_{t+1})]=Theta0 + Theta1*w_{t}.
+  # In that case, we have
+  # E_t(theta2*w_{t+1} + ... + theta2*w_{t+h-1} + theta1*w_{t+h}) =
+  #      C0(theta2,theta1,h) + C1(theta2,theta1,h)*w_{t} and
+  # vec[Var_t(theta2*w_{t+1} + ... + theta2*w_{t+h-1} + theta1*w_{t+h})] =
+  #      Gamma0(theta2,theta1,h) + Gamma1(theta2,theta1,h)*w_{t}.
+
+  mu  <- VAR_representation$mu
+  Phi <- VAR_representation$Phi
+  Theta0 <- VAR_representation$Theta0
+  Theta1 <- VAR_representation$Theta1
+
+  k <- dim(theta1)[1]
+  n <- dim(theta2)[2]
+
+  all_C0 <- array(NaN,c(k,1,H))
+  all_C1 <- array(NaN,c(k,n,H))
+  all_Gamma0 <- array(NaN,c(k^2,1,H))
+  all_Gamma1 <- array(NaN,c(k^2,n,H))
+
+  for(h in 1:H){
+    if(h==1){
+      C0_h <- theta1 %*% mu
+      C1_h <- theta1 %*% Phi
+      Gamma0_h <- (theta1 %x% theta1) %*% Theta0
+      Gamma1_h <- (theta1 %x% theta1) %*% Theta1
+    }else{
+      C0_h <- (theta2 + C1_h_1) %*% mu + C0_h_1
+      C1_h <- (theta2 + C1_h_1) %*% Phi
+
+      aux <- (theta2 + C1_h_1) %x% (theta2 + C1_h_1)
+      Gamma0_h <- Gamma0_h_1 + Gamma1_h_1 %*% mu + aux %*% Theta0
+      Gamma1_h <- Gamma1_h_1 %*% Phi + aux %*% Theta1
+    }
+    C0_h_1 <- C0_h
+    C1_h_1 <- C1_h
+    Gamma0_h_1 <- Gamma0_h
+    Gamma1_h_1 <- Gamma1_h
+
+    all_C0[,,h] <- C0_h
+    all_C1[,,h] <- C1_h
+    all_Gamma0[,,h] <- Gamma0_h
+    all_Gamma1[,,h] <- Gamma1_h
+  }
+
+  return(list(all_C0 = all_C0,
+              all_C1 = all_C1,
+              all_Gamma0 = all_Gamma0,
+              all_Gamma1 = all_Gamma1))
 }
 
 # # Check
@@ -311,8 +367,14 @@ compute_expect_variance <- function(psi,model,du = 1e-08){
 #                  Phi = matrix(c(.6,.2,-.3,.8),2,2),
 #                  Sigma = diag(2),
 #                  n_w=2)
-# compute_expect_variance(psi.GaussianVAR,modelVAR)
+#
+# VAR_representation <- compute_expect_variance(psi.GaussianVAR,modelVAR)
 # solve(diag(4) - modelVAR$Phi %x% modelVAR$Phi) %*% c(modelVAR$Sigma)
+#
+# theta1 <- matrix(rnorm(8),4,2)
+# H <- 5
+# res <- compute_expect_variance_H(VAR_representation,
+#                                  theta1=theta1,H=H)
 
 
 psi.VARG <- function(u,model){
@@ -471,15 +533,13 @@ simul_VARG <- function(model,nb_periods,w0=NaN){
   if(is.na(w0[1])){
     w0 <- compute_uncondmean_VARG(model)
   }
-
-  w     <- w0
+  w <- w0
   all_w <- w
   for(t in 1:nb_periods){
     param.pois <- rpois(n, alpha + beta %*% w)
     w <- rgamma(n,shape = param.pois + nu, scale = mu)
     all_w <- cbind(all_w,w)
   }
-
   return(all_w)
 }
 
@@ -845,6 +905,11 @@ varphi4G_TopDown <- function(u,parameterization){
                               H = H,
                               psi.parameterization = model)
 
+  A <- res_reverse$A
+  A <- A - array(matrix(1,q*H,1) %x% matrix(model$xi1,ncol=1),c(nw,q,H))
+  B <- res_reverse$B
+  B <- B - model$xi0*array(matrix((1:H),ncol=1) %*% matrix(1,q,1),c(1,q,H))
+
   return(list(A = res_reverse$A,
               B = matrix(res_reverse$B,nrow=1)))
 }
@@ -875,7 +940,7 @@ truncated.payoff <- function(W, # values of w_t
   # NOTE: De facto, it is varphi that determines whether the condition is
   #       on Sum_h(w_{t+h}) or on w_{t+h}; i.e., if the indicator is
   #       1_{v'Sum_h(w_{t+h}) < b} or 1_{v'w_{t+h} < b}.
-  #       (This depends on whether ivx is in u2 or not.)
+  #       (This depends on whether ivx is in "u2" or not in varphi.)
 
   n_w <- parameterization$model$n_w
 
@@ -898,13 +963,13 @@ truncated.payoff <- function(W, # values of w_t
   xi0 <- parameterization$model$xi0
   xi1 <- parameterization$model$xi1
 
-  # Adjust for current short-term interest rate:
-  B <- matrix(res_varphi$B,1,nb_x*H) -
-    matrix(1:H,nrow=1) %x% matrix(1,1,nb_x) * xi0
-  A <- matrix(res_varphi$A,n_w,nb_x*H) - matrix(xi1,n_w,nb_x*H)
-
-  B0 <- matrix(res_varphi0$B,nrow=1) - (1:H) * xi0
-  A0 <- matrix(res_varphi0$A,n_w,H)  - matrix(xi1,n_w,H)
+  # # Adjust for current short-term interest rate:
+  # B <- matrix(res_varphi$B,1,nb_x*H) -
+  #   matrix(1:H,nrow=1) %x% matrix(1,1,nb_x) * xi0
+  # A <- matrix(res_varphi$A,n_w,nb_x*H) - matrix(xi1,n_w,nb_x*H)
+  #
+  # B0 <- matrix(res_varphi0$B,nrow=1) - (1:H) * xi0
+  # A0 <- matrix(res_varphi0$A,n_w,H)  - matrix(xi1,n_w,H)
 
   if(dim(W)[2]!=n_w){# to make sure W is of dimension T x n.w
     W <- t(W)
@@ -983,7 +1048,8 @@ compute_tranche <- function(model,W,
                             nb_x1 = 1000,
                             indic_Q = TRUE # if FALSE; then everyting computed under P
 ){
-  # This function computes the price of tranche products.
+  # This function computes the price of credit tranche products in
+  #     the context of the top-down credit approach.
   # It does that for one segment only (segment j).
   # vector.of.a contains the attachment/detachment points. For instance,
   #     if vector.of.a =[0,.03,.06], then we consider 2 tranches:
@@ -1146,7 +1212,7 @@ compute_bond_price_Ratings <- function(model,Y,H,psi){
   # This function computes bond prices in a context featuring
   #     credit ratings migration.
   # H is the maximum maturity considered.
-  # Y is the matrix of y_t realiizations. Dimension: T x n_y.
+  # Y is the matrix of y_t realizations. Dimension: T x n_y.
   # !!: model$kappa0 is of dimension 1 x K, where K is the number of
   #     ratings (including "Default"). model$kappa1 is of dimension n_y x K.
   #     The bottom entries of model$kappa0 and model$kappa1 are zeros.
@@ -1337,3 +1403,43 @@ log_mvdnorm <- function(X, Sigma){
   logL <- term1 + term2 + term3
   return(as.numeric(logL))
 }
+
+
+#
+# model <- list(alpha = matrix(c(0,.02),ncol=1),
+#               nu = matrix(c(.1,.2),ncol=1),
+#               mu = matrix(c(1,1),ncol=1),
+#               beta = matrix(c(.9,0,.2,.8),2,2),
+#               n_w=2)
+# VAR_representation <- compute_expect_variance(psi.VARG,model)
+#
+# theta1 <- matrix(rnorm(8),4,2)
+# theta2 <- matrix(rnorm(8),4,2)
+# resEV <- compute_expect_variance_H(VAR_representation,
+#                                    theta1=theta1,
+#                                    theta2=theta2,H=H)
+#
+# w0 <- VAR_representation$Ew
+#
+# N <- 100000
+# H <- 5
+# all_w <- array(NaN,c(2,N,H+1))
+# for(i in 1:N){
+#   simres <- simul_VARG(model,nb_periods=5,w0 = w0)
+#   all_w[,i,] <- simres
+# }
+#
+# X <- theta1 %*% all_w[,,H+1]
+# for(j in 1:(H-1)){
+#   X <- X + theta2 %*% all_w[,,H+1-j]
+# }
+#
+# cbind(
+#   resEV$all_C0[,,H] + resEV$all_C1[,,H] %*% w0,
+#   apply(X,1,mean)
+# )
+#
+# cbind(
+#   resEV$all_Gamma0[,,H] + resEV$all_Gamma1[,,H] %*% w0,
+#   c(var(t(X)))
+# )
