@@ -1130,7 +1130,7 @@ truncated.payoff <- function(W, # values of w_t
     count_b <- count_b + 1
     #aux <- Im(Psi_eval * matrix(exp(-1i*x_mid*b),nb_x,T*H))
     aux <- Im(Psi_eval *
-                exp(-1i*matrix(x_mid,ncol=1)*
+                exp(-1i*matrix(x_mid,ncol=1) %*%
                       (matrix(b.matrix[count_b,],nrow=1) %x% matrix(1,1,T))))
     fx <- aux/x_mid * dx
     f  <- 1/2*c(t(psi_eval0)) - 1/pi * apply(fx,2,sum)
