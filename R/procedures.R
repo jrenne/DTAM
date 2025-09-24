@@ -958,14 +958,14 @@ varphi4G_TopDown <- function(x,parameterization){
 
 
 truncated.payoff <- function(W, # values of w_t
-                                  b.matrix, # thresholds (H x k, 1 row per maturity)
-                                  H,
-                                  varphi,
-                                  parameterization,
-                                  max_x = 500,
-                                  dx_statio = .1,
-                                  min_dx = 1e-05,
-                                  nb_x1 = 1000){
+                             b.matrix, # thresholds (H x k, 1 row per maturity)
+                             H,
+                             varphi,
+                             parameterization,
+                             max_x = 500,
+                             dx_statio = .1,
+                             min_dx = 1e-05,
+                             nb_x1 = 1000){
   # This function computes:
   #       E[exp(u0·w_t+...+uh·w_{t+h})·1_{v0·w_t+...+vh·w_{t+h} < b}],
   # for different horizons and values of b.
@@ -1050,15 +1050,15 @@ truncated.payoff <- function(W, # values of w_t
 
 
 compute_G <- function(model,W,
-                           gamma,v,
-                           b.matrix, # attachment/detachment points
-                           H, # maturity
-                           indic_Q = TRUE, # computed under Q.
-                           indic_upper = TRUE, # otherwise, computed G_lower
-                           max_x = 2000,
-                           dx_statio = 2,
-                           min_dx = 10^(-6),
-                           nb_x1=1000){
+                      gamma,v,
+                      b.matrix, # attachment/detachment points
+                      H, # maturity
+                      indic_Q = TRUE, # computed under Q.
+                      indic_upper = TRUE, # otherwise, computed G_lower
+                      max_x = 2000,
+                      dx_statio = 2,
+                      min_dx = 10^(-6),
+                      nb_x1=1000){
   # This computes functions G_lower and G_upper
 
   parameterization <- list(model=model,
@@ -1076,15 +1076,15 @@ compute_G <- function(model,W,
   #                       dx_statio = dx_statio,
   #                       min_dx = min_dx,
   #                       nb_x1=nb_x1)
-  P <- truncated.payoff_test(W,
-                             b.matrix,
-                             H,
-                             varphi = varphi4G_TopDown_test,
-                             parameterization,
-                             max_x = max_x,
-                             dx_statio = dx_statio,
-                             min_dx = min_dx,
-                             nb_x1=nb_x1)
+  P <- truncated.payoff(W,
+                        b.matrix,
+                        H,
+                        varphi = varphi4G_TopDown,
+                        parameterization,
+                        max_x = max_x,
+                        dx_statio = dx_statio,
+                        min_dx = min_dx,
+                        nb_x1=nb_x1)
 
   return(P)
 }
