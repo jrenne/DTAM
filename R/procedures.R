@@ -1025,13 +1025,6 @@ truncated.payoff <- function(W, # values of w_t
   count_b <- 0
   for(b in 1:dim(b.matrix)[2]){
     count_b <- count_b + 1
-    #aux <- Im(Psi_eval * matrix(exp(-1i*x_mid*b),nb_x,T*H))
-    # print(nb_x)
-    # print(dim(x_mid))
-    print(dim(Psi_eval))
-    print(psi_eval0)
-    # print(dim(matrix(x,ncol=1) %*%
-    #             (matrix(b.matrix[,count_b],nrow=1) %x% matrix(1,1,T))))
     aux <- Im(Psi_eval *
                 exp(-1i*matrix(x,ncol=1) %*%
                       (matrix(b.matrix[,count_b],nrow=1) %x% matrix(1,1,T))))
