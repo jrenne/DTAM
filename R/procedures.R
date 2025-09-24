@@ -876,7 +876,7 @@ compute_CDS_TopDown <- function(model,
   return(CDS)
 }
 
-varphi4G_TopDown <- function(u,parameterization){
+varphi4G_TopDown_old <- function(u,parameterization){
 
   model   <- parameterization$model
   H       <- parameterization$H # maturity
@@ -914,7 +914,49 @@ varphi4G_TopDown <- function(u,parameterization){
               B = matrix(res_reverse$B,nrow=1)))
 }
 
-truncated.payoff <- function(W, # values of w_t
+
+varphi4G_TopDown <- function(x,parameterization){
+
+  model   <- parameterization$model
+  H       <- parameterization$H # maturity
+  gamma   <- parameterization$gamma
+  indic_Q     <- parameterization$indic_Q # if FALSE, use physical LT, otherwise Q
+  indic_upper <- parameterization$indic_upper # if TRUE, compute G_upper, otherwise G_lower
+
+  v <- parameterization$v # determine thresholds (dimension nw x 1)
+  i.v.x <- matrix(v,ncol=1) %*% matrix(c(1i*x),nrow=1)
+
+  nw <- dim(i.v.x)[1]
+  q  <- dim(i.v.x)[2]
+
+  u2 <- matrix(gamma - model$xi1, nw, q) + i.v.x
+  u1 <- i.v.x
+  if(indic_upper){
+    u1 <- u1 + matrix(gamma, nw, q)
+  }
+
+  if(indic_Q){
+    psi <- psiQ.w.TopDown
+  }else{
+    psi <- psi.w.TopDown
+  }
+
+  res_reverse <- reverse.MHLT(psi,
+                              u1 = u1,
+                              u2 = u2,
+                              H = H,
+                              psi.parameterization = model)
+
+  A <- res_reverse$A
+  A <- A - array(matrix(1,q*H,1) %x% matrix(model$xi1,ncol=1),c(nw,q,H))
+  B <- res_reverse$B
+  B <- B - model$xi0*array(matrix((1:H),ncol=1) %x% matrix(1,q,1),c(1,q,H))
+
+  return(list(A = res_reverse$A,
+              B = matrix(res_reverse$B,nrow=1)))
+}
+
+truncated.payoff_old <- function(W, # values of w_t
                              v,vector.of.b,
                              H,
                              varphi,
@@ -923,6 +965,11 @@ truncated.payoff <- function(W, # values of w_t
                              dx_statio = .1,
                              min_dx = 1e-05,
                              nb_x1 = 1000){
+  # This function computes:
+  #       E[exp(u0·w_t+...+uh·w_{t+h})·1_{v0·w_t+...+vh·w_{t+h} < b}],
+  # for different horizons and values of b.
+  # b.matrix is organized as follows: H * k; the h^th row gives the b values for
+  #       horizon h.
   # This function calculates the value of
   #           payoff(w_{t+1},...,w_{t+h},parameterization) x
   #                        1_{v'Sum_h(w_{t+h}) < b},
@@ -937,10 +984,11 @@ truncated.payoff <- function(W, # values of w_t
   #          and B(u) is of dimension n.u x 1
   # The truncation is of the form v'w < b,
   #          "vector.of.b" collects the b boundaries of interest.
-  # NOTE: De facto, it is varphi that determines whether the condition is
-  #       on Sum_h(w_{t+h}) or on w_{t+h}; i.e., if the indicator is
-  #       1_{v'Sum_h(w_{t+h}) < b} or 1_{v'w_{t+h} < b}.
-  #       (This depends on whether ivx is in "u2" or not in varphi.)
+  # NOTE: De facto, it is varphi that determines the function
+  #       payoff(w_{t+1},...,w_{t+h},parameterization) as well as
+  #       whether the condition is on Sum_h(w_{t+h})
+  #       or on w_{t+h}; i.e., if the indicator is 1_{v'Sum_h(w_{t+h}) < b} or
+  #       1_{v'w_{t+h} < b}. (This depends on whether ivx is in "u2" or not in varphi.)
 
   n_w <- parameterization$model$n_w
 
@@ -959,17 +1007,6 @@ truncated.payoff <- function(W, # values of w_t
 
   res_varphi  <- varphi(i.v.x,parameterization)
   res_varphi0 <- varphi(matrix(0,n_w,1),parameterization)
-
-  # xi0 <- parameterization$model$xi0
-  # xi1 <- parameterization$model$xi1
-  #
-  # # Adjust for current short-term interest rate:
-  # B <- matrix(res_varphi$B,1,nb_x*H) -
-  #   matrix(1:H,nrow=1) %x% matrix(1,1,nb_x) * xi0
-  # A <- matrix(res_varphi$A,n_w,nb_x*H) - matrix(xi1,n_w,nb_x*H)
-  #
-  # B0 <- matrix(res_varphi0$B,nrow=1) - (1:H) * xi0
-  # A0 <- matrix(res_varphi0$A,n_w,H)  - matrix(xi1,n_w,H)
 
   # Adjust for current short-term interest rate:
   B <- matrix(res_varphi$B,1,nb_x*H)
@@ -1002,7 +1039,6 @@ truncated.payoff <- function(W, # values of w_t
     aux <- Im(Psi_eval * matrix(exp(-1i*x_mid*b),nb_x,T*H))
     fx <- aux/x_mid * dx
     f  <- 1/2*c(t(psi_eval0)) - 1/pi * apply(fx,2,sum)
-
     all_prices[,count_b] <- f
   }
 
@@ -1014,9 +1050,104 @@ truncated.payoff <- function(W, # values of w_t
   return(All_prices)
 }
 
+truncated.payoff <- function(W, # values of w_t
+                             b.matrix, # thresholds (H x k, 1 row per maturity)
+                             H,
+                             varphi,
+                             parameterization,
+                             max_x = 500,
+                             dx_statio = .1,
+                             min_dx = 1e-05,
+                             nb_x1 = 1000){
+  # This function computes:
+  #       E[exp(u0·w_t+...+uh·w_{t+h})·1_{v0·w_t+...+vh·w_{t+h} < b}],
+  # for different horizons and values of b.
+  # b.matrix is organized as follows: H * k; the h^th row gives the b values for
+  #       horizon h.
+  # This function calculates the value of
+  #           payoff(w_{t+1},...,w_{t+h},parameterization) x
+  #                        1_{v'Sum_h(w_{t+h}) < b},
+  #      for different values of b (collected in "vector.of.b").
+  #       "W" is of dimension T x n.w; it contains values of the state vector w
+  #          at which we want to evaluate the prices.
+  #       "varphi" is a function that takes two arguments:
+  #          (i) u and (ii) parameterization (fields of parameterization: model, gamma, H);
+  #       it returns matrices A(u) and B(u) that are such that the "price" of
+  #          the payoff is given by exp(A(u)'w + B(u)),
+  #          where A(u) is of dimension n.u x n.w,
+  #          and B(u) is of dimension n.u x 1
+  # The truncation is of the form v'w < b,
+  #          "vector.of.b" collects the b boundaries of interest.
+  # NOTE: De facto, it is varphi that determines the function
+  #       payoff(w_{t+1},...,w_{t+h},parameterization) as well as
+  #       whether the condition is on Sum_h(w_{t+h})
+  #       or on w_{t+h}; i.e., if the indicator is 1_{v'Sum_h(w_{t+h}) < b} or
+  #       1_{v'w_{t+h} < b}. (This depends on whether ivx is in "u2" or not in varphi.)
+
+  n_w <- parameterization$model$n_w
+
+  dx1 <- exp(seq(log(min_dx),log(dx_statio),length.out=nb_x1))
+  max_x1 <- tail(cumsum(dx1),1)
+  nb_x2 <- (max_x - max_x1)/dx_statio
+  dx <- c(dx1,rep(dx_statio,nb_x2))
+  x <- matrix(cumsum(dx),ncol=1)
+
+  nb_x <- length(x)
+
+  # Add necessary fields in parameterization:
+  parameterization$H <- H
+
+  res_varphi  <- varphi(x,parameterization)
+  res_varphi0 <- varphi(0,parameterization)
+
+  # Adjust for current short-term interest rate:
+  B <- matrix(res_varphi$B,1,nb_x*H)
+  A <- matrix(res_varphi$A,n_w,nb_x*H)
+  B0 <- matrix(res_varphi0$B,nrow=1)
+  A0 <- matrix(res_varphi0$A,n_w,H)
+
+  if(dim(W)[2]!=n_w){# to make sure W is of dimension T x n.w
+    W <- t(W)
+  }
+  T <- dim(W)[1]
+
+  psi_eval  <- exp(t(A)  %*% t(W) + matrix(B, nb_x*H,T))
+  psi_eval0 <- exp(t(A0) %*% t(W) + matrix(B0,H,T))
+
+  # modify format to have them nb_x x (T*H):
+  Psi_eval  <- matrix(NaN,nb_x,T*H)
+  for(h in 1:H){
+    Psi_eval[,(T*(h-1)+1):(T*h)]  <- psi_eval[(nb_x*(h-1)+1):(nb_x*h),]
+  }
+
+  dx <- matrix(x - c(0,x[1:(nb_x-1)]),nb_x,T*H)
+  x_mid <- matrix(x,nb_x,T*H)
+
+  all_prices <- matrix(0,T*H,dim(b.matrix)[2])
+
+  count_b <- 0
+  for(b in dim(b.matrix)[2]){
+    count_b <- count_b + 1
+    #aux <- Im(Psi_eval * matrix(exp(-1i*x_mid*b),nb_x,T*H))
+    aux <- Im(Psi_eval *
+                exp(-1i*matrix(x_mid,ncol=1)*
+                      (matrix(b.matrix[count_b,],nrow=1) %x% matrix(1,1,T))))
+    fx <- aux/x_mid * dx
+    f  <- 1/2*c(t(psi_eval0)) - 1/pi * apply(fx,2,sum)
+    all_prices[,count_b] <- f
+  }
+
+  All_prices <- array(NaN,c(T,dim(b.matrix)[2],H))
+  for(h in 1:H){
+    All_prices[,,h] <- all_prices[(T*(h-1)+1):(T*h),]
+  }
+
+  return(All_prices)
+}
+
 compute_G <- function(model,W,
                       gamma,v,
-                      vector.of.b, # attachment/detachment points
+                      b.matrix, # attachment/detachment points
                       H, # maturity
                       indic_Q = TRUE, # computed under Q.
                       indic_upper = TRUE, # otherwise, computed G_lower
@@ -1029,10 +1160,20 @@ compute_G <- function(model,W,
   parameterization <- list(model=model,
                            indic_Q = indic_Q,
                            indic_upper = indic_upper,
-                           gamma = gamma)
+                           gamma = gamma,
+                           v = v)
 
+  # P <- truncated.payoff(W,
+  #                       v,vector.of.b,
+  #                       H,
+  #                       varphi = varphi4G_TopDown,
+  #                       parameterization,
+  #                       max_x = max_x,
+  #                       dx_statio = dx_statio,
+  #                       min_dx = min_dx,
+  #                       nb_x1=nb_x1)
   P <- truncated.payoff(W,
-                        v,vector.of.b,
+                        b.matrix,
                         H,
                         varphi = varphi4G_TopDown,
                         parameterization,
@@ -1093,7 +1234,8 @@ compute_tranche <- function(model,W,
                             W=W,
                             gamma = 0*ej_tilde,
                             v = ej_tilde,
-                            vector.of.b=vector.of.a.bar, # attachment/detachment points
+                            b.matrix=t(matrix(vector.of.a.bar,
+                                              length(vector.of.a.bar),H)), # attachment/detachment points
                             H=H,
                             indic_Q = indic_Q,
                             indic_upper = TRUE,
@@ -1103,7 +1245,8 @@ compute_tranche <- function(model,W,
                             W=W,
                             gamma = 0*ej_tilde,
                             v = ej_tilde,
-                            vector.of.b=vector.of.a.bar, # attachment/detachment points
+                            b.matrix=t(matrix(vector.of.a.bar,
+                                              length(vector.of.a.bar),H)), # attachment/detachment points
                             H=H,
                             indic_Q = indic_Q,
                             indic_upper = FALSE,
@@ -1115,7 +1258,8 @@ compute_tranche <- function(model,W,
                               W=W,
                               gamma = u*ej_tilde,
                               v = ej_tilde,
-                              vector.of.b=vector.of.a.bar, # attachment/detachment points
+                              b.matrix=t(matrix(vector.of.a.bar,
+                                                length(vector.of.a.bar),H)), # attachment/detachment points
                               H=H,
                               indic_Q = indic_Q,
                               indic_upper = TRUE,
@@ -1125,7 +1269,8 @@ compute_tranche <- function(model,W,
                               W=W,
                               gamma = u*ej_tilde,
                               v = ej_tilde,
-                              vector.of.b=vector.of.a.bar, # attachment/detachment points
+                              b.matrix=t(matrix(vector.of.a.bar,
+                                                length(vector.of.a.bar),H)), # attachment/detachment points
                               H=H,
                               indic_Q = indic_Q,
                               indic_upper = FALSE,
