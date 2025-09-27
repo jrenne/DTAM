@@ -422,8 +422,8 @@ psi.GaussianQVAR <- function(u,psi.parameterization){
     vecV <- Mx %*% Vred
     V <- matrix(vecV,n,n)
 
-    Sigma_1_2V_1 <- solve(solve(Sigma) - 2*V)
-    Sigma12 <- t(chol(Sigma))
+    #Sigma_1_2V_1 <- solve(solve(Sigma) - 2*V)
+    Sigma_1_2V_1 <- solve(Id - 2 * Sigma %*% V) %*% Sigma
 
     a1_i <- 2 * t(Phi) %*% V %*% Sigma_1_2V_1 %*% (v + 2*V %*% mu) +
       t(Phi) %*% v + 2 * t(Phi) %*% V %*% mu
@@ -440,6 +440,10 @@ psi.GaussianQVAR <- function(u,psi.parameterization){
 
   return(list(a = a, b = b))
 }
+
+
+#det_complex <- function(M) prod(eigen(M, only.values = TRUE)$values)
+
 
 make_Knx <- function(n) {
   S <- matrix(0, nrow = n, ncol = n)
@@ -547,5 +551,5 @@ make_Mnx <- function(n) {
 # Sigma12 %*% solve(diag(2) - 2*t(Sigma12) %*% V %*% Sigma12) %*% t(Sigma12)
 # solve(solve(Sigma12%*%t(Sigma12)) - 2*V)
 #
-
-
+#
+#

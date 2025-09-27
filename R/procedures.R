@@ -324,7 +324,7 @@ compute_expect_variance_H <- function(VAR_representation,
   Theta1 <- VAR_representation$Theta1
 
   k <- dim(theta1)[1]
-  n <- dim(theta2)[2]
+  n <- dim(theta1)[2]
 
   all_C0 <- array(NaN,c(k,1,H))
   all_C1 <- array(NaN,c(k,n,H))
@@ -876,49 +876,10 @@ compute_CDS_TopDown <- function(model,
   return(CDS)
 }
 
-varphi4G_TopDown_old <- function(u,parameterization){
+
+varphi4G_TopDown <- function(x,parameterization,H){
 
   model   <- parameterization$model
-  H       <- parameterization$H # maturity
-  gamma   <- parameterization$gamma
-  indic_Q     <- parameterization$indic_Q # if FALSE, use physical LT, otherwise Q
-  indic_upper <- parameterization$indic_upper # if TRUE, compute G_upper, otherwise G_lower
-
-  nw <- dim(u)[1]
-  q  <- dim(u)[2]
-
-  u2 <- matrix(gamma - model$xi1, nw, q) + u
-  u1 <- u
-  if(indic_upper){
-    u1 <- u1 + matrix(gamma, nw, q)
-  }
-
-  if(indic_Q){
-    psi <- psiQ.w.TopDown
-  }else{
-    psi <- psi.w.TopDown
-  }
-
-  res_reverse <- reverse.MHLT(psi,
-                              u1 = u1,
-                              u2 = u2,
-                              H = H,
-                              psi.parameterization = model)
-
-  A <- res_reverse$A
-  A <- A - array(matrix(1,q*H,1) %x% matrix(model$xi1,ncol=1),c(nw,q,H))
-  B <- res_reverse$B
-  B <- B - model$xi0*array(matrix((1:H),ncol=1) %x% matrix(1,q,1),c(1,q,H))
-
-  return(list(A = res_reverse$A,
-              B = matrix(res_reverse$B,nrow=1)))
-}
-
-
-varphi4G_TopDown <- function(x,parameterization){
-
-  model   <- parameterization$model
-  H       <- parameterization$H # maturity
   gamma   <- parameterization$gamma
   indic_Q     <- parameterization$indic_Q # if FALSE, use physical LT, otherwise Q
   indic_upper <- parameterization$indic_upper # if TRUE, compute G_upper, otherwise G_lower
@@ -959,7 +920,6 @@ varphi4G_TopDown <- function(x,parameterization){
 
 truncated.payoff <- function(W, # values of w_t
                              b.matrix, # thresholds (H x k, 1 row per maturity)
-                             H,
                              varphi,
                              parameterization,
                              max_x = 500,
@@ -981,7 +941,7 @@ truncated.payoff <- function(W, # values of w_t
   #       and B(u) is of dimension n.u x 1
   # NOTE: It is varphi that determines the ui's and vi's.
 
-  n_w <- parameterization$model$n_w
+  n_w <- dim(W)[2]
 
   dx1 <- exp(seq(log(min_dx),log(dx_statio),length.out=nb_x1))
   max_x1 <- tail(cumsum(dx1),1)
@@ -991,11 +951,10 @@ truncated.payoff <- function(W, # values of w_t
 
   nb_x <- length(x)
 
-  # Add necessary fields in parameterization:
-  parameterization$H <- H
+  H <- dim(b.matrix)[1]
 
-  res_varphi  <- varphi(x,parameterization)
-  res_varphi0 <- varphi(0,parameterization)
+  res_varphi  <- varphi(x,parameterization,H)
+  res_varphi0 <- varphi(0,parameterization,H)
 
   # Adjust for current short-term interest rate:
   B <- matrix(res_varphi$B,1,nb_x*H)
@@ -1071,7 +1030,6 @@ compute_G <- function(model,W,
   #                       nb_x1=nb_x1)
   P <- truncated.payoff(W,
                         b.matrix,
-                        H,
                         varphi = varphi4G_TopDown,
                         parameterization,
                         max_x = max_x,
