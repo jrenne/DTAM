@@ -933,15 +933,22 @@ truncated.payoff <- function(W, # values of w_t
   #       horizon h.
   # "W" is of dimension T x n.w; it contains values of the state vector w
   #       at which we want to evaluate the prices.
-  # "varphi" is a function that takes two arguments:
-  #       (i) u and (ii) parameterization (fields of parameterization: model, gamma, H);
+  # "varphi" is a function that takes three arguments:
+  #       (i) u and
+  #       (ii) parameterization (that contains at least "model"),
+  #       (iii) H (max maturity);
   # it returns matrices A(u) and B(u) that are such that the "price" of
   #       the payoff is given by exp(A(u)'w + B(u)),
   #       where A(u) is of dimension n.u x n.w,
   #       and B(u) is of dimension n.u x 1
   # NOTE: It is varphi that determines the ui's and vi's.
 
-  n_w <- dim(W)[2]
+  if(is.null(parameterization$model$n_w)){
+    print("Error: 'parameterization' should include 'model', itself including 'n_w' (size of state vector).")
+    return(1)
+  }
+
+  n_w <- parameterization$model$n_w
 
   dx1 <- exp(seq(log(min_dx),log(dx_statio),length.out=nb_x1))
   max_x1 <- tail(cumsum(dx1),1)

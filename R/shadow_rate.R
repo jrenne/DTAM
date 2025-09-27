@@ -248,10 +248,9 @@ psi.PoissonSR <- function(u,psi.parameterization){
   return(list(a = a, b = b))
 }
 
-varphi4G_SR_Gaussian <- function(x,parameterization){
+varphi4G_SR_Gaussian <- function(x,parameterization,H){
 
   model   <- parameterization$model
-  H       <- parameterization$H # maturity
 
   u <- parameterization$u
   v <- parameterization$v # determine thresholds (dimension nw x 1)
@@ -273,10 +272,9 @@ varphi4G_SR_Gaussian <- function(x,parameterization){
   return(list(A=A,B=B))
 }
 
-varphi4G_SR_QPoisson <- function(x,parameterization){
+varphi4G_SR_QPoisson <- function(x,parameterization,H){
 
   model   <- parameterization$model
-  H       <- parameterization$H # maturity
 
   u <- parameterization$u
   v <- parameterization$v # determine thresholds (dimension nw x 1)
@@ -307,7 +305,7 @@ varphi4G_SR_QPoisson <- function(x,parameterization){
 # Sigma12 <- .02*matrix(c(1,-1),2,1)
 # Sigma <- Sigma12 %*% t(Sigma12)
 #
-# model <- list(mu=mu,Phi=Phi,Sigma=Sigma,Sigma12=Sigma12)
+# model <- list(mu=mu,Phi=Phi,Sigma=Sigma,Sigma12=Sigma12,n_w=2)
 #
 # TT = 200
 #
@@ -391,7 +389,7 @@ varphi4G_SR_QPoisson <- function(x,parameterization){
 # Sigma12 <- .015*matrix(c(1,-1),2,1)
 # Sigma <- Sigma12 %*% t(Sigma12)
 #
-# model <- list(mu=mu,Phi=Phi,Sigma=Sigma,Sigma12=Sigma12)
+# model <- list(mu=mu,Phi=Phi,Sigma=Sigma,Sigma12=Sigma12,n_w=2)
 #
 # TT = 200
 # simX <- simul.GVAR(model,nb.sim = TT)
@@ -409,7 +407,7 @@ varphi4G_SR_QPoisson <- function(x,parameterization){
 #   u = matrix(0*xi1,ncol=1),
 #   v = matrix(1*xi1,ncol=1)
 # )
-# res_truncated0 <- truncated.payoff(simX,b.matrix = matrix(i_bar-xi0,H,1),H = H,
+# res_truncated0 <- truncated.payoff(simX,b.matrix = matrix(i_bar-xi0,H,1),
 #                                    varphi = varphi4G_SR_Gaussian,
 #                                    parameterization = parameterization,
 #                                    max_x = 2000,
@@ -418,7 +416,7 @@ varphi4G_SR_QPoisson <- function(x,parameterization){
 #                                    nb_x1 = 1000)
 # eps <- 10^(-6)
 # parameterization$u <- matrix(eps*xi1,ncol=1)
-# res_truncatedeps <- truncated.payoff(simX,b.matrix = matrix(i_bar-xi0,H,1),H = H,
+# res_truncatedeps <- truncated.payoff(simX,b.matrix = matrix(i_bar-xi0,H,1),
 #                                      varphi = varphi4G_SR_Gaussian,
 #                                      parameterization = parameterization,
 #                                      max_x = 2000,
