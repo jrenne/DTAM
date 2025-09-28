@@ -377,18 +377,18 @@ compute_expect_variance_H <- function(VAR_representation,
 #                                  theta1=theta1,H=H)
 
 
-psi.VARG <- function(u,model){
+psi.VARG <- function(u,psi.parameterization){
   # Laplace transform of a VARG with conditionally independent components.
   # Conditionally on w_t,w_{t-1},..., the distribution of the jth component is:
   #  w_{j,t} ~ gamma_{nu_j}(alpha_j + beta_j'w_{t-1},mu_j),
-  # In model, the vectors alpha, nu, mu gather the n values
+  # In psi.parameterization, the vectors alpha, nu, mu gather the n values
   #  of the associated parameters. The rows of matrix beta are the beta_j'
   # If w_t is n-dimensional (of dimension n, say), u is of dimension n x k
   #    (i.e., we can compute k LT in parallel)
-  alpha <- model$alpha
-  beta  <- model$beta
-  nu    <- model$nu
-  mu    <- model$mu
+  alpha <- psi.parameterization$alpha
+  beta  <- psi.parameterization$beta
+  nu    <- psi.parameterization$nu
+  mu    <- psi.parameterization$mu
   n <- dim(u)[1]
   k <- dim(u)[2]
   mu_matrix <- matrix(mu,n,k)

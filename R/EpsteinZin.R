@@ -165,17 +165,17 @@ solve_EZ_stock_return <- function(model,psi,Ew=NaN,z_s_bar_ini=5,
 }
 
 
-psi.BansalShaliastovich <- function (u,model){
+psi.BansalShaliastovich <- function (u,psi.parameterization){
   # This function computes the log Laplace transform associated with
   # the model by Bansal and Shaliastovich (2012, RFS)
-  n <- dim(model$Pi)[1]
-  q <- dim(model$nu)[1]
+  n <- dim(psi.parameterization$Pi)[1]
+  q <- dim(psi.parameterization$nu)[1]
   u.x <- matrix(u[1:n, ], nrow = n)
   u.z <- matrix(u[(n + 1):(n + q), ], nrow = q)
-  b <- 0.5 * t(u.x * u.x) %*% matrix(model$chi.0, ncol = 1) +
-    0.5 * t(u.z * u.z) %*% matrix(model$sigma.w^2, ncol = 1)
-  a <- rbind(t(model$Pi) %*% u.x, 0.5 *
-               model$chi.1 %*% (u.x * u.x) + t(model$nu) %*% u.z)
+  b <- 0.5 * t(u.x * u.x) %*% matrix(psi.parameterization$chi.0, ncol = 1) +
+    0.5 * t(u.z * u.z) %*% matrix(psi.parameterization$sigma.w^2, ncol = 1)
+  a <- rbind(t(psi.parameterization$Pi) %*% u.x, 0.5 *
+               psi.parameterization$chi.1 %*% (u.x * u.x) + t(psi.parameterization$nu) %*% u.z)
   return(list(a = a,b = b))
 }
 
