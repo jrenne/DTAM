@@ -169,8 +169,9 @@ make.pdf <- function(model,values.of.variable,
                      max_x = 10000,
                      min_x = 10^(-8),nb_x=5000){
   # psi is a function calculating the Laplace transform (LT) of a univariate random variable
-  # psi admits 2 arguments: model and u; model is a list of parameters; u is the
-  # vector of points where one wants to evaluate the pdf.
+  # psi admits 2 arguments: model and u.
+  #    (model is a list of parameters; u is the vector of points
+  #     where one wants to evaluate the pdf.)
 
   x <- matrix(exp(seq(log(min_x),log(max_x),length.out=nb_x)),ncol=1)
   gamma <- matrix(values.of.variable,nrow=1)
@@ -205,7 +206,7 @@ Fourier.psi <- function(model,gamma,x,
   gamma <- matrix(gamma,nrow=1)
 
   u <- c(1i*x)
-  psi_eval <- matrix(psi(model,u),length(x),length(gamma))
+  psi_eval <- matrix(psi(u,model),length(x),length(gamma))
   dx <- matrix(x-c(0,x[1:length(x)-1]),length(x),length(gamma))
   fx <- Im(psi_eval*exp(-1i*x %*% gamma))/matrix(x,length(x),length(gamma))*dx
 
