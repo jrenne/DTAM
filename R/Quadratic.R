@@ -432,6 +432,7 @@ psi.GaussianQVAR <- function(u,psi.parameterization){
     b_i <- .5 * t(v) %*% Sigma_1_2V_1 %*% v +
       2*t(v + V %*% mu) %*% Sigma_1_2V_1 %*% V %*% mu -
       .5*log(det(Id - 2*Sigma %*% V)) +
+      #.5*sum(log(eigen(Id - 2*Sigma %*% V)$values)) +
       t(v + V %*% mu) %*% mu
 
     a[,i] <- c(a1_i,Kx %*% c(a2_i))
@@ -442,7 +443,7 @@ psi.GaussianQVAR <- function(u,psi.parameterization){
 }
 
 
-#det_complex <- function(M) prod(eigen(M, only.values = TRUE)$values)
+det_complex <- function(M) prod(eigen(M, only.values = TRUE)$values)
 
 
 make_Knx <- function(n) {
