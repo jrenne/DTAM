@@ -249,30 +249,6 @@ psi.VARG_Poisson <- function(u,psi.parameterization){
   return(list(a = a, b = b))
 }
 
-varphi4G_SR <- function(x,psi,parameterization,H){
-
-  model   <- parameterization$model
-
-  u <- parameterization$u
-  v <- parameterization$v # determine thresholds (dimension nw x 1)
-  i.v.x <- matrix(v,ncol=1) %*% matrix(c(1i*x),nrow=1)
-
-  nw <- dim(i.v.x)[1]
-  q  <- dim(i.v.x)[2]
-
-  u2 <- matrix(0, nw, q)
-  u1 <- matrix(u, nw, q) + i.v.x
-
-  res_reverse <- reverse.MHLT(psi,
-                              u1 = u1,
-                              u2 = u2,
-                              H = H,
-                              psi.parameterization = model)
-  A <- res_reverse$A
-  B <- res_reverse$B
-  return(list(A=A,B=B))
-}
-
 varphi4G_SR_Gaussian <- function(x,parameterization,H){
 
   model   <- parameterization$model
@@ -321,21 +297,53 @@ varphi4G_SR_QPoisson <- function(x,parameterization,H){
   return(list(A=A,B=B))
 }
 
-compute_F_Shadow_affine <- function(W,psi,H,
-                                    parameterization,
-                                    xi0,xi1,
-                                    i_bar=0,
+varphi4G_SR <- function(x,psi,parameterization,H){
+  # This employs the (single-horizon) Laplace transform and
+  #    makes it suitable to be used by function compute_F_Shadow_affine.
+  # 'parameterization' is a list containing:
+  #     - a 'model' (second argument of the 'psi' function)
+  #     - XXXX
+
+  u <- parameterization$u
+  v <- parameterization$v # determine thresholds (dimension nw x 1)
+  i.v.x <- matrix(v,ncol=1) %*% matrix(c(1i*x),nrow=1)
+
+  nw <- dim(i.v.x)[1]
+  q  <- dim(i.v.x)[2]
+
+  u2 <- matrix(0, nw, q)
+  u1 <- matrix(u, nw, q) + i.v.x
+
+  res_reverse <- reverse.MHLT(psi,
+                              u1 = u1,
+                              u2 = u2,
+                              H = H,
+                              psi.parameterization =
+                                parameterization$psi.parameterization)
+  A <- res_reverse$A
+  B <- res_reverse$B
+  return(list(A=A,B=B))
+}
+
+compute_F_Shadow_affine <- function(W,psi,psi.parameterization,
+                                    ell_bar,b,a,c,
+                                    H,
                                     eps = 10^(-6), # to compute dG
                                     max_x = 2000,
                                     dx_statio = 1,
                                     min_dx = 1e-06,
                                     nb_x1 = 1000){
   # W is of dimension TT x n, where TT is the number of dates.
-  # parameterization is a list; it contains in particular "model". XXXXXXXXXXXXXXXXXXXX
 
   TT <- dim(W)[1] # number of dates.
 
   # Compute G0 and dG:
+
+  parameterization <- list(
+    psi.parameterization = psi.parameterization,
+    u = matrix(0*xi1,ncol=1),
+    v = matrix(1*xi1,ncol=1)
+  )
   res_truncated0 <- truncated.payoff(W,b.matrix = matrix(i_bar-xi0,H,1),
                                      varphi = varphi4G_SR_Gaussian,
                                      parameterization = parameterization,
