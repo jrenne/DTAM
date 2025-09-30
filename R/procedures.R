@@ -235,7 +235,7 @@ simul.VAR <- function (Model, nb.sim, x0 = NaN)
   return(X)
 }
 
-compute_expect_variance <- function(psi,model,du = 1e-08){
+compute_expect_variance <- function(psi,model,du = 1e-06){
   # This function computes the conditional and unconditional expectations and
   # varances of an affine process.
   # ----------------------------------------------------------------------------
@@ -260,8 +260,8 @@ compute_expect_variance <- function(psi,model,du = 1e-08){
 
   for(i in 1:n_w){
     u_plus_i <- matrix(0,model$n_w,1)
-    u_plus_i[i] <- du
     u_minu_i <- matrix(0,model$n_w,1)
+    u_plus_i[i] <- du
     u_minu_i[i] <- -du
     psi_plus_i <- psi(u_plus_i,model)
     psi_minu_i <- psi(u_minu_i,model)
@@ -288,6 +288,12 @@ compute_expect_variance <- function(psi,model,du = 1e-08){
       Theta1[n_w*(i-1)+j,]  <-
         (psi_plus_i_plus_j$a - psi_plus_i_minu_j$a - psi_minu_i_plus_j$a + psi_minu_i_minu_j$a)/
         (4*du^2)
+      # print(cbind(psi_plus_i_plus_j$a,
+      #             psi_plus_i_minu_j$a,
+      #             psi_minu_i_plus_j$a,
+      #             psi_minu_i_minu_j$a))
+      # print(psi_plus_i_plus_j$a - psi_plus_i_minu_j$a - psi_minu_i_plus_j$a + psi_minu_i_minu_j$a)
+      # return(0)
     }
   }
 

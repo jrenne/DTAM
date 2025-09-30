@@ -230,11 +230,15 @@ psi.VARG_Poisson <- function(u,psi.parameterization){
   # N_t^+ ~ Poisson(z_t^+) and N_t^- ~ Poisson(z_t^-),
   # where z_t = (z_t^+,z_t^-)' follows a bivariate VARG process.
 
+  u <- matrix(u,nrow=4)
   k <- dim(u)[2]
 
   v <- matrix(u[1:2,],nrow=2)
   u_plus  <- u[3,]
   u_minus <- u[4,]
+
+  # u_plus  <- 0
+  # u_minus <- 0
 
   v_star <- v
   v_star[1,] <- v[1,] + exp(u_plus)  - 1
@@ -244,7 +248,7 @@ psi.VARG_Poisson <- function(u,psi.parameterization){
 
   b <- res.VARG$b
   a <- rbind(res.VARG$a,
-             u_plus,u_minus)
+             .99999*u_plus,.99999*u_minus)
 
   return(list(a = a, b = b))
 }
@@ -297,63 +301,70 @@ varphi4G_SR_QPoisson <- function(x,parameterization,H){
   return(list(A=A,B=B))
 }
 
-varphi4G_SR <- function(x,psi,parameterization,H){
-  # This employs the (single-horizon) Laplace transform and
-  #    makes it suitable to be used by function compute_F_Shadow_affine.
-  # 'parameterization' is a list containing:
-  #     - a 'model' (second argument of the 'psi' function)
-  #     - XXXX
-
-  u <- parameterization$u
-  v <- parameterization$v # determine thresholds (dimension nw x 1)
-  i.v.x <- matrix(v,ncol=1) %*% matrix(c(1i*x),nrow=1)
-
-  nw <- dim(i.v.x)[1]
-  q  <- dim(i.v.x)[2]
-
-  u2 <- matrix(0, nw, q)
-  u1 <- matrix(u, nw, q) + i.v.x
-
-  res_reverse <- reverse.MHLT(psi,
-                              u1 = u1,
-                              u2 = u2,
-                              H = H,
-                              psi.parameterization =
-                                parameterization$psi.parameterization)
-  A <- res_reverse$A
-  B <- res_reverse$B
-  return(list(A=A,B=B))
-}
-
 compute_F_Shadow_affine <- function(W,psi,psi.parameterization,
                                     ell_bar,b,a,c,
                                     H,
                                     eps = 10^(-6), # to compute dG
                                     max_x = 2000,
-                                    dx_statio = 1,
+                                    dx_statio = 10,
                                     min_dx = 1e-06,
-                                    nb_x1 = 1000){
+                                    nb_x1 = 1000,
+                                    du = 1e-06 # To numerically compute Gamma0 and Gamma1 (cond. variance)
+                                    ){
   # W is of dimension TT x n, where TT is the number of dates.
+  # psi.parameterization contains the model specifications
 
   TT <- dim(W)[1] # number of dates.
+  vec1TT <- matrix(1,TT,1)
 
-  # Compute G0 and dG:
+  n_w <- dim(W)[2]
+  n_a <- length(a)
+  n_c <- length(c)
+  if((n_a != n_w)|(n_c != n_w)){
+    print("Error: a and c should be vectors of dimenson n_w x 1, and W a #dates x n_w matrix.")
+    return(1)
+  }
 
+  varphi <- function(x,parameterization,H){
+    # This function is used in truncated.payof
+
+    u <- parameterization$u
+    v <- parameterization$v # determine thresholds (dimension nw x 1)
+    i.v.x <- matrix(v,ncol=1) %*% matrix(c(1i*x),nrow=1)
+
+    nw <- dim(i.v.x)[1]
+    q  <- dim(i.v.x)[2]
+
+    u2 <- matrix(0, nw, q)
+    u1 <- matrix(u, nw, q) + i.v.x
+
+    res_reverse <- reverse.MHLT(psi,
+                                u1 = u1,
+                                u2 = u2,
+                                H = H,
+                                psi.parameterization =
+                                  parameterization$model)
+    A <- res_reverse$A
+    B <- res_reverse$B
+    return(list(A=A,B=B))
+  }
+
+  # Compute G0 and dG: ---------------------------------------------------------
   parameterization <- list(
-    psi.parameterization = psi.parameterization,
-    u = matrix(0*xi1,ncol=1),
-    v = matrix(1*xi1,ncol=1)
+    model = psi.parameterization,
+    u = matrix(0*a,ncol=1),
+    v = matrix(1*a,ncol=1)
   )
-  res_truncated0 <- truncated.payoff(W,b.matrix = matrix(i_bar-xi0,H,1),
-                                     varphi = varphi4G_SR_Gaussian,
+  res_truncated0 <- truncated.payoff(W,b.matrix = matrix(ell_bar-b,H,1),
+                                     varphi = varphi,
                                      parameterization = parameterization,
                                      max_x = max_x,
                                      dx_statio = dx_statio,
                                      min_dx = min_dx,
                                      nb_x1 = nb_x1)
   parameterization$u <- matrix(eps*xi1,ncol=1)
-  res_truncatedeps <- truncated.payoff(W,b.matrix = matrix(i_bar-xi0,H,1),
-                                       varphi = varphi4G_SR_Gaussian,
+  res_truncatedeps <- truncated.payoff(W,b.matrix = matrix(ell_bar-b,H,1),
+                                       varphi = varphi,
                                        parameterization = parameterization,
                                        max_x = max_x,
                                        dx_statio = dx_statio,
@@ -361,25 +372,57 @@ compute_F_Shadow_affine <- function(W,psi,psi.parameterization,
                                        nb_x1 = nb_x1)
   G0   <- matrix(res_truncated0,nrow=TT)
   Geps <- matrix(res_truncatedeps,nrow=TT)
-
   dG <- (Geps - G0)/eps
+  # ----------------------------------------------------------------------------
 
-  model$n_w <- 2
-  model <- XXXX
-  res_EV <- compute_expect_variance_H(compute_expect_variance(psi,model),
-                                      theta1 = t(xi1),theta2 = t(0*xi1),H = H)
+  psi.parameterization$n_w <- n_w # this is required in 'compute_expect_variance'
+  res_EV <- compute_expect_variance(psi,psi.parameterization,du = du)
 
-  C0 <- matrix(res_EV$all_C0,nrow=1)
-  C1 <- matrix(res_EV$all_C1,ncol=H)
+  # Compute E_t(a'w_{t+n}): ----------------------------------------------------
+  res_EV_0a <- compute_expect_variance_H(res_EV,
+                                         theta1 = t(a),theta2 = t(0*a),H = H)
+  C0 <- matrix(res_EV_0a$all_C0,nrow=1)
+  C1 <- matrix(res_EV_0a$all_C1,ncol=H)
   E_aW <- matrix(1,TT,1) %*% C0 + W %*% C1
 
-  res_EV2 <- compute_expect_variance_H(compute_expect_variance(psi,model),
-                                       theta1 = t(xi1),theta2 = t(xi1),H = H)
-  delta_sigma2 <- c(res_EV2$all_Gamma0) - c(0,c(res_EV2$all_Gamma0)[1:(H-1)])
+  # Compute E_t(c'w_{t+n}): ----------------------------------------------------
+  res_EV_0c <- compute_expect_variance_H(res_EV,
+                                         theta1 = t(c),theta2 = t(0*c),H = H)
+  C0 <- matrix(res_EV_0c$all_C0,nrow=1)
+  C1 <- matrix(res_EV_0c$all_C1,ncol=H)
+  E_cW <- matrix(1,TT,1) %*% C0 + W %*% C1
 
-  F <- xi0*(1 - G0) + E_aW - dG - 1/2*(1-G0)*t(matrix(delta_sigma2,H,TT))
+  # Compute sigma2_n(c-a,w_{t}): -----------------------------------------------
+  res_EV_c_a <- compute_expect_variance_H(res_EV,
+                                          theta1 = t(c-a),theta2 = t(c-a),H = H)
+  sigma2_c_a <- vec1TT %*% matrix(res_EV_c_a$all_Gamma0,nrow=1) +
+    W %*% matrix(res_EV_c_a$all_Gamma1,n_w,H)
 
-  return(F)
+  # Compute sigma2_n(c,w_{t}): -----------------------------------------------
+  res_EV_cc <- compute_expect_variance_H(res_EV,
+                                          theta1 = t(c),theta2 = t(c),H = H)
+  sigma2_cc <- vec1TT %*% matrix(res_EV_cc$all_Gamma0,nrow=1) +
+    W %*% matrix(res_EV_cc$all_Gamma1,n_w,H)
+
+  delta_sigma2_c_a <- sigma2_c_a - cbind(0,sigma2_c_a[,1:(H-1)])
+  delta_sigma2_cc  <- sigma2_cc  - cbind(0,sigma2_cc[,1:(H-1)])
+
+  # Combine all sub-results to compute F:
+  F <- b*(1 - G0) + E_aW - E_cW - dG +
+    (-1/2*(1-G0)*delta_sigma2_c_a) +
+    (-1/2*G0*delta_sigma2_cc)
+
+  aux <- (-1/2*(1-G0)*delta_sigma2_c_a)
+
+  return(list(F=F,
+              E_aW=E_aW,E_cW=E_cW,
+              delta_sigma2_c_a=delta_sigma2_c_a,
+              delta_sigma2_cc=delta_sigma2_cc,
+              G0=G0,dG=dG,
+              res_EV_c_a=res_EV_c_a,
+              sigma2_c_a = sigma2_c_a,
+              aux = aux,
+              res_EV=res_EV))
 }
 
 

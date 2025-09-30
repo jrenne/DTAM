@@ -121,7 +121,7 @@
 #                                    varphi = varphi4G_SR_Gaussian,
 #                                    parameterization = parameterization,
 #                                    max_x = 2000,
-#                                    dx_statio = 1,
+#                                    dx_statio = 10,
 #                                    min_dx = 1e-06,
 #                                    nb_x1 = 1000)
 # eps <- 10^(-6)
@@ -130,7 +130,7 @@
 #                                      varphi = varphi4G_SR_Gaussian,
 #                                      parameterization = parameterization,
 #                                      max_x = 2000,
-#                                      dx_statio = 1,
+#                                      dx_statio = 10,
 #                                      min_dx = 1e-06,
 #                                      nb_x1 = 1000)
 # G0   <- matrix(res_truncated0,nrow=TT)
@@ -212,6 +212,21 @@
 # lines(F_lemma[,h],col="red")
 # lines(F_lemma_bis[,h],col="blue")
 #
+# F_affine <- compute_F_Shadow_affine(W=simX,psi.GaussianVAR,
+#                                     psi.parameterization=model,
+#                                     ell_bar=i_bar,b=xi0,a=xi1,c=0*xi1,
+#                                     H,
+#                                     eps = 10^(-6), # to compute dG
+#                                     max_x = 2000,
+#                                     dx_statio = 10,
+#                                     min_dx = 1e-06,
+#                                     nb_x1 = 1000)
+# lines(F_affine$F[,h],col="green")
+#
+# # plot(F_affine$E_cW[,10])
+# # lines(E_aW[,10])
+#
+#
 # stop()
 #
 # model <- (list(
@@ -258,7 +273,7 @@
 #
 # model$n_w <- 4 # number of factors.
 #
-# H <- 200
+# H <- 100
 #
 # res <- compute_AB_classical(xi0, xi1, kappa0 = NaN, kappa1 = NaN,
 #                             H=H, psi=psi.VARG_Poisson,
@@ -267,6 +282,19 @@
 # yields <- matrix(1,TT,1) %*% matrix(res$b,nrow=1) +
 #   W %*% matrix(res$a,dim(res$a)[1],dim(res$a)[3])
 #
-# t <- 40
+# t <- 200
 # lines((t+1):(t+H),yields[t,],col="red",lwd=2)
 #
+# HH <- 100
+# F_affine <- compute_F_Shadow_affine(W=W,psi.VARG_Poisson,
+#                                     psi.parameterization=model,
+#                                     ell_bar=i_bar,b=xi0,a=xi1,c=0*xi1,
+#                                     H=HH,
+#                                     eps = 10^(-6), # to compute dG
+#                                     max_x = 2000,
+#                                     dx_statio = 10,
+#                                     min_dx = 1e-06,
+#                                     nb_x1 = 1000)
+# lines((t+1):(t+H),F_affine$F[t,],col="blue")
+#
+# plot(F_affine$delta_sigma2_c_a[,100],type="l")
