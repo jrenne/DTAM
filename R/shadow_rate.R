@@ -94,16 +94,16 @@ compute_F_Shadow_Gaussian <- function(W,model,ell_bar,b,a,c,H){
   all_nu_n_c         <- Phi_aux_s + phi_aux_s_bar
 
   return(list(F_c_equal_0 = F_c_equal_0,
-              F_c         = F_c,
-              all_a_n     = all_a_n,
-              all_c_n     = all_c_n,
-              all_nu_n_c         = all_nu_n_c,
-              all_nu_n_c_equal_0 = all_nu_n_c_equal_0,
-              ptn = Phi_aux_s_bar,
-              all_b_bar_n = all_b_bar_n,
-              all_b_n = all_b_n,
-              all_sigma_n = all_sigma_n,
-              all_a_n = all_a_n))
+              F = F_c
+              # all_a_n     = all_a_n,
+              # all_c_n     = all_c_n,
+              # all_nu_n_c         = all_nu_n_c,
+              # all_nu_n_c_equal_0 = all_nu_n_c_equal_0,
+              # ptn = Phi_aux_s_bar,
+              # all_b_bar_n = all_b_bar_n,
+              # all_b_n = all_b_n,
+              # all_sigma_n = all_sigma_n,
+              ))
 }
 
 psi.QPoisson <- function(u,psi.parameterization){
