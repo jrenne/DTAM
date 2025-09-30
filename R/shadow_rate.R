@@ -103,7 +103,7 @@ compute_F_Shadow_Gaussian <- function(W,model,ell_bar,b,a,c,H){
               # all_b_bar_n = all_b_bar_n,
               # all_b_n = all_b_n,
               # all_sigma_n = all_sigma_n,
-              ))
+  ))
 }
 
 psi.QPoisson <- function(u,psi.parameterization){
@@ -235,7 +235,7 @@ compute_F_Shadow_affine <- function(W,psi,psi.parameterization,
                                     nb_x1 = 1000,
                                     du = 1e-06 # To numerically compute Gamma0
                                     #            and Gamma1 (condit. variance)
-                                    ){
+){
   # W is of dimension TT x n, where TT is the number of dates.
   # psi.parameterization contains the model specifications
 
@@ -325,19 +325,30 @@ compute_F_Shadow_affine <- function(W,psi,psi.parameterization,
 
   # Compute sigma2_n(c,w_{t}): -----------------------------------------------
   res_EV_cc <- compute_expect_variance_H(res_EV,
-                                          theta1 = t(c),theta2 = t(c),H = H)
+                                         theta1 = t(c),theta2 = t(c),H = H)
   sigma2_cc <- vec1TT %*% matrix(res_EV_cc$all_Gamma0,nrow=1) +
     W %*% matrix(res_EV_cc$all_Gamma1,n_w,H)
 
+  # Compute sigma2_n(a,w_{t}): -----------------------------------------------
+  res_EV_aa <- compute_expect_variance_H(res_EV,
+                                         theta1 = t(a),theta2 = t(a),H = H)
+  sigma2_aa <- vec1TT %*% matrix(res_EV_aa$all_Gamma0,nrow=1) +
+    W %*% matrix(res_EV_aa$all_Gamma1,n_w,H)
+
   delta_sigma2_c_a <- sigma2_c_a - cbind(0,sigma2_c_a[,1:(H-1)])
   delta_sigma2_cc  <- sigma2_cc  - cbind(0,sigma2_cc[,1:(H-1)])
+  delta_sigma2_aa  <- sigma2_aa  - cbind(0,sigma2_aa[,1:(H-1)])
 
   # Combine all sub-results to compute F:
-  F <- b*(1 - G0) + E_aW - E_cW - dG +
+  F_c <- b*(1 - G0) + E_aW - E_cW - dG +
     (-1/2*(1-G0)*delta_sigma2_c_a) +
     (-1/2*G0*delta_sigma2_cc)
 
-  return(F)
+  F_c_equal_0 <- b*(1 - G0) + E_aW - dG +
+    (-1/2*(1-G0)*delta_sigma2_aa)
+
+  return(list(F_c_equal_0 = F_c_equal_0,
+              F = F_c))
 }
 
 
