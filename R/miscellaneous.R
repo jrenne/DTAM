@@ -160,6 +160,8 @@ simul.GVAR <- function(model,nb.sim,x0=NaN){
 
   if(is.null(model$Sigma12)){
     Sigma12 <- t(chol(model$Sigma))
+  }else{
+    Sigma12 <- model$Sigma12
   }
 
   X <- c(x0)
