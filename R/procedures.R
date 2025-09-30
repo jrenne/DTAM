@@ -20,7 +20,7 @@ reverse.MHLT <- function(psi,u1,u2=NaN,H,psi.parameterization){
   for(i in 1:H){
     if(i==1){u <- u1}else{u <- u2}
     psi.u <- psi(u + A.h_1,psi.parameterization)
-    A.h <- psi.u$a
+    A.h <- matrix(psi.u$a,n,k)
     B.h <- psi.u$b + B.h_1
     # save results
     A[,,i] <- A.h
@@ -46,7 +46,12 @@ psi.GaussianVAR <- function(u,psi.parameterization){
   Phi   <- psi.parameterization$Phi
   Sigma <- psi.parameterization$Sigma
   a <- t(Phi) %*% u
-  b <- t(u) %*% mu + .5 * t(apply(u,2,function(x){x %x% x})) %*% c(Sigma)
+  if(dim(u)[1]==1){
+    aux <- matrix(apply(u,2,function(x){x %x% x}),ncol=1)
+  }else{
+    aux <- t(apply(u,2,function(x){x %x% x}))
+  }
+  b <- t(u) %*% mu + .5 * aux %*% c(Sigma)
   return(list(a=a,b=b))
 }
 # # Check:
