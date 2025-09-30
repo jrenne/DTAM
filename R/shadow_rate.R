@@ -1,9 +1,10 @@
 
-compute_F_Shadow_Gaussian <- function(W,model,ell_bar,b,a,c,H){
+compute_F_Shadow_Gaussian <-
+  function(W,psi.parameterization,ell_bar,b,a,c,H){
 
-  mu    <- model$mu
-  Phi   <- model$Phi
-  Sigma <- model$Sigma # Covariance matrix
+  mu    <- psi.parameterization$mu
+  Phi   <- psi.parameterization$Phi
+  Sigma <- psi.parameterization$Sigma # Covariance matrix
 
   g <- function(x){
     return(x * pnorm(x) + dnorm(x))
