@@ -309,7 +309,8 @@ compute_F_Shadow_affine <- function(W,psi,psi.parameterization,
                                     dx_statio = 10,
                                     min_dx = 1e-06,
                                     nb_x1 = 1000,
-                                    du = 1e-06 # To numerically compute Gamma0 and Gamma1 (cond. variance)
+                                    du = 1e-06 # To numerically compute Gamma0
+                                    #            and Gamma1 (condit. variance)
                                     ){
   # W is of dimension TT x n, where TT is the number of dates.
   # psi.parameterization contains the model specifications
@@ -412,17 +413,7 @@ compute_F_Shadow_affine <- function(W,psi,psi.parameterization,
     (-1/2*(1-G0)*delta_sigma2_c_a) +
     (-1/2*G0*delta_sigma2_cc)
 
-  aux <- (-1/2*(1-G0)*delta_sigma2_c_a)
-
-  return(list(F=F,
-              E_aW=E_aW,E_cW=E_cW,
-              delta_sigma2_c_a=delta_sigma2_c_a,
-              delta_sigma2_cc=delta_sigma2_cc,
-              G0=G0,dG=dG,
-              res_EV_c_a=res_EV_c_a,
-              sigma2_c_a = sigma2_c_a,
-              aux = aux,
-              res_EV=res_EV))
+  return(F)
 }
 
 
