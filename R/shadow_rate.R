@@ -222,7 +222,8 @@ varphi4G_SR_QPoisson <- function(x,parameterization,H){
 }
 
 compute_F_Shadow_affine <- function(W,psi,psi.parameterization,
-                                    ell_bar,b,a,c,
+                                    ell_bar=0,
+                                    b,a,c,
                                     H,
                                     eps = 10^(-6), # to compute dG
                                     max_x = 2000,
@@ -283,7 +284,7 @@ compute_F_Shadow_affine <- function(W,psi,psi.parameterization,
                                      dx_statio = dx_statio,
                                      min_dx = min_dx,
                                      nb_x1 = nb_x1)
-  parameterization$u <- matrix(eps*xi1,ncol=1)
+  parameterization$u <- matrix(eps*a,ncol=1)
   res_truncatedeps <- truncated.payoff(W,b.matrix = matrix(ell_bar-b,H,1),
                                        varphi = varphi,
                                        parameterization = parameterization,
