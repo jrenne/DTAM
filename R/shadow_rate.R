@@ -1,26 +1,29 @@
 
-apply_Lemma <- function(mu,Phi,Sigma,i_bar,b,a,c,X,max_h){
+compute_F_Shadow_Gaussian <- function(W,model,ell_bar,b,a,c,H){
+
+  mu    <- model$mu
+  Phi   <- model$Phi
+  Sigma <- model$Sigma # Covariance matrix
 
   g <- function(x){
     return(x * pnorm(x) + dnorm(x))
   }
 
   n_x <- dim(Phi)[1] # number of states variables
-  T <- dim(X)[1] # number of dates
+  T <- dim(W)[1] # number of dates
 
-  SS    <- Sigma %*% t(Sigma)
-  vecSS <- matrix(SS,ncol=1)
+  vecSS <- matrix(Sigma,ncol=1)
 
   # Initialization -------------------------------------------------------------
-  all_b_n         <- matrix(0,max_h,1)
-  all_b_bar_n     <- matrix(0,max_h,1)
-  all_a_n         <- matrix(0,max_h,n_x)
-  all_c_dot_n     <- matrix(0,max_h,1)
-  all_c_n         <- matrix(0,max_h,n_x)
-  all_sigma_n     <- matrix(0,max_h,1)
+  all_b_n         <- matrix(0,H,1)
+  all_b_bar_n     <- matrix(0,H,1)
+  all_a_n         <- matrix(0,H,n_x)
+  all_c_dot_n     <- matrix(0,H,1)
+  all_c_n         <- matrix(0,H,n_x)
+  all_sigma_n     <- matrix(0,H,1)
 
-  all_a_tilde_n   <- matrix(0,max_h,n_x)
-  all_c_tilde_n   <- matrix(0,max_h,n_x)
+  all_a_tilde_n   <- matrix(0,H,n_x)
+  all_c_tilde_n   <- matrix(0,H,n_x)
 
   # n = 1:
   Phi_low_n_1  <- matrix(0,n_x,n_x)
@@ -29,16 +32,16 @@ apply_Lemma <- function(mu,Phi,Sigma,i_bar,b,a,c,X,max_h){
 
   # Loop on maturities ---------------------------------------------------------
 
-  for(i in 1:max_h){
+  for(i in 1:H){
 
     Phi_low_n <- Phi_low_n_1 + Phi_exp_n_1
     Phi_exp_n <- Phi %*% Phi_exp_n_1
 
-    sigma2_n <- sigma2_n_1 + t(a) %*% Phi_exp_n_1 %*% SS %*% t(Phi_exp_n_1) %*% a
+    sigma2_n <- sigma2_n_1 + t(a) %*% Phi_exp_n_1 %*% Sigma %*% t(Phi_exp_n_1) %*% a
 
     b_bar_n <- b + t(a) %*% Phi_low_n %*% mu
-    b_n     <- b_bar_n - .5 * t(a) %*% Phi_low_n %*% SS %*% t(Phi_low_n) %*% a
-    c_dot_n <- t(c) %*% Phi_low_n %*% mu + .5 * t(c) %*% Phi_low_n %*% SS %*% t(Phi_low_n) %*% c
+    b_n     <- b_bar_n - .5 * t(a) %*% Phi_low_n %*% Sigma %*% t(Phi_low_n) %*% a
+    c_dot_n <- t(c) %*% Phi_low_n %*% mu + .5 * t(c) %*% Phi_low_n %*% Sigma %*% t(Phi_low_n) %*% c
 
     # Store results:
     all_b_n[i]     <- b_n
@@ -57,24 +60,24 @@ apply_Lemma <- function(mu,Phi,Sigma,i_bar,b,a,c,X,max_h){
     sigma2_n_1  <- sigma2_n
   }
 
-  vec1N <- matrix(1,max_h,1)
+  vec1N <- matrix(1,H,1)
   vec1T <- matrix(1,T,1)
   vec1x <- matrix(1,n_x,1)
 
-  aux_an_bnX    <- vec1T %*% t(all_b_n)     + X %*% t(all_a_n) - i_bar
-  aux_abarn_bnX <- vec1T %*% t(all_b_bar_n) + X %*% t(all_a_n) - i_bar
-  aux_s     <- aux_an_bnX    / (vec1T %*% t(all_sigma_n))
-  aux_s_bar <- aux_abarn_bnX / (vec1T %*% t(all_sigma_n))
+  aux_an_bnW    <- vec1T %*% t(all_b_n)     + W %*% t(all_a_n) - ell_bar
+  aux_abarn_bnW <- vec1T %*% t(all_b_bar_n) + W %*% t(all_a_n) - ell_bar
+  aux_s     <- aux_an_bnW    / (vec1T %*% t(all_sigma_n))
+  aux_s_bar <- aux_abarn_bnW / (vec1T %*% t(all_sigma_n))
 
   aux_sigma <- vec1T %*% t(all_sigma_n)
-  aux_pi    <- vec1T %*% t(all_c_dot_n) + X %*% t(all_c_n)
+  aux_pi    <- vec1T %*% t(all_c_dot_n) + W %*% t(all_c_n)
 
   aux_SS <- (all_a_tilde_n %x% t(vec1x)) * (t(vec1x) %x% all_c_tilde_n) * (vec1N %*% t(vecSS))
   aux_SS <- apply(aux_SS,1,sum)
 
-  F_c_equal_0                <- i_bar + aux_sigma * g(aux_s)
+  F_c_equal_0                <- ell_bar + aux_sigma * g(aux_s)
   indic_sigma0               <- which(all_sigma_n==0)
-  F_c_equal_0[,indic_sigma0] <- i_bar + pmax(aux_an_bnX[,indic_sigma0], 0)
+  F_c_equal_0[,indic_sigma0] <- ell_bar + pmax(aux_an_bnW[,indic_sigma0], 0)
 
   Phi_aux_s_bar <- pnorm(aux_s_bar)
   Phi_aux_s_bar[,indic_sigma0] <- 1 * (Phi_aux_s_bar[,indic_sigma0]>0)
