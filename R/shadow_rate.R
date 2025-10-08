@@ -369,7 +369,7 @@ compute_F_Shadow_affine <- function(W,psi,psi.parameterization,
   delta_sigma2_aa  <- sigma2_aa  - cbind(0,sigma2_aa[,1:(H-1)])
 
   # Combine all sub-results to compute F:
-  F_c <- b*(1 - G0) + E_aW - E_cW - dG +
+  F_c <- - chi*b*(1 - G0) - chi*E_aW - E_cW + chi*dG +
     (-1/2*(1-G0)*delta_sigma2_c_a) +
     (-1/2*G0*delta_sigma2_cc)
 
