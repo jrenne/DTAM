@@ -177,6 +177,34 @@ psi.VARG_Poisson <- function(u,psi.parameterization){
   return(list(a = a, b = b))
 }
 
+psi.AR_CH <- function(u,psi.parameterization){
+  # Laplace transform of a process defined as follows:
+  # s_t = mu + phi·s_{t+1} + sqrt(z_t)·eps_t, with eps_t ~ N(0,1) and
+  # z_t ARG(nu,beta,mu_z)
+
+  mu  <- psi.parameterization$mu
+  phi <- psi.parameterization$phi
+
+  nu   <- psi.parameterization$nu
+  mu_z <- psi.parameterization$mu_z
+  beta <- psi.parameterization$beta
+
+  u <- matrix(u,nrow=2)
+  k <- dim(u)[2]
+
+  u_s <- u[1,]
+  u_z <- u[2,]
+
+  u_z_tilde <- u_z + u_s^2/2
+
+  b <- u_s*mu - nu*log(1 - mu_z*u_z_tilde)
+  a <- matrix(NaN,2,k)
+  a[1,] <- u_s * phi
+  a[2,] <- beta*mu_z*u_z_tilde/(1 - mu_z*u_z_tilde)
+
+  return(list(a = a, b = b))
+}
+
 varphi4G_SR_Gaussian <- function(x,parameterization,H){
 
   model   <- parameterization$model
@@ -227,7 +255,7 @@ varphi4G_SR_QPoisson <- function(x,parameterization,H){
 
 compute_F_Shadow_affine <- function(W,psi,psi.parameterization,
                                     ell_bar=0,
-                                    b,a,c,
+                                    b,a,c,chi=-1,
                                     H,
                                     eps = 10^(-6), # to compute dG
                                     max_x = 2000,
@@ -320,7 +348,7 @@ compute_F_Shadow_affine <- function(W,psi,psi.parameterization,
 
   # Compute sigma2_n(c-a,w_{t}): -----------------------------------------------
   res_EV_c_a <- compute_expect_variance_H(res_EV,
-                                          theta1 = t(c-a),theta2 = t(c-a),H = H)
+                                          theta1 = t(c+chi*a),theta2 = t(c+chi*a),H = H)
   sigma2_c_a <- vec1TT %*% matrix(res_EV_c_a$all_Gamma0,nrow=1) +
     W %*% matrix(res_EV_c_a$all_Gamma1,n_w,H)
 
@@ -345,7 +373,7 @@ compute_F_Shadow_affine <- function(W,psi,psi.parameterization,
     (-1/2*(1-G0)*delta_sigma2_c_a) +
     (-1/2*G0*delta_sigma2_cc)
 
-  F_c_equal_0 <- b*(1 - G0) + E_aW - dG +
+  F_c_equal_0 <- - chi*b*(1 - G0) - chi*E_aW + chi*dG +
     (-1/2*(1-G0)*delta_sigma2_aa)
 
   return(list(F_c_equal_0 = F_c_equal_0,
