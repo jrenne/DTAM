@@ -75,7 +75,7 @@ psi.GaussianVAR <- function(u,psi.parameterization){
 
 
 
-simul.ARG <- function(nb.sim,mu,nu,rho,alpha=0,w0=NaN){
+simul.ARG_OLD <- function(nb.sim,mu,nu,rho,alpha=0,w0=NaN){
   # This function simulates an ARG or an ARG0 process
 
   unc.mean <- (alpha + nu) * mu/(1-rho)
@@ -94,6 +94,30 @@ simul.ARG <- function(nb.sim,mu,nu,rho,alpha=0,w0=NaN){
   }
   return(W)
 }
+
+simul.ARG <- function(nb.sim,mu,nu,rho,alpha=0,w0=NaN,nb.replic=1){
+  # This function simulates an ARG or an ARG0 process
+  # If nb.replic>1, then we simulate several paths in parallel
+
+  unc.mean <- (alpha + nu) * mu/(1-rho)
+  # set starting point:
+  if(is.na(w0)){
+    w_0 <- unc.mean
+  }else{
+    w_0 <- w0
+  }
+
+  W <- matrix(NaN,nb.sim,nb.replic)
+  W[1,] <- w_0
+  w <- w_0
+  for(t in 2:nb.sim){
+    z <- rpois(nb.replic,rho*w/mu + alpha)
+    w <- mu * rgamma(nb.replic,shape=nu+z)
+    W[t,] <- w
+  }
+  return(W)
+}
+
 
 simul.compound.poisson <- function(nb.sim,Gamma,Pi,lambda,w0=NaN){
   # This function simulates a compound Poisson process

@@ -152,7 +152,7 @@ compute_Gaussian_fast <- function(model,Maturities_decompo){
 # t(u) %*% mu_h + (t(u) %*% Sigma_h %*% u)/2
 # t(u) %*% Phi_h
 
-simul.GVAR <- function(model,nb.sim,x0=NaN){
+simul.GVAR_OLD <- function(model,nb.sim,x0=NaN){
   n <- dim(model$Phi)[1]
   if(is.na(x0[1])){
     x0 <- solve(diag(n) - model$Phi) %*% model$mu
@@ -169,6 +169,42 @@ simul.GVAR <- function(model,nb.sim,x0=NaN){
   for(t in 2:nb.sim){
     x <- model$mu + model$Phi %*% x + Sigma12 %*% rnorm(dim(Sigma12)[2])
     X <- rbind(X,c(x))
+  }
+  return(X)
+}
+
+simul.GVAR <- function(model,nb.sim,x0=NaN,nb.replic=1){
+  # Simulate a Gaussian VAR model.
+  # If nb.replic > 1, simluate several processes of length nb.sim in parallel;
+  #.    the output matrix then is an array (three dimensions).
+
+  n <- dim(model$Phi)[1]
+  if(is.na(x0[1])){
+    x0 <- solve(diag(n) - model$Phi) %*% model$mu
+  }
+
+  if(is.null(model$Sigma12)){
+    Sigma12 <- t(chol(model$Sigma))
+  }else{
+    Sigma12 <- model$Sigma12
+  }
+
+  if(nb.replic==1){
+    X <- c(x0)
+    x <- x0
+    for(t in 2:nb.sim){
+      x <- model$mu + model$Phi %*% x + Sigma12 %*% rnorm(dim(Sigma12)[2])
+      X <- rbind(X,c(x))
+    }
+  }else{
+    # In that case, we simulate nb.replic paths in parallel
+    X <- array(NaN,c(nb.sim,n,nb.replic))
+    X[1,,] <- x0
+    x <- matrix(x0,n,nb.replic)
+    for(t in 2:nb.sim){
+      x <- matrix(model$mu,n,nb.replic) + model$Phi %*% x + Sigma12 %*% matrix(rnorm(dim(Sigma12)[2]*nb.replic),dim(Sigma12)[2],nb.replic)
+      X[t,,] <- x
+    }
   }
   return(X)
 }
