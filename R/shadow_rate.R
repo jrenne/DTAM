@@ -1,111 +1,129 @@
 
 compute_F_Shadow_Gaussian <-
-  function(W,psi.parameterization,ell_bar,b,a,c,H){
+  function(W,psi.parameterization,ell_bar,b,a,c,H,
+           indic_WuXia=TRUE){
+    # When indic_WuXia is TRUE, then the formula uses
+    #      |b_bar_n - b_n|/sigma_n << 1.
 
-  mu    <- psi.parameterization$mu
-  Phi   <- psi.parameterization$Phi
-  Sigma <- psi.parameterization$Sigma # Covariance matrix
+    mu    <- psi.parameterization$mu
+    Phi   <- psi.parameterization$Phi
+    Sigma <- psi.parameterization$Sigma # Covariance matrix
 
-  g <- function(x){
-    return(x * pnorm(x) + dnorm(x))
+    g <- function(x){
+      return(x * pnorm(x) + dnorm(x))
+    }
+
+    n_x <- dim(Phi)[1] # number of states variables
+    T <- dim(W)[1] # number of dates
+
+    vecSS <- matrix(Sigma,ncol=1)
+
+    # Initialization -------------------------------------------------------------
+    all_b_n         <- matrix(0,H,1)
+    all_b_bar_n     <- matrix(0,H,1)
+    all_a_n         <- matrix(0,H,n_x)
+    all_c_dot_n     <- matrix(0,H,1)
+    all_c_n         <- matrix(0,H,n_x)
+    all_sigma_n     <- matrix(0,H,1)
+
+    all_a_tilde_n   <- matrix(0,H,n_x)
+    all_c_tilde_n   <- matrix(0,H,n_x)
+
+    # n = 1:
+    Phi_low_n_1  <- matrix(0,n_x,n_x)
+    Phi_exp_n_1  <- diag(n_x)
+    sigma2_n_1 <- 0
+
+    # Loop on maturities ---------------------------------------------------------
+
+    for(i in 1:H){
+
+      Phi_low_n <- Phi_low_n_1 + Phi_exp_n_1
+      Phi_exp_n <- Phi %*% Phi_exp_n_1
+
+      sigma2_n <- sigma2_n_1 + t(a) %*% Phi_exp_n_1 %*% Sigma %*% t(Phi_exp_n_1) %*% a
+
+      b_bar_n <- b + t(a) %*% Phi_low_n %*% mu
+      b_n     <- b_bar_n - .5 * t(a) %*% Phi_low_n %*% Sigma %*% t(Phi_low_n) %*% a
+      c_dot_n <- t(c) %*% Phi_low_n %*% mu + .5 * t(c) %*% Phi_low_n %*% Sigma %*% t(Phi_low_n) %*% c
+
+      # Store results:
+      all_b_n[i]     <- b_n
+      all_b_bar_n[i] <- b_bar_n
+      all_a_n[i,]    <- t(Phi_exp_n) %*% a
+      all_c_dot_n[i] <- c_dot_n
+      all_c_n[i,]    <- t(Phi_exp_n) %*% c
+      all_sigma_n[i] <- sqrt(sigma2_n)
+
+      all_a_tilde_n[i,] <- t(Phi_low_n) %*% a
+      all_c_tilde_n[i,] <- t(Phi_low_n) %*% c
+
+      # For next iteration:
+      Phi_low_n_1 <- Phi_low_n
+      Phi_exp_n_1 <- Phi_exp_n
+      sigma2_n_1  <- sigma2_n
+    }
+
+    vec1N <- matrix(1,H,1)
+    vec1T <- matrix(1,T,1)
+    vec1x <- matrix(1,n_x,1)
+
+    aux_an_bnW    <- vec1T %*% t(all_b_n)     + W %*% t(all_a_n) - ell_bar
+    aux_abarn_bnW <- vec1T %*% t(all_b_bar_n) + W %*% t(all_a_n) - ell_bar
+    aux_s     <- aux_an_bnW    / (vec1T %*% t(all_sigma_n))
+    aux_s_bar <- aux_abarn_bnW / (vec1T %*% t(all_sigma_n))
+
+    aux_sigma <- vec1T %*% t(all_sigma_n)
+    aux_pi    <- vec1T %*% t(all_c_dot_n) + W %*% t(all_c_n)
+
+    if(indic_WuXia){
+      F_c_equal_0                <- ell_bar + aux_sigma * g(aux_s)
+      indic_sigma0               <- which(all_sigma_n==0)
+      F_c_equal_0[,indic_sigma0] <- ell_bar + pmax(aux_an_bnW[,indic_sigma0], 0)
+
+      Phi_aux_s_bar <- pnorm(aux_s_bar)
+      Phi_aux_s_bar[,indic_sigma0] <- 1 * (Phi_aux_s_bar[,indic_sigma0]>0)
+
+      aux_SS <- (all_a_tilde_n %x% t(vec1x)) * (t(vec1x) %x% all_c_tilde_n) * (vec1N %*% t(vecSS))
+      aux_SS <- apply(aux_SS,1,sum)
+
+      F_c <- F_c_equal_0 - aux_pi + Phi_aux_s_bar * (vec1T %*% t(aux_SS))
+    }else{
+      # In that case, we do not use |b_bar_n - b_n|/sigma_n << 1
+      F_c_equal_0                <- ell_bar + aux_sigma * g(aux_s_bar)
+      indic_sigma0               <- which(all_sigma_n==0)
+      F_c_equal_0[,indic_sigma0] <- ell_bar + pmax(aux_abarn_bnW[,indic_sigma0], 0)
+
+      Phi_aux_s_bar <- pnorm(aux_s_bar)
+      Phi_aux_s_bar[,indic_sigma0] <- 1 * (Phi_aux_s_bar[,indic_sigma0]>0)
+
+      aux_SS <- (all_a_tilde_n %x% t(vec1x)) * (t(vec1x) %x% (all_c_tilde_n - .5*all_a_tilde_n)) * (vec1N %*% t(vecSS))
+      aux_SS <- apply(aux_SS,1,sum)
+
+      F_c <- F_c_equal_0 - aux_pi + Phi_aux_s_bar * (vec1T %*% t(aux_SS))
+    }
+
+    Phi_aux_s <- pnorm(aux_s)
+    Phi_aux_s[,indic_sigma0] <- 1 * (Phi_aux_s[,indic_sigma0]>0)
+
+    phi_aux_s_bar <- dnorm(aux_s_bar) * (vec1T %*% t(aux_SS/all_sigma_n))
+    phi_aux_s_bar[,indic_sigma0] <- 0
+
+    all_nu_n_c_equal_0 <- Phi_aux_s
+    all_nu_n_c         <- Phi_aux_s + phi_aux_s_bar
+
+    return(list(F_c_equal_0 = F_c_equal_0,
+                F = F_c,
+                # all_a_n     = all_a_n,
+                # all_c_n     = all_c_n,
+                # all_nu_n_c         = all_nu_n_c,
+                # all_nu_n_c_equal_0 = all_nu_n_c_equal_0,
+                # ptn = Phi_aux_s_bar,
+                all_b_bar_n = all_b_bar_n,
+                all_b_n = all_b_n,
+                all_sigma_n = all_sigma_n
+    ))
   }
-
-  n_x <- dim(Phi)[1] # number of states variables
-  T <- dim(W)[1] # number of dates
-
-  vecSS <- matrix(Sigma,ncol=1)
-
-  # Initialization -------------------------------------------------------------
-  all_b_n         <- matrix(0,H,1)
-  all_b_bar_n     <- matrix(0,H,1)
-  all_a_n         <- matrix(0,H,n_x)
-  all_c_dot_n     <- matrix(0,H,1)
-  all_c_n         <- matrix(0,H,n_x)
-  all_sigma_n     <- matrix(0,H,1)
-
-  all_a_tilde_n   <- matrix(0,H,n_x)
-  all_c_tilde_n   <- matrix(0,H,n_x)
-
-  # n = 1:
-  Phi_low_n_1  <- matrix(0,n_x,n_x)
-  Phi_exp_n_1  <- diag(n_x)
-  sigma2_n_1 <- 0
-
-  # Loop on maturities ---------------------------------------------------------
-
-  for(i in 1:H){
-
-    Phi_low_n <- Phi_low_n_1 + Phi_exp_n_1
-    Phi_exp_n <- Phi %*% Phi_exp_n_1
-
-    sigma2_n <- sigma2_n_1 + t(a) %*% Phi_exp_n_1 %*% Sigma %*% t(Phi_exp_n_1) %*% a
-
-    b_bar_n <- b + t(a) %*% Phi_low_n %*% mu
-    b_n     <- b_bar_n - .5 * t(a) %*% Phi_low_n %*% Sigma %*% t(Phi_low_n) %*% a
-    c_dot_n <- t(c) %*% Phi_low_n %*% mu + .5 * t(c) %*% Phi_low_n %*% Sigma %*% t(Phi_low_n) %*% c
-
-    # Store results:
-    all_b_n[i]     <- b_n
-    all_b_bar_n[i] <- b_bar_n
-    all_a_n[i,]    <- t(Phi_exp_n) %*% a
-    all_c_dot_n[i] <- c_dot_n
-    all_c_n[i,]    <- t(Phi_exp_n) %*% c
-    all_sigma_n[i] <- sqrt(sigma2_n)
-
-    all_a_tilde_n[i,] <- t(Phi_low_n) %*% a
-    all_c_tilde_n[i,] <- t(Phi_low_n) %*% c
-
-    # For next iteration:
-    Phi_low_n_1 <- Phi_low_n
-    Phi_exp_n_1 <- Phi_exp_n
-    sigma2_n_1  <- sigma2_n
-  }
-
-  vec1N <- matrix(1,H,1)
-  vec1T <- matrix(1,T,1)
-  vec1x <- matrix(1,n_x,1)
-
-  aux_an_bnW    <- vec1T %*% t(all_b_n)     + W %*% t(all_a_n) - ell_bar
-  aux_abarn_bnW <- vec1T %*% t(all_b_bar_n) + W %*% t(all_a_n) - ell_bar
-  aux_s     <- aux_an_bnW    / (vec1T %*% t(all_sigma_n))
-  aux_s_bar <- aux_abarn_bnW / (vec1T %*% t(all_sigma_n))
-
-  aux_sigma <- vec1T %*% t(all_sigma_n)
-  aux_pi    <- vec1T %*% t(all_c_dot_n) + W %*% t(all_c_n)
-
-  aux_SS <- (all_a_tilde_n %x% t(vec1x)) * (t(vec1x) %x% all_c_tilde_n) * (vec1N %*% t(vecSS))
-  aux_SS <- apply(aux_SS,1,sum)
-
-  F_c_equal_0                <- ell_bar + aux_sigma * g(aux_s)
-  indic_sigma0               <- which(all_sigma_n==0)
-  F_c_equal_0[,indic_sigma0] <- ell_bar + pmax(aux_an_bnW[,indic_sigma0], 0)
-
-  Phi_aux_s_bar <- pnorm(aux_s_bar)
-  Phi_aux_s_bar[,indic_sigma0] <- 1 * (Phi_aux_s_bar[,indic_sigma0]>0)
-
-  F_c <- F_c_equal_0 - aux_pi + Phi_aux_s_bar * (vec1T %*% t(aux_SS))
-
-  Phi_aux_s <- pnorm(aux_s)
-  Phi_aux_s[,indic_sigma0] <- 1 * (Phi_aux_s[,indic_sigma0]>0)
-
-  phi_aux_s_bar <- dnorm(aux_s_bar) * (vec1T %*% t(aux_SS/all_sigma_n))
-  phi_aux_s_bar[,indic_sigma0] <- 0
-
-  all_nu_n_c_equal_0 <- Phi_aux_s
-  all_nu_n_c         <- Phi_aux_s + phi_aux_s_bar
-
-  return(list(F_c_equal_0 = F_c_equal_0,
-              F = F_c
-              # all_a_n     = all_a_n,
-              # all_c_n     = all_c_n,
-              # all_nu_n_c         = all_nu_n_c,
-              # all_nu_n_c_equal_0 = all_nu_n_c_equal_0,
-              # ptn = Phi_aux_s_bar,
-              # all_b_bar_n = all_b_bar_n,
-              # all_b_n = all_b_n,
-              # all_sigma_n = all_sigma_n,
-  ))
-}
 
 psi.QPoisson <- function(u,psi.parameterization){
   # Laplace transform of a process defined as follows:
