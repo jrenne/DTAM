@@ -97,7 +97,7 @@ compute_F_Shadow_Gaussian <-
       Phi_aux_s_bar <- pnorm(aux_s_bar)
       Phi_aux_s_bar[,indic_sigma0] <- 1 * (Phi_aux_s_bar[,indic_sigma0]>0)
 
-      aux_SS <- (all_a_tilde_n %x% t(vec1x)) * (t(vec1x) %x% (all_c_tilde_n - .5*all_a_tilde_n)) * (vec1N %*% t(vecSS))
+      aux_SS <- (all_a_tilde_n %x% t(vec1x)) * (t(vec1x) %x% (all_c_tilde_n + .5*all_a_tilde_n)) * (vec1N %*% t(vecSS))
       aux_SS <- apply(aux_SS,1,sum)
 
       F_c <- F_c_equal_0 - aux_pi + Phi_aux_s_bar * (vec1T %*% t(aux_SS))
