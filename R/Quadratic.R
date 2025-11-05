@@ -668,32 +668,32 @@ make_Mnx <- function(n) {
 }
 
 
-mu <- matrix(c(0,1,.2),3,1)
-Phi <- .8*diag(3)
-Phi[2,1] <- .2
-Phi[1,3] <- .1
-Phi[3,1] <- -.1
-aux <- matrix(.1*rnorm(9),3,3)
-Sigma <- aux %*% t(aux)
+# mu <- matrix(c(0,1,.2),3,1)
+# Phi <- .8*diag(3)
+# Phi[2,1] <- .2
+# Phi[1,3] <- .1
+# Phi[3,1] <- -.1
+# aux <- matrix(.1*rnorm(9),3,3)
+# Sigma <- aux %*% t(aux)
+# #
+# # res1 <- vcov_matrix_Quadratic(mu, Phi, Sigma, BigMats = make_BigMats(dim(Phi)[1]))
+# # res2 <- make_matrices_cond_mean_variance_Quadratic(mu, Phi, Sigma, indic_compute_V=TRUE)
 #
-# res1 <- vcov_matrix_Quadratic(mu, Phi, Sigma, BigMats = make_BigMats(dim(Phi)[1]))
-# res2 <- make_matrices_cond_mean_variance_Quadratic(mu, Phi, Sigma, indic_compute_V=TRUE)
-
-model <- list(mu=mu,Phi=Phi,Sigma=Sigma)
-n <- dim(Phi)[1]
-
-Vred <- .1*rnorm(n*(n+1)/2)
-
-u <- matrix(c(.1*rnorm(n),Vred),ncol=1)
-
-psi_Quad <- psi.GaussianQVAR(u,psi.parameterization=model)
-
-model$n_w <- 9
-res <- compute_expect_variance(psi.GaussianQVAR,model,du = 10^(-6))
-
-res2 <- make_matrices_cond_mean_variance_Quadratic(model,indic_compute_V = TRUE)
-
-res3 <- make_matrices_cond_mean_variance_Quadratic_new(model,indic_compute_V = TRUE)
+# model <- list(mu=mu,Phi=Phi,Sigma=Sigma)
+# n <- dim(Phi)[1]
+#
+# Vred <- .1*rnorm(n*(n+1)/2)
+#
+# u <- matrix(c(.1*rnorm(n),Vred),ncol=1)
+#
+# psi_Quad <- psi.GaussianQVAR(u,psi.parameterization=model)
+#
+# model$n_w <- 9
+# res <- compute_expect_variance(psi.GaussianQVAR,model,du = 10^(-6))
+#
+# res2 <- make_matrices_cond_mean_variance_Quadratic(model,indic_compute_V = TRUE)
+#
+# res3 <- make_matrices_cond_mean_variance_Quadratic_new(model,indic_compute_V = TRUE)
 
 
 
