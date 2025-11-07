@@ -1,6 +1,9 @@
 
-Kalman_filter <- function(Y_t,nu_t,H,N,mu_t,G,M,Sigma_0,rho_0,indic_pos=0,
-                          Rfunction=Rf, Qfunction=Qf){
+Kalman_filter <- function(Y_t,nu_t,H,N,mu_t,G,M,Sigma_0,rho_0,
+                          indic_pos=0,
+                          Rfunction=Rf, Qfunction=Qf,
+                          reconciliationf = function(x){x} # In case
+){
   # Measurement equations:
   #    y_t   = mu_t + G * rho_t + M * eps_t
   # Transition equations:
@@ -11,6 +14,13 @@ Kalman_filter <- function(Y_t,nu_t,H,N,mu_t,G,M,Sigma_0,rho_0,indic_pos=0,
   # The function returns:
   # .$r   filtered variables (rho_t|t) size T*nr
   # .$S  SIGMA t|t T*(nr*nr)
+
+  # Notes:
+  # 'indic_pos' is a vector of binary variables indicating if
+  #     latent factors have to be >=0
+  # If 'reconciliationf' is a function, then 'rho_tt' may be modified,
+  #     in a way defined by this function. That is used in the QKF, to ensure
+  #     that there is consistency in the augmented state vector (x,vec(xx')).
 
   # Number of observed variables:
   ny = NCOL(Y_t)
@@ -35,7 +45,6 @@ Kalman_filter <- function(Y_t,nu_t,H,N,mu_t,G,M,Sigma_0,rho_0,indic_pos=0,
   #Initilize log-Likelihood:
   logl = ny*T/2*log(2*pi)
 
-
   #Kalman algorithm:
 
   for (t in 1:T){
@@ -54,7 +63,7 @@ Kalman_filter <- function(Y_t,nu_t,H,N,mu_t,G,M,Sigma_0,rho_0,indic_pos=0,
       R = Rfunction(M,rho_tt[t-1,],t)
       Q = Qfunction(N,rho_tt[t-1,],t)
     }
-    if(sum(indic_pos==1)>0){
+    if(sum(indic_pos==1)>0){ # Some latent variables imposed to be >= 0
       rho_tp1_t[t,indic_pos==1] = pmax(rho_tp1_t[t,indic_pos==1],0)
     }
     y_tp1_t[t,] = mu_t[t,] + t(G %*% rho_tp1_t[t,])
@@ -109,6 +118,13 @@ Kalman_filter <- function(Y_t,nu_t,H,N,mu_t,G,M,Sigma_0,rho_0,indic_pos=0,
       }else{
         det.omega <- det(omega)
       }
+
+      # Potential reconciliation between components of rho_tt (QKF):
+      y2Bfitted <- matrix(Y_t[t,],ncol=1)
+      constant  <- matrix(mu_t[t,],ncol=1)
+      rho_tt[t,] <- reconciliationf(rho_tt[t,],n,
+                                    y2Bfitted,constant,G,M)
+
       loglik.vector <- rbind(loglik.vector,
                              ny.aux/2*log(2*pi) - 1/2*(log(det.omega) +
                                                          t(lambda_t) %*% MASS::ginv(omega) %*% lambda_t)
@@ -205,5 +221,103 @@ Kalman_smoother <- function(Y_t,nu_t,H,N,mu_t,G,M,Sigma_0,rho_0,indic_pos=0,
                 Omega_tT = Omega_tT)
   return(output)
 }
+
+QKF <- function(Y_t,A,B,C,mu,Phi,Sigma,M){
+  # The state-space is: --------------------------------------------------------
+  # --- Measurement equations (y_t of dimension m x 1):
+  # y_t = A + B·x_t + Sum_i{e_i·[x_t'·C_i·x_t]} + eta_t,
+  #   with eta_t ~ N(0,Omega), with Omega = M·M'.
+  # --- Transition equation (x_t of dimension n x 1):
+  # x_t = mu + Phi·x_{t-1} + epsilon_t,
+  #   with epsilon_t ~ N(0,Sigma)
+  # Remarks: -------------------------------------------------------------------
+  # C is an array of dimension n x n x m; the i^th layer is C_i.
+  #    The layers C_i are not necessarily symmetric.
+  # The dimension of the augmented state vector is n + n*(n+1)/2,
+  #    that is, the augmented state vector is (x_t',vech(x_t·x_t')')'
+  # ----------------------------------------------------------------------------
+
+  B <- as.matrix(B)
+  if(class(C) != "array"){
+    print("Error: C should be an array")
+    return(0)
+  }
+
+  # Dimensions:
+  T <- dim(Y_t)[1]
+  m <- dim(B)[1]
+  n <- dim(B)[2]
+
+  model <- list(mu=mu,Phi=Phi,Sigma=Sigma)
+  # Compute mu and Psi:
+  aux <- make_matrices_cond_mean_variance_Quadratic(model,
+                                                    indic_compute_V=TRUE)
+
+  # Convert inputs into those required by 'Kalman_filter':
+  nu_t <- t(matrix(c(aux$mu_tilde_red),n + n*(n+1)/2,T))
+  H    <- aux$Phi_tilde_red
+  N    <- list(n=n,
+               nu_red = aux$nu_red,
+               Psi_red = aux$Psi_red)
+  mu_t <- t(matrix(c(A),m,T))
+
+  Cmatrix     <- t(apply(C, 3, as.vector)) # number of columns: n^2
+  Kn          <- make_Knx(n) # Kn used to build Cmatrix_red, with n*(n+1)/2 columns.
+  Cmatrix_red <- Cmatrix %*% t(Kn) # number of columns: n*(n+1)/2
+  G           <- cbind(B,Cmatrix_red)
+
+  M <- as.matrix(M)
+
+  Ex <- matrix(aux$E_red[1:n],ncol=1)
+  rho_0   <- c(Ex,(Ex %*% t(Ex))[!upper.tri(Ex %*% t(Ex))])
+  Sigma_0 <- aux$V_red
+
+  resKF <- Kalman_filter(Y_t,nu_t,H,N,mu_t,G,M,
+                         Sigma_0=Sigma_0,rho_0=rho_0,
+                         indic_pos=0,
+                         Rfunction=Rf, Qfunction=Q_QKF,
+                         reconciliationf = reconciliationf_QKF)
+
+  return(resKF)
+}
+
+Q_QKF <- function(N,RHO,t=0){
+  nu_red  <- N$nu_red
+  Psi_red <- N$Psi_red
+  n <- N$n
+  Q <- matrix(nu_red + Psi_red %*% RHO,n+n*(n+1)/2,n+n*(n+1)/2)
+  return(Q)
+}
+
+reconciliationf_QKF <- function(rho_ini,n,y2Bfitted,constant,G,M){
+  Omega_1 <- solve(M %*% t(M))
+
+  # Linear projection:
+  x <- matrix(rho_ini[1:n],ncol=1)
+  S <- x %*% t(x)
+  w1 <- matrix(c(x,S[!upper.tri(S)]),ncol=1)
+  lambda <- y2Bfitted - (constant + G %*% w1)
+  ell1 <- c(t(lambda) %*% Omega_1 %*% lambda)
+
+  # Quadratic projection:
+  vechS <- rho_ini[(n+1):(n+n*(n+1)/2)]
+  vecS <- t(make_Knx(n)) %*% vechS
+  S <- matrix(vecS,n,n)
+  eigenS <- eigen(S)
+  v1 <- matrix(aux$vectors[,1],ncol=1)
+  lambda1 <- eigenS$values[1]
+  x <- sqrt(lambda1) * v1
+  S <- x %*% t(x)
+  w2 <- matrix(c(x,S[!upper.tri(S)]),ncol=1)
+  lambda <- y2Bfitted - (constant + G %*% w2)
+  ell2 <- c(t(lambda) %*% Omega_1 %*% lambda)
+  if(ell1 < ell2){# better fit with linear projection
+    rho_tt <- w1
+  }else{# better fit with quadratic projection
+    rho_tt <- w2
+  }
+  return(rho_tt)
+}
+
 
 
