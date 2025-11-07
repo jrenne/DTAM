@@ -280,12 +280,19 @@ QKF <- function(Y_t,QStateSpace,indic_reconciliation=TRUE){
   rho_0   <- c(Ex,(Ex %*% t(Ex))[!upper.tri(Ex %*% t(Ex))])
   Sigma_0 <- aux$V_red
 
-  resKF <- Kalman_filter(Y_t,nu_t,H,N,mu_t,G,M,
-                         Sigma_0=Sigma_0,rho_0=rho_0,
-                         indic_pos=0,
-                         Rfunction=Rf, Qfunction=Q_QKF,
-                         reconciliationf = ifelse(indic_reconciliation,
-                                                  reconciliationf_QKF,NaN))
+  if(indic_reconciliation){
+    resKF <- Kalman_filter(Y_t,nu_t,H,N,mu_t,G,M,
+                           Sigma_0=Sigma_0,rho_0=rho_0,
+                           indic_pos=0,
+                           Rfunction=Rf, Qfunction=Q_QKF,
+                           reconciliationf = reconciliationf_QKF)
+  }else{
+    resKF <- Kalman_filter(Y_t,nu_t,H,N,mu_t,G,M,
+                           Sigma_0=Sigma_0,rho_0=rho_0,
+                           indic_pos=0,
+                           Rfunction=Rf, Qfunction=Q_QKF,
+                           reconciliationf = NaN)
+  }
 
   return(resKF)
 }
