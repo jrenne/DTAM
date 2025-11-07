@@ -122,7 +122,8 @@ Kalman_filter <- function(Y_t,nu_t,H,N,mu_t,G,M,Sigma_0,rho_0,
       # Potential reconciliation between components of rho_tt (QKF):
       y2Bfitted  <- matrix(Y_t[t,],ncol=1)
       constant   <- matrix(mu_t[t,],ncol=1)
-      opt        <- list(y2Bfitted,constant,G,M)
+      Rho_tt_1   <- rho_tp1_t[t,]
+      opt        <- list(y2Bfitted,constant,G,M,Rho_tt_1,Q)
       rho_tt[t,] <- reconciliationf(rho_tt[t,],opt)
 
       loglik.vector <- rbind(loglik.vector,
@@ -260,13 +261,19 @@ QKF <- function(Y_t,QStateSpace,indic_reconciliation=TRUE){
   # Compute mu and Psi:
   aux <- make_matrices_cond_mean_variance_Quadratic(model,
                                                     indic_compute_V=TRUE)
+  mu_tilde_red  <- aux$mu_tilde_red
+  Phi_tilde_red <- aux$Phi_tilde_red
+  nu_red  <- aux$nu_red
+  Psi_red <- aux$Psi_red
+  E_red   <- aux$E_red
+  V_red   <- aux$V_red
 
   # Convert inputs into those required by 'Kalman_filter':
-  nu_t <- t(matrix(c(aux$mu_tilde_red),n + n*(n+1)/2,T))
-  H    <- aux$Phi_tilde_red
+  nu_t <- t(matrix(c(mu_tilde_red),n + n*(n+1)/2,T))
+  H    <- Phi_tilde_red
   N    <- list(n=n,
-               nu_red = aux$nu_red,
-               Psi_red = aux$Psi_red)
+               nu_red = nu_red,
+               Psi_red = Psi_red)
   mu_t <- t(matrix(c(A),m,T))
 
   Cmatrix     <- t(apply(C, 3, as.vector)) # number of columns: n^2
@@ -276,9 +283,9 @@ QKF <- function(Y_t,QStateSpace,indic_reconciliation=TRUE){
 
   M <- as.matrix(M)
 
-  Ex <- matrix(aux$E_red[1:n],ncol=1)
+  Ex <- matrix(E_red[1:n],ncol=1)
   rho_0   <- c(Ex,(Ex %*% t(Ex))[!upper.tri(Ex %*% t(Ex))])
-  Sigma_0 <- aux$V_red
+  Sigma_0 <- V_red
 
   if(indic_reconciliation){
     resKF <- Kalman_filter(Y_t,nu_t,H,N,mu_t,G,M,
@@ -293,7 +300,19 @@ QKF <- function(Y_t,QStateSpace,indic_reconciliation=TRUE){
                            Rfunction=Rf, Qfunction=Q_QKF)
   }
 
-  return(resKF)
+  output <- resQKF
+
+  output$mu_tilde_red  <- mu_tilde_red
+  output$Phi_tilde_red <- Phi_tilde_red
+  output$nu_red        <- nu_red
+  output$Psi_red       <- Psi_red
+  output$E_red         <- E_red
+  output$V_red         <- V_red
+  output$B_tilde       <- G
+  output$A             <- A
+  output$Omega         <- M %*% t(M)
+
+  return(output)
 }
 
 Q_QKF <- function(N,RHO,t=0){
@@ -309,20 +328,27 @@ reconciliationf_QKF <- function(rho_ini,opt){
   constant  <- opt[[2]]
   G         <- opt[[3]]
   M         <- opt[[4]]
-
-  Omega_1 <- solve(M %*% t(M))
+  rho_tt_1  <- opt[[5]]
+  Q         <- opt[[6]]
 
   # Determine n:
   r <- dim(G)[2]
   D <- 9 + 8*r
   n <- (-3+sqrt(D))/2
 
+  Omega_1 <- solve(M %*% t(M))
+  Sigma_1 <- solve(Q[1:n,1:n])
+  x_tt_1  <- matrix(rho_tt_1[1:n],ncol=1)
+
+
   # Linear projection:
   x <- matrix(rho_ini[1:n],ncol=1)
   S <- x %*% t(x)
   w1 <- matrix(c(x,S[!upper.tri(S)]),ncol=1)
   lambda <- y2Bfitted - (constant + G %*% w1)
-  ell1 <- c(t(lambda) %*% Omega_1 %*% lambda)
+  epsilon_t <- x - x_tt_1
+  ell1 <- c(t(lambda) %*% Omega_1 %*% lambda) +
+    0*t(epsilon_t) %*% Sigma_1 %*% epsilon_t
 
   # Quadratic projection:
   vechS <- rho_ini[(n+1):(n+n*(n+1)/2)]
@@ -335,7 +361,9 @@ reconciliationf_QKF <- function(rho_ini,opt){
   S <- x %*% t(x)
   w2 <- matrix(c(x,S[!upper.tri(S)]),ncol=1)
   lambda <- y2Bfitted - (constant + G %*% w2)
-  ell2 <- c(t(lambda) %*% Omega_1 %*% lambda)
+  epsilon_t <- x - x_tt_1
+  ell2 <- c(t(lambda) %*% Omega_1 %*% lambda) +
+    0*t(epsilon_t) %*% Sigma_1 %*% epsilon_t
   if(ell1 < ell2){# better fit with linear projection
     rho_tt <- w1
   }else{# better fit with quadratic projection
@@ -343,4 +371,9 @@ reconciliationf_QKF <- function(rho_ini,opt){
   }
   return(rho_tt)
 }
+
+
+
+
+
 
