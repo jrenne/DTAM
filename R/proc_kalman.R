@@ -222,7 +222,7 @@ Kalman_smoother <- function(Y_t,nu_t,H,N,mu_t,G,M,Sigma_0,rho_0,indic_pos=0,
   return(output)
 }
 
-QKF <- function(Y_t,QStateSpace){
+QKF <- function(Y_t,QStateSpace,indic_reconciliation=TRUE){
   # The state-space is: --------------------------------------------------------
   # --- Measurement equations (y_t of dimension m x 1):
   # y_t = A + B·x_t + Sum_i{e_i·[x_t'·C_i·x_t]} + eta_t,
@@ -284,7 +284,8 @@ QKF <- function(Y_t,QStateSpace){
                          Sigma_0=Sigma_0,rho_0=rho_0,
                          indic_pos=0,
                          Rfunction=Rf, Qfunction=Q_QKF,
-                         reconciliationf = reconciliationf_QKF)
+                         reconciliationf = ifelse(indic_reconciliation,
+                                                  reconciliationf_QKF,NaN))
 
   return(resKF)
 }
