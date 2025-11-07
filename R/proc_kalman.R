@@ -222,7 +222,7 @@ Kalman_smoother <- function(Y_t,nu_t,H,N,mu_t,G,M,Sigma_0,rho_0,indic_pos=0,
   return(output)
 }
 
-QKF <- function(Y_t,A,B,C,mu,Phi,Sigma,M){
+QKF <- function(Y_t,QStateSpace){
   # The state-space is: --------------------------------------------------------
   # --- Measurement equations (y_t of dimension m x 1):
   # y_t = A + B·x_t + Sum_i{e_i·[x_t'·C_i·x_t]} + eta_t,
@@ -236,6 +236,14 @@ QKF <- function(Y_t,A,B,C,mu,Phi,Sigma,M){
   # The dimension of the augmented state vector is n + n*(n+1)/2,
   #    that is, the augmented state vector is (x_t',vech(x_t·x_t')')'
   # ----------------------------------------------------------------------------
+
+  A     <- QStateSpace$A
+  B     <- QStateSpace$B
+  C     <- QStateSpace$C
+  mu    <- QStateSpace$mu
+  Phi   <- QStateSpace$Phi
+  Sigma <- QStateSpace$Sigma
+  M     <- QStateSpace$M
 
   B <- as.matrix(B)
   if(class(C) != "array"){
