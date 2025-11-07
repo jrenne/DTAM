@@ -2,7 +2,7 @@
 Kalman_filter <- function(Y_t,nu_t,H,N,mu_t,G,M,Sigma_0,rho_0,
                           indic_pos=0,
                           Rfunction=Rf, Qfunction=Qf,
-                          reconciliationf = function(x){x} # In case
+                          reconciliationf = function(x,opt){x} # In case
 ){
   # Measurement equations:
   #    y_t   = mu_t + G * rho_t + M * eps_t
@@ -120,10 +120,10 @@ Kalman_filter <- function(Y_t,nu_t,H,N,mu_t,G,M,Sigma_0,rho_0,
       }
 
       # Potential reconciliation between components of rho_tt (QKF):
-      y2Bfitted <- matrix(Y_t[t,],ncol=1)
-      constant  <- matrix(mu_t[t,],ncol=1)
-      rho_tt[t,] <- reconciliationf(rho_tt[t,],
-                                    y2Bfitted,constant,G,M)
+      y2Bfitted  <- matrix(Y_t[t,],ncol=1)
+      constant   <- matrix(mu_t[t,],ncol=1)
+      opt        <- list(y2Bfitted,constant,G,M)
+      rho_tt[t,] <- reconciliationf(rho_tt[t,],opt)
 
       loglik.vector <- rbind(loglik.vector,
                              ny.aux/2*log(2*pi) - 1/2*(log(det.omega) +
@@ -304,7 +304,12 @@ Q_QKF <- function(N,RHO,t=0){
   return(Q)
 }
 
-reconciliationf_QKF <- function(rho_ini,y2Bfitted,constant,G,M){
+reconciliationf_QKF <- function(rho_ini,opt){
+  y2Bfitted <- opt[[1]]
+  constant  <- opt[[2]]
+  G         <- opt[[3]]
+  M         <- opt[[4]]
+
   Omega_1 <- solve(M %*% t(M))
 
   # Determine n:
