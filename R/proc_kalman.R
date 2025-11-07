@@ -311,7 +311,7 @@ reconciliationf_QKF <- function(rho_ini,y2Bfitted,constant,G,M){
   vecS <- t(make_Knx(n)) %*% vechS
   S <- matrix(vecS,n,n)
   eigenS <- eigen(S)
-  v1 <- matrix(aux$vectors[,1],ncol=1)
+  v1 <- matrix(eigenS$vectors[,1],ncol=1)
   lambda1 <- eigenS$values[1]
   x <- sqrt(lambda1) * v1
   S <- x %*% t(x)
