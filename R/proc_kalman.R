@@ -122,7 +122,7 @@ Kalman_filter <- function(Y_t,nu_t,H,N,mu_t,G,M,Sigma_0,rho_0,
       # Potential reconciliation between components of rho_tt (QKF):
       y2Bfitted <- matrix(Y_t[t,],ncol=1)
       constant  <- matrix(mu_t[t,],ncol=1)
-      rho_tt[t,] <- reconciliationf(rho_tt[t,],n,
+      rho_tt[t,] <- reconciliationf(rho_tt[t,],nr,
                                     y2Bfitted,constant,G,M)
 
       loglik.vector <- rbind(loglik.vector,
