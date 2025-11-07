@@ -122,7 +122,7 @@ Kalman_filter <- function(Y_t,nu_t,H,N,mu_t,G,M,Sigma_0,rho_0,
       # Potential reconciliation between components of rho_tt (QKF):
       y2Bfitted <- matrix(Y_t[t,],ncol=1)
       constant  <- matrix(mu_t[t,],ncol=1)
-      rho_tt[t,] <- reconciliationf(rho_tt[t,],nr,
+      rho_tt[t,] <- reconciliationf(rho_tt[t,],
                                     y2Bfitted,constant,G,M)
 
       loglik.vector <- rbind(loglik.vector,
@@ -289,13 +289,20 @@ Q_QKF <- function(N,RHO,t=0){
   return(Q)
 }
 
-reconciliationf_QKF <- function(rho_ini,n,y2Bfitted,constant,G,M){
+reconciliationf_QKF <- function(rho_ini,y2Bfitted,constant,G,M){
   Omega_1 <- solve(M %*% t(M))
+
+  # Determine n:
+  r <- dim(G)[2]
+  D <- 9 + 8*r
+  n <- (-3+sqrt(D))/2
 
   # Linear projection:
   x <- matrix(rho_ini[1:n],ncol=1)
   S <- x %*% t(x)
   w1 <- matrix(c(x,S[!upper.tri(S)]),ncol=1)
+  print(dim(G))
+  print(dim(w1))
   lambda <- y2Bfitted - (constant + G %*% w1)
   ell1 <- c(t(lambda) %*% Omega_1 %*% lambda)
 
@@ -320,4 +327,35 @@ reconciliationf_QKF <- function(rho_ini,n,y2Bfitted,constant,G,M){
 }
 
 
+TT <- dim(Data_Macro_US_quarterly)[1]
+Data_Macro_US_quarterly$infl <- c(NaN,
+                                  400*log(Data_Macro_US_quarterly$CPIAUCSL[2:TT]/
+                                            Data_Macro_US_quarterly$CPIAUCSL[1:(TT-1)]))
 
+plot(Data_Macro_US_quarterly$date,Data_Macro_US_quarterly$infl,type="l")
+
+Y_t <- matrix(Data_Macro_US_quarterly$infl[2:TT],ncol=1)
+
+rho <- .95
+stdv_tau <- 1/sqrt(1-rho^2)
+a <- .04
+b <- sd(Y_t)/stdv_tau
+c <- 0.1
+
+alpha <- .5*sd(Y_t)
+beta <- 0.1
+
+A <- a
+B <- matrix(c(b,alpha),nrow=1)
+C <- array(c(c,beta,0,0),c(2,2,1))
+mu = matrix(0,2,1)
+Phi <- diag(c(rho,0))
+Sigma <- diag(2)
+M <- .001
+resQKF <- QKF(Y_t,A,B,C,mu,Phi,Sigma,M)
+
+par(mfrow=c(2,2))
+par(plt=c(.1,.95,.1,.95))
+plot(resQKF$r[,1],type="l")
+plot(Y_t,type="l")
+lines(resQKF$fitted.obs,col="red")
