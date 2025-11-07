@@ -300,7 +300,7 @@ QKF <- function(Y_t,QStateSpace,indic_reconciliation=TRUE){
                            Rfunction=Rf, Qfunction=Q_QKF)
   }
 
-  output <- resQKF
+  output <- resKF
 
   output$mu_tilde_red  <- mu_tilde_red
   output$Phi_tilde_red <- Phi_tilde_red
@@ -371,7 +371,6 @@ reconciliationf_QKF <- function(rho_ini,opt){
   }
   return(rho_tt)
 }
-
 
 
 
