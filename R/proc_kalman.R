@@ -301,8 +301,6 @@ reconciliationf_QKF <- function(rho_ini,y2Bfitted,constant,G,M){
   x <- matrix(rho_ini[1:n],ncol=1)
   S <- x %*% t(x)
   w1 <- matrix(c(x,S[!upper.tri(S)]),ncol=1)
-  print(dim(G))
-  print(dim(w1))
   lambda <- y2Bfitted - (constant + G %*% w1)
   ell1 <- c(t(lambda) %*% Omega_1 %*% lambda)
 
