@@ -290,8 +290,7 @@ QKF <- function(Y_t,QStateSpace,indic_reconciliation=TRUE){
     resKF <- Kalman_filter(Y_t,nu_t,H,N,mu_t,G,M,
                            Sigma_0=Sigma_0,rho_0=rho_0,
                            indic_pos=0,
-                           Rfunction=Rf, Qfunction=Q_QKF,
-                           reconciliationf = NaN)
+                           Rfunction=Rf, Qfunction=Q_QKF)
   }
 
   return(resKF)
