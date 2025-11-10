@@ -7,7 +7,6 @@ KH_filter <- function(Omega, Eta){
   # z_t follows a Markov chain with matrix of transition probabilities Omega,
   # Omega (of dim. J x J) is such that the entries of each of its rows sum to 1.
   # ----------------------------------------------------------------------------
-  # F is a matrix of dimension T x n.
   # Omega is a matrix of dimension J x J (rows sum to 1).
   #  If it is a 3-dimensional array, then it means that the transition
   #  probabilities vary (deterministically) over time. The third dimension
