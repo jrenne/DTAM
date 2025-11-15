@@ -373,6 +373,48 @@ reconciliationf_QKF <- function(rho_ini,opt){
 }
 
 
+make_stationary_filter <- function(mu,Phi,Sigma12,A,B,Omega12,
+                                   nb_iter = 100){
+  # This function determines the stationary Kalman filter.
+  # This can be used in the context of imperfect info models.
+  # Sigma12 is such that Sigma = Sigma12·Sigma12'
+  # Omega12 is such that Omega = Omega12·Omega12'
 
+  mu      <- as.matrix(mu)
+  Phi     <- as.matrix(Phi)
+  Sigma12 <- as.matrix(Sigma12)
+  A       <- as.matrix(A)
+  B       <- as.matrix(B)
+  Omega12 <- as.matrix(Omega12)
 
+  n <- dim(Phi)[1]
+  n_eta <- dim(Omega12)[2]
+
+  # Initialization:
+  P <- matrix(0,n,n)
+
+  Sigma <- Sigma12 %*% t(Sigma12)
+  Omega <- Omega12 %*% t(Omega12)
+
+  for(i in 1:nb_iter){
+    Pstar <- Phi %*% P %*% t(Phi) + Sigma
+    K <- Pstar %*% t(A) %*% solve(A %*% Pstar %*% t(A) + Omega)
+    P <- Pstar - K %*% A %*% Pstar
+  }
+
+  # Next, we define the specification of the VAR followed
+  #  by (w_t',w_{t|t}')'
+  mu_ww <- matrix(c(mu),2*n,1)
+  Phi_ww <- cbind(rbind(Phi,K%*%A%*%Phi),
+                  rbind(matrix(0,n,n),(diag(n) - K %*% A) %*% Phi))
+  Sigma12_ww <- cbind(rbind(Sigma12,K%*%A%*%Sigma12),
+                      rbind(matrix(0,n,n_eta),K%*%Omega12))
+
+  return(list(Pstar = Pstar,
+              P = P,
+              K = K,
+              mu_ww = mu_ww,
+              Phi_ww = Phi_ww,
+              Sigma12_ww = Sigma12_ww))
+}
 
