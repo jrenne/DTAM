@@ -405,10 +405,10 @@ make_stationary_filter <- function(mu,Phi,Sigma12,A,B,Omega12,
   # Next, we define the specification of the VAR followed
   #  by (w_t',w_{t|t}')'
   mu_ww <- matrix(c(mu),2*n,1)
-  Phi_ww <- cbind(rbind(Phi,K%*%A%*%Phi),
+  Phi_ww <- cbind(rbind(Phi,K %*% A %*% Phi),
                   rbind(matrix(0,n,n),(diag(n) - K %*% A) %*% Phi))
-  Sigma12_ww <- cbind(rbind(Sigma12,K%*%A%*%Sigma12),
-                      rbind(matrix(0,n,n_eta),K%*%Omega12))
+  Sigma12_ww <- cbind(rbind(Sigma12,K %*% A %*% Sigma12),
+                      rbind(matrix(0,n,n_eta),K %*% Omega12))
 
   return(list(Pstar = Pstar,
               P = P,
@@ -417,4 +417,6 @@ make_stationary_filter <- function(mu,Phi,Sigma12,A,B,Omega12,
               Phi_ww = Phi_ww,
               Sigma12_ww = Sigma12_ww))
 }
+
+
 
