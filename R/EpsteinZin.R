@@ -1,6 +1,139 @@
 
 
-solve_EZ_SDF <- function(model,psi,Ew=NaN,z_bar_ini=5,
+
+
+
+solve_EZ_UnitEIS <- function(model,psi,Phi=NaN,du = 1e-06,
+                             nb_iter_u1 = 20){
+  # This procedure computes the SDF and the utility function
+  #    in the CES-CRRA Epstein-Zin case, when EIS = 1.
+  # -- Inputs ------------------------------------------------------------------
+  # model is a list containing the model parameters, including:
+  # - the parameterization of preferences, i.e., gamma, delta.
+  # - the parameterization of consumption growth, i.e., mu_c0 and mu_c1
+  # - the dimension of w, parameter: n_w (used to compute Ew numerically)
+  # psi is the log Laplace transform of the state vector w_t; it can itself use
+  #     model as an argument (i.e., model contains the process parameterization).
+  # If Phi is given, it will be used to initialize the recursion used to
+  #     compute numerically mu_u1. If this gives the exact solution, no numerical
+  #     solution.
+  # nb_iter_u1 is used to numerically solved for mu_u1 (fixed-point problem).
+  # du is used to numerically compute the VAR representation,
+  #     (and unconditional moments) of w.
+  # ----------------------------------------------------------------------------
+
+  gamma <- model$gamma
+  delta <- model$delta
+
+  mu_c0 <- model$mu_c0
+  mu_c1 <- as.matrix(model$mu_c1,ncol=1)
+
+  n_w  <- model$n_w
+  Id_n <- diag(n_w)
+
+  res_moments <- compute_expect_variance(psi,model,du)
+  Ew  <- res_moments$Ew
+  Vw  <- res_moments$Vw
+  mu  <- res_moments$mu
+
+  if(is.na(Phi[1])){
+    # Computation of Ew, using the Laplace Transform (Ew = dPsi(u)/du at u=0) ----
+    Phi <- res_moments$Phi
+  }
+
+  # Initial value for mu_u1:
+  # (may be the solution if w follows homoskedastic VAR)
+  mu_u1 <- delta * solve(Id_n - delta*t(Phi)) %*% t(Phi) %*% mu_c1
+
+  # Solve for mu_u1:
+  flag <- 0
+  i <- 0
+  while((i < nb_iter_u1)&(flag==0)){
+    i <- i + 1
+    u <- (1 - gamma)*(mu_c1 + mu_u1)
+    psi_w <- psi(u,model)
+    new_mu_u1 <- delta/(1-gamma) * psi_w$a
+    if(sum(abs(new_mu_u1 - new_mu_u1))==0){
+      # In that case, mu_u1 is solution, we can stop.
+      flag <- 1
+    }else{
+      mu_u1 <- new_mu_u1
+    }
+  }
+  mu_u0 <- delta/(1-delta) * (mu_c0 + 1/(1-gamma)*psi_w$b)
+
+  # Determine vector of prices of risk: ----------------------------------------
+  alpha <- (1-gamma)*mu_u1 - gamma*mu_c1
+
+  # Determine real short-term rate specification: ------------------------------
+  psi_w_alpha_muc1 <- psi(alpha + mu_c1,model)
+  psi_w_alpha      <- psi(alpha,model)
+  eta0 <- - log(delta) + mu_c0 + psi_w_alpha_muc1$b - psi_w_alpha$b
+  eta1 <- psi_w_alpha_muc1$a - psi_w_alpha$a
+
+  model_solved <- model
+
+  model_solved$Ew     <- Ew
+  model_solved$Vw     <- Vw
+  model_solved$Phi    <- Phi
+  model_solved$mu     <- mu
+  model_solved$eta0   <- c(eta0)
+  model_solved$eta1   <- eta1
+  model_solved$alpha  <- alpha
+
+  return(model_solved)
+}
+
+solve_CRRA <- function(model,psi,Phi=NaN,du = 1e-06){
+  # This procedure computes the SDF and the utility function
+  #    in the case of CRRA time-separable preferences.
+  # -- Inputs ------------------------------------------------------------------
+  # model is a list containing the model parameters, including:
+  # - the parameterization of preferences, i.e., gamma, delta.
+  # - the parameterization of consumption growth, i.e., mu_c0 and mu_c1
+  # - the dimension of w, parameter: n_w (used to compute Ew numerically)
+  # psi is the log Laplace transform of the state vector w_t; it can itself use
+  #     model as an argument (i.e., model contains the process parameterization).
+  # du is used to numerically compute the VAR representation,
+  #     (and unconditional moments) of w.
+  # ----------------------------------------------------------------------------
+
+  gamma <- model$gamma
+  delta <- model$delta
+
+  mu_c0 <- model$mu_c0
+  mu_c1 <- as.matrix(model$mu_c1,ncol=1)
+
+  n_w  <- model$n_w
+
+  res_moments <- compute_expect_variance(psi,model,du)
+  Ew  <- res_moments$Ew
+  Vw  <- res_moments$Vw
+  mu  <- res_moments$mu
+  Phi <- res_moments$Phi
+
+  alpha <- - gamma*mu_c1 # vector of prices of risk
+  psi_w_alpha <- psi(alpha,model)
+
+  eta0 <- - log(delta) - gamma*mu_c0 - psi_w_alpha$b
+  eta1 <- - psi_w_alpha$a
+
+  model_solved <- model
+
+  model_solved$Ew     <- Ew
+  model_solved$Vw     <- Vw
+  model_solved$Phi    <- Phi
+  model_solved$mu     <- mu
+  model_solved$eta0   <- c(eta0)
+  model_solved$eta1   <- eta1
+  model_solved$alpha  <- alpha
+
+  return(model_solved)
+}
+
+
+
+solve_EZ_SDF <- function(model,psi,z_bar_ini=5,
                          nb_loop_z_bar=20,nb_loop_mu_z1=100){
   # This procedure computes the SDF in the CES-CRRA Epstein-Zin case.
   # -- Inputs ------------------------------------------------------------------
@@ -10,7 +143,6 @@ solve_EZ_SDF <- function(model,psi,Ew=NaN,z_bar_ini=5,
   # - the dimension of w, parameter: n_w (used to compute Ew numerically)
   # psi is the log Laplace transform of the state vector w_t; it can itself use
   #     model as an argument (i.e., model contains the process parameterization).
-  # Ew is the mean of w_t. If NaN, it is computed numerically.
   # ----------------------------------------------------------------------------
 
 
