@@ -206,16 +206,32 @@ save(DAT_GSW,file="data/DAT_GSW.rda")
 #===============================================================================
 
 YC_LW_raw <- csv.get(file = "data-raw/LW_monthly.csv", skip = 8)
+YC_LW_raw$date <- as.character(YC_LW_raw[,1])
+YC_LW_raw$date <- as.Date(paste(substr(YC_LW_raw$date,1,4),"-",
+                                substr(YC_LW_raw$date,5,6),"-01",sep=""))
+
+# Selected maturities:
 maturities_in_month <- matrix(c(1,3,6,9,12*(1:30)),ncol=1)
 maturities <- apply(maturities_in_month,1,function(x){ifelse(x<12,
                                                              paste(x,"m",sep=""),
                                                              paste(x/12,"y",sep=""))})
-YC_LW <- cbind(YC_LW_raw[,1+maturities_in_month])
+YC_LW <- cbind(YC_LW_raw[,c("date",
+                            paste("X",maturities_in_month,".m",sep=""))])
 names(YC_LW) <- paste("yld_",maturities,sep="")
-YC_LW$date <- as.character(YC_LW_raw[,1])
-YC_LW$date <- as.Date(paste(substr(YC_LW$date,1,4),"-",substr(YC_LW$date,5,6),"-01",sep=""))
+names(YC_LW) <- c("date",
+                  paste("yld_",maturities,sep=""))
 
 save(YC_LW,file="data/DAT_LW.rda")
+
+# All maturities:
+maturities_in_month <- matrix(1:360,ncol=1)
+YC_LW_FULL <- cbind(YC_LW_raw[,c("date",
+                                 paste("X",maturities_in_month,".m",sep=""))])
+names(YC_LW_FULL) <- paste("yld_",maturities,sep="")
+names(YC_LW_FULL) <- c("date",
+                       paste("yld_",maturities_in_month,"m",sep=""))
+
+save(YC_LW_FULL,file="data/DAT_LW_FULL.rda")
 
 
 #===============================================================================
@@ -447,9 +463,9 @@ Shiller$Date  <- as.Date(paste(Shiller$year,"-",
 # Add short-term rate (3-month, from FRED)
 ticker <- "DTB3"
 DTB3 <- fredr(series_id = ticker,
-                 observation_start = Shiller$Date[1],
+              observation_start = Shiller$Date[1],
               observation_end = tail(Shiller$Date,1),
-                 frequency = "m",aggregation_method = "avg")
+              frequency = "m",aggregation_method = "avg")
 DTB3 <- subset(DTB3,select = c("date","value"))
 names(DTB3)[1] <- "Date"
 names(DTB3)[2] <- "DTB3"
@@ -457,9 +473,9 @@ names(DTB3)[2] <- "DTB3"
 # Add Personal Consumption Expenditures (from FRED)
 ticker <- "PCE"
 PCE <- fredr(series_id = ticker,
-              observation_start = Shiller$Date[1],
-              observation_end = tail(Shiller$Date,1),
-              frequency = "m",aggregation_method = "avg")
+             observation_start = Shiller$Date[1],
+             observation_end = tail(Shiller$Date,1),
+             frequency = "m",aggregation_method = "avg")
 PCE <- subset(PCE,select = c("date","value"))
 names(PCE)[1] <- "Date"
 names(PCE)[2] <- "PCE"
