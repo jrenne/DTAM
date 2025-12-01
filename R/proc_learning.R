@@ -34,8 +34,7 @@ solve_learning <- function(model,max.iter=200){
     S   <- A %*% Pstar %*% t(A) + Omega
     S_1 <- solve(S)
     K   <- Pstar %*% t(A) %*% S_1
-    P  <- (Id_n - Pstar %*% t(A) %*%
-             solve(A %*% Pstar %*% t(A)) %*% A) %*% Pstar
+    P  <- (Id_n - K %*% A) %*% Pstar
     P.change <- P - old_P
     old_P <- P
   }
@@ -196,8 +195,7 @@ solve_Learning_RE <- function(model, max.iter = 200){
     K <- Pstar %*% t(A) %*% S_1
 
     # Update P
-    P  <- (Id_n - Pstar %*% t(A) %*%
-             MASS::ginv(A %*% Pstar %*% t(A)) %*% A) %*% Pstar
+    P  <- (Id_n - K %*% A) %*% Pstar
 
     # Track change (unused, but kept for completeness)
     P.change <- P - old_P
