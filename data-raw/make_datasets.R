@@ -526,3 +526,14 @@ save(Credit_spds,file="data/Credit_spds.rda")
 
 
 
+#===============================================================================
+# Macro-history database
+#===============================================================================
+
+download.file("https://www.macrohistory.net/app/download/9834512569/JSTdatasetR6.xlsx",
+              "data/JSTdatasetR6.xlsx")
+
+JSTdataset <- readxl::read_excel("data/JSTdatasetR6.xlsx")
+
+save(JSTdataset,file="data/JSTdataset.rda")
+
