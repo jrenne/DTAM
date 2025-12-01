@@ -2,6 +2,11 @@
 
 
 solve_learning <- function(model,max.iter=200){
+  #
+  # The model is:
+  # w_t = mu + Phi·w_{t+1} + Lambda0·w_{t|t} + Lambda1·w_{t-1|t-1}
+  #         + Sigma^{1/2}·epsilon_t
+  #
 
   mu      <- as.matrix(model$mu,ncol=1)
   Phi     <- as.matrix(model$Phi)
@@ -30,36 +35,33 @@ solve_learning <- function(model,max.iter=200){
     S_1 <- solve(S)
     K   <- Pstar %*% t(A) %*% S_1
     P  <- (Id_n - Pstar %*% t(A) %*%
-              solve(A %*% Pstar %*% t(A)) %*% A) %*% Pstar
+             solve(A %*% Pstar %*% t(A)) %*% A) %*% Pstar
     P.change <- P - old_P
     old_P <- P
   }
 
-  R <- solve(Id_n + (Id_n - K %*% A) %*% Lambda0)
+  R <- solve(Id_n - Lambda0)
 
-  model_sol    <- model
-  model_sol$R  <- R
+  model_sol <- model
+  model_sol$R <- R
   model_sol$P <- P
-  model_sol$K  <- K
-  model_sol$S  <- S
+  model_sol$K <- K
+  model_sol$S <- S
 
   # Dynamics of (w_t',w_{t|t}')':
 
-  AUX <- rbind(
-    cbind(Id_n,Lambda0),
-    cbind(0 * Id_n,Id_n))
-  Gamma <- solve(AUX)
-
-  mu_ww <- Gamma %*% rbind(mu,
-                           R %*% mu)
+  mu_ww <- rbind(R %*% mu,
+                 R %*% mu)
   Phi_ww <- Gamma %*%
-    rbind(cbind(Phi,Lambda1),
-          cbind(R %*% K %*% A,
-                R %*% (Id_n - K %*% A) %*% (Phi + Lambda1)))
+    rbind(cbind(Phi,
+                Lambda1 + Lambda0 %*% R %*% (Phi + Lambda1)),
+          cbind(matrix(0,n,n),
+                R %*% (Phi + Lambda1)))
 
-  Sigma12_ww <- Gamma %*%
-    rbind(cbind(Sigma12,matrix(0,n,m)),
-          cbind(R %*% K %*% A %*% Sigma12,R %*% K %*% Omega12))
+  Sigma12_ww <- rbind(cbind((Id_n + Lambda0 %*% R %*% K %*% A) %*% Sigma12,
+                            Lambda0 %*% R %*% K %*% Omega12),
+                      cbind(R %*% K %*% A %*% Sigma12,
+                            R %*% K %*% Omega12))
 
   Sigma_ww <- Sigma12_ww %*% t(Sigma12_ww)
 
