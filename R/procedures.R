@@ -9,8 +9,6 @@ reverse.MHLT <- function(psi,u1,u2=NaN,H,psi.parameterization){
   if(is.na(u2[1])){# in that case, u2 <- u1
     u2 <- u1
   }
-  A = NULL
-  B = NULL
   A.h_1 <- 0
   B.h_1 <- 0
   n <- dim(u1)[1]
@@ -1413,6 +1411,61 @@ compute_AB_classical <- function(xi0,xi1,
               a=a,b=b))
 }
 
+compute_AB_thk <- function(xi0,xi1,
+                           u,
+                           H, # maximum maturity,
+                           k, # indexation lag of the payoff
+                           psi, psi.parameterization){
+  # This function is used to price options.
+  # It employs recursive formulas to price payoffs of the type:
+  #    exp(u'w_{t+h-k}), settled on date t+h.
+  # The risk-free short-term rate is r_t = xi0 + xi1'w_t,
+  #    where w_t is the state vector, of dimension n x 1.
+  # The function returns a list containing A, B, a, and b.
+  # Bond prices are such that the date-t payoff is = exp(B_h + A_h'w_t), where
+  #    B_h is a scalar and A_h is a (n x 1) vector.
+  # u can be of dimension n x q with q > 1 (n is the dimension of the state)
+  # psi and psi.parameterization defined the risk-neutral dynamics of w_t.
+  # The function returns NaN for horizons h < k.
+
+  n <- length(xi1) # dimension of state vector
+  u <- matrix(u,nrow=n) # make sure u has the right dimension
+
+  A.h_1 <- 0
+  B.h_1 <- 0
+
+  n <- dim(u)[1]
+  q <- dim(u)[2]
+
+  A <- array(NaN, c(n, q, H))
+  B <- array(NaN, c(1, q, H))
+  for (h in 1:H) {
+
+    X <- matrix(-xi1, n, q)*(h>1) + A.h_1
+
+    psi.u <- psi(X, psi.parameterization)
+    A.h <- matrix(psi.u$a, n, q) + u*(h==k)
+    B.h <- psi.u$b + B.h_1
+    A[, , h] <- A.h
+    B[, , h] <- B.h
+    A.h_1 <- A.h
+    B.h_1 <- B.h
+  }
+
+  for(h in 1:H){
+    A[,,h]  <- A[,,h] - matrix(xi1, n, q) # one xi1 is missing
+    B[1,,h] <- B[1,,h] - h * xi0          # all xi0 are missing
+  }
+
+  if(k>1){
+    A[,,1:(k-1)] <- NaN
+    B[,,1:(k-1)] <- NaN
+  }
+
+  return(list(A=A,B=B))
+}
+
+
 
 # loglik_Gaussian <- function(std_dev,epsilon){
 #   # epsilon is of dimension T x n, and epsilon_t ~ N(0,Omega),
@@ -1492,3 +1545,158 @@ log_mvdnorm <- function(X, Sigma){
 #   resEV$all_Gamma0[,,H] + resEV$all_Gamma1[,,H] %*% w0,
 #   c(var(t(X)))
 # )
+
+price_IR_caps_floors <- function(W, # Values of state vector (T x n)
+                                 H, # maximum maturity, in model periods
+                                 tau, # maturity of ref. rate, in model periods
+                                 freq, # number of model periods per year
+                                 all_K, # vector of (annualized) strikes
+                                 psi, # Laplace transform of W
+                                 parameterization, # see details below
+                                 max_x = 100000, # settings for Riemann sum comput.
+                                 dx_statio = 10,
+                                 min_dx = 1e-05,
+                                 nb_x1 = 5000
+){
+  # W is the matrix of state-vector values, of dimension T x n (T = number of dates)
+  # "parameterization" includes:
+  #     - "model" (model should include "n_w", the dimension of w_t)
+  #     - "xi0", "xi1" (parameterization of short-term rate, not annualized)
+
+  xi0 <- parameterization$xi0
+  xi1 <- parameterization$xi1
+
+  alpha_tau <- tau/freq # year fraction corresponding to tau
+
+  varphi <- function(x,parameterization,H){
+    # This function is an argument of truncated.payoff
+
+    u <- parameterization$u
+    v <- parameterization$v # determine thresholds (dimension nw x 1)
+    i.v.x <- matrix(v,ncol=1) %*% matrix(c(1i*x),nrow=1)
+
+    tau <- parameterization$tau
+
+    nw <- dim(i.v.x)[1]
+    q  <- dim(i.v.x)[2]
+    U <- matrix(u, nw, q) + i.v.x
+
+    res <- compute_AB_thk(xi0 = parameterization$xi0,
+                          xi1 = parameterization$xi1,
+                          u = U,
+                          H = H, # maximum maturity, in model periods
+                          k = tau, # indexation lag of the payoff
+                          psi = psi,
+                          psi.parameterization = parameterization$model)
+    return(res)
+  }
+
+  # Compute affine representation of the reference rate:
+  res_tau <- compute_AB_classical(xi0 = parameterization$xi0,
+                                  xi1 = parameterization$xi1,
+                                  H = tau,
+                                  psi = psi,
+                                  psi.parameterization = parameterization$model)
+  # Specification of discount factor:
+  A_tau <- res_tau$A[,,tau]
+  B_tau <- res_tau$B[,,tau]
+  a_tau <- res_tau$a[,,tau]
+  b_tau <- res_tau$b[,,tau]
+
+  thresholds <- - log(1 + alpha_tau*all_K) - B_tau
+  b.matrix <- t(matrix(thresholds,length(thresholds),H))
+
+  TT <- dim(W)[1] # number of dates.
+  vec1TT <- matrix(1,TT,1)
+
+  parameterization$tau <- tau
+  parameterization$u   <- NaN
+
+  # Use of "truncated.payoff" for caplets:
+  parameterization$v <- matrix(+ A_tau,ncol=1)
+  parameterization$u <- matrix(- A_tau,ncol=1)
+  res_truncated1 <- truncated.payoff(W,
+                                     b.matrix = b.matrix,
+                                     varphi = varphi,
+                                     parameterization = parameterization,
+                                     max_x = max_x,
+                                     dx_statio = dx_statio,
+                                     min_dx = min_dx,
+                                     nb_x1 = nb_x1)
+  parameterization$u <- matrix(0*A_tau, ncol = 1)
+  res_truncated2 <- truncated.payoff(W,
+                                     b.matrix = b.matrix,
+                                     varphi = varphi,
+                                     parameterization = parameterization,
+                                     max_x = max_x,
+                                     dx_statio = dx_statio,
+                                     min_dx = min_dx,
+                                     nb_x1 = nb_x1)
+
+  # Use of "truncated.payoff" for floorlets:
+  b.matrix <- - t(matrix(thresholds,length(thresholds),H))
+  parameterization$v <- matrix(- A_tau,ncol=1)
+  parameterization$u <- matrix(0*A_tau,ncol=1)
+  res_truncated3 <- truncated.payoff(W,
+                                     b.matrix = b.matrix,
+                                     varphi = varphi,
+                                     parameterization = parameterization,
+                                     max_x = max_x,
+                                     dx_statio = dx_statio,
+                                     min_dx = min_dx,
+                                     nb_x1 = nb_x1)
+  parameterization$u <- matrix(- A_tau, ncol = 1)
+  res_truncated4 <- truncated.payoff(W,
+                                     b.matrix = b.matrix,
+                                     varphi = varphi,
+                                     parameterization = parameterization,
+                                     max_x = max_x,
+                                     dx_statio = dx_statio,
+                                     min_dx = min_dx,
+                                     nb_x1 = nb_x1)
+
+  matrix_K <- t(matrix(all_K,length(all_K),TT))
+  array_K  <- array(matrix_K,c(TT,length(all_K),H))
+
+  Caplet <- exp(-B_tau) * res_truncated1 -
+    (1 + alpha_tau * array_K) * res_truncated2
+
+  Floorlet <- (1 + alpha_tau * array_K) * res_truncated3 -
+    exp(-B_tau) * res_truncated4
+
+
+  # Compute maturities available given H and tau:
+  maturities.in.model.period <- seq(tau,H,by=tau)
+
+  Caps <- array(NaN,c(TT,
+                      length(all_K),
+                      length(maturities.in.model.period)))
+  dimnames(Caps) <- list(
+    time     = paste0("t", 1:TT),
+    strike   = paste0(100*all_K,"%"),
+    maturity = paste0("matur_",maturities.in.model.period/freq,"_years")
+  )
+  Floors <- Caps
+
+  Cap   <- 0
+  Floor <- 0
+  count <- 0
+  for(maturity in maturities.in.model.period){
+    count <- count + 1
+    Cap   <- Cap   + Caplet[,,maturity]
+    Floor <- Floor + Floorlet[,,maturity]
+    Caps[,,count]   <- Cap
+    Floors[,,count] <- Floor
+  }
+
+  return(
+    list(A_tau = A_tau, B_tau = B_tau,
+         a_tau = a_tau, b_tau = b_tau,
+         Caplet = Caplet, Floorlet = Floorlet,
+         Caps = Caps,     Floors = Floors,
+         maturities.in.model.period = maturities.in.model.period)
+  )
+}
+
+
+

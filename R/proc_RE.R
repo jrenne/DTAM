@@ -36,6 +36,23 @@ solve_RE <- function(model) {
   Q <- qz$Q
   Z <- qz$Z
 
+  # S_ss <- S[1:n,1:n]
+  # S_su <- S[1:n,(n+1):(n+n)]
+  # S_uu <- S[(n+1):(n+n),(n+1):(n+n)]
+  # T_ss <- T[1:n,1:n]
+  # T_su <- T[1:n,(n+1):(n+n)]
+  # T_uu <- T[(n+1):(n+n),(n+1):(n+n)]
+  # Q_ss <- Q[1:n,1:n]
+  # Q_su <- Q[1:n,(n+1):(n+n)]
+  # Q_us <- Q[(n+1):(n+n),1:n]
+  # Q_uu <- Q[(n+1):(n+n),(n+1):(n+n)]
+  # Z_ss <- Z[1:n,1:n]
+  # Z_su <- Z[1:n,(n+1):(n+n)]
+  # Z_us <- Z[(n+1):(n+n),1:n]
+  # Z_uu <- Z[(n+1):(n+n),(n+1):(n+n)]
+  # print(solve(Z_ss) %*% Z_us)
+  # print(solve(S_ss) %*% T_ss)
+
   # Check QZ decomposition:
   max(abs((A - Q %*% S %*% t(Z))))
   max(abs((B - Q %*% T %*% t(Z))))
@@ -65,3 +82,67 @@ solve_RE <- function(model) {
   )
 }
 
+
+
+
+# Parameter values from Table 1
+delta  <- 0.611     # δ
+kappa  <- 0.064     # κ
+#sigma  <- 3.156     #
+mu     <- 0.424     # µ
+rho    <- 0.723     # ρ (policy smoothing)
+beta   <- 1.525     # β (in policy rule)
+gamma  <- 0.001     # γ (response to output gap in policy rule)
+phi_yn <- 0.958
+omega  <- 0.877     # ω
+phi    <- 0.134
+phi_1  <- 0.500     # φ₁
+phi_2  <- 0.492     # φ₂
+phi_3  <- 0.0004 #1 - phi_1 - phi_2  # φ₃ = 1−φ₁−φ₂ ≈ 0.008
+sigma_AS  <- 1.249
+sigma_IS  <- 0.671
+sigma_MP  <- 2.177
+sigma_yn  <- 1.380
+sigma_pistar <- 0.730
+
+alpha_IS <- 0
+alpha_MP <- 0
+
+n <- 5
+
+# Build matrices
+Gamma0 <- matrix(0, 5, 5)
+Gamma0[1, ] <- c(1, -kappa, 0,  kappa, 0)
+Gamma0[2, ] <- c(0,    1,  phi, 0,     0)
+Gamma0[3, ] <- c(0, -(1-rho)*gamma, 1, (1-rho)*gamma, (1-rho)*beta)
+Gamma0[4, ] <- c(0, 0, 0, 1, 0)
+Gamma0[5, ] <- c(-phi_3, 0, 0, 0, 1)
+
+Gamma1 <- matrix(0, 5, 5)
+Gamma1[1,1] <- 1 - delta
+Gamma1[2,2] <- 1 - mu
+Gamma1[3,3] <- rho
+Gamma1[4,4] <- phi_yn      # your varphi_{y^n}
+Gamma1[5,5] <- phi_2
+
+C <- matrix(c(0, alpha_IS, alpha_MP, 0, 0), 5, 1)
+
+Psi0 <- matrix(0, 5, 5)
+Psi0[1,1] <- delta
+Psi0[2,1] <- phi
+Psi0[2,2] <- mu
+Psi0[3,1] <- (1-rho)*beta
+Psi0[5,5] <- phi_1
+
+Psi1 <- 0*Psi0
+
+Pi <- diag(c(sigma_AS, sigma_IS, sigma_MP, sigma_yn, sigma_pistar))
+
+## Solve
+## Your solver:
+model <- list(mu = solve(Gamma0) %*% C,
+              Phi = solve(Gamma0) %*% Gamma1,
+              Psi0 = solve(Gamma0) %*% Psi0,
+              Psi1 = solve(Gamma0) %*% Psi1,
+              Sigma12 = solve(Gamma0) %*% Pi)
+res <- solve_RE(model)
