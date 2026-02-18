@@ -1411,14 +1411,16 @@ compute_AB_classical <- function(xi0,xi1,
               a=a,b=b))
 }
 
-compute_AB_thk <- function(xi0,xi1,
+compute_AB_thk <- function(xi0, xi1,
                            u,
                            H, # maximum maturity,
                            k, # indexation lag of the payoff
-                           psi, psi.parameterization){
+                           psi, psi.parameterization,
+                           u2 = NaN){
   # This function is used to price options.
   # It employs recursive formulas to price payoffs of the type:
-  #    exp(u'w_{t+h-k}), settled on date t+h.
+  #    exp[u'w_{t+h-k} + u2'(w_{t+1}+...+w_{t+h})], settled on date t+h.
+  #    (if u2 = NaN, then u2 <- 0)
   # The risk-free short-term rate is r_t = xi0 + xi1'w_t,
   #    where w_t is the state vector, of dimension n x 1.
   # The function returns a list containing A, B, a, and b.
@@ -1429,7 +1431,11 @@ compute_AB_thk <- function(xi0,xi1,
   # The function returns NaN for horizons h < k.
 
   n <- length(xi1) # dimension of state vector
-  u <- matrix(u,nrow=n) # make sure u has the right dimension
+  u1 <- matrix(u,nrow=n) # make sure u has the right dimension
+
+  if(is.na(u2[1])){
+    u2 <- 0*u1
+  }
 
   A.h_1 <- 0
   B.h_1 <- 0
@@ -1441,10 +1447,10 @@ compute_AB_thk <- function(xi0,xi1,
   B <- array(NaN, c(1, q, H))
   for (h in 1:H) {
 
-    X <- matrix(-xi1, n, q)*(h>1) + A.h_1
+    X <- matrix(-xi1, n, q)*(h>1) + A.h_1 + u2
 
     psi.u <- psi(X, psi.parameterization)
-    A.h <- matrix(psi.u$a, n, q) + u*(h==k)
+    A.h <- matrix(psi.u$a, n, q) + u1*(h==k)
     B.h <- psi.u$b + B.h_1
     A[, , h] <- A.h
     B[, , h] <- B.h
