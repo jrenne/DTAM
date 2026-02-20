@@ -1802,8 +1802,10 @@ price_Stock_calls_puts <- function(W, # Values of state vector (T x n)
   A_00 <- matrix(res_00$A,nw,H)
   B_00 <- matrix(res_00$B,H,1)
 
-  varphi_th_aa <- exp(W %*% A_aa + vec1TT %*% t(B_aa + b*(1:H)))
+  varphi_th_aa <- exp(W %*% A_aa + vec1TT %*% t(B_aa + b * matrix(1:H,H,1)))
+  varphi_th_aa <- varphi_th_aa %x% matrix(1,1,nb_strikes)
   varphi_th_00 <- exp(W %*% A_00 + vec1TT %*% t(B_00))
+  varphi_th_00 <- varphi_th_00 %x% matrix(1,1,nb_strikes)
 
   array_varphi_th_aa <- array(varphi_th_aa,c(TT,nb_strikes,H))
   array_varphi_th_00 <- array(varphi_th_00,c(TT,nb_strikes,H))
