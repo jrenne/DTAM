@@ -1705,65 +1705,127 @@ price_IR_caps_floors <- function(W, # Values of state vector (T x n)
 }
 
 
-plot_isodensity_gaussian <- function(Ew, Vw, n = 200,
-                                     min_w = NA_real_, max_w = NA_real_,
-                                     prob_levels = c(0.50, 0.80, 0.95, 0.99),
-                                     n_std = 4,
-                                     maintitle = "") {
-  stopifnot(length(Ew) == 2, all(dim(Vw) == c(2, 2)))
+price_Stock_calls_puts <- function(W, # Values of state vector (T x n)
+                                   S, # ex-dividend stock price (T x 1)
+                                   H, # maximum maturity, in model periods
+                                   a, b, # specif. of ex-dividend stock returns
+                                   K_over_S, # vector of strikes
+                                   psi, # Laplace transform of W
+                                   parameterization, # see details below
+                                   max_x = 100000, # settings for Riemann sum comput.
+                                   dx_statio = 10,
+                                   min_dx = 1e-05,
+                                   nb_x1 = 5000
+){
+  # W is the matrix of state-vector values, of dimension T x n (T = number of dates)
+  # "parameterization" includes:
+  #     - "model" (model should include "n_w", the dimension of w_t)
+  #     - "xi0", "xi1" (parameterization of short-term rate, not annualized)
+  # Regarding the specification of stock returns:
+  #     - "a" is a vector, "b" is a scalar.
+  #     - the returns are expressed at the model frequency
+  # K_over_S contain strikes, expressed as fractions of the ex-dividend stock price
 
-  sds <- sqrt(diag(Vw))
+  xi0 <- parameterization$xi0
+  xi1 <- matrix(parameterization$xi1,ncol=1)
 
-  # Default axis range (if not supplied)
-  if (!is.finite(min_w)) min_w <- Ew[1] - n_std * sds[1]
-  if (!is.finite(max_w)) max_w <- Ew[1] + n_std * sds[1]
+  a <- matrix(a,ncol=1)
 
-  # Grid for density
-  x1 <- seq(Ew[1] - n_std * sds[1], Ew[1] + n_std * sds[1], length.out = n)
-  x2 <- seq(Ew[2] - n_std * sds[2], Ew[2] + n_std * sds[2], length.out = n)
+  nw <- length(xi1)
 
-  X1 <- matrix(rep(x1, each = n), nrow = n)
-  X2 <- matrix(rep(x2, times = n), nrow = n)
+  varphi <- function(x,parameterization,H){
+    # This function is an argument of truncated.payoff
 
-  detV <- det(Vw)
-  invV <- solve(Vw)
+    u <- parameterization$u
+    v <- parameterization$v # determine thresholds (dimension nw x 1)
+    i.v.x <- matrix(v,ncol=1) %*% matrix(c(1i*x),nrow=1)
 
-  dX1 <- X1 - Ew[1]
-  dX2 <- X2 - Ew[2]
+    tau <- parameterization$tau
 
-  # Quadratic form Q = (w-Ew)' V^{-1} (w-Ew)
-  Q <- invV[1,1]*dX1^2 + 2*invV[1,2]*dX1*dX2 + invV[2,2]*dX2^2
+    nw <- dim(i.v.x)[1]
+    q  <- dim(i.v.x)[2]
+    U <- matrix(u, nw, q) + i.v.x
 
-  # Density
-  logdens <- -0.5 * (2 * log(2*pi) + log(detV) + Q)
-  dens <- exp(logdens)
+    res <- reverse.MHLT(psi = psi,
+                        u1 = U,
+                        u2 = U,
+                        H  = H,
+                        psi.parameterization = parameterization$model)
+    return(res)
+  }
 
-  # Convert probability-mass levels to density levels
-  # In 2D Gaussian: Q ~ chi^2(df=2) on ellipses
-  Q_levels <- qchisq(prob_levels, df = 2)
-  dens_levels <- exp(-0.5 * Q_levels) / (2*pi*sqrt(detV))
+  # Computation of thresholds:
+  nb_strikes <- length(K_over_S)
+  b.matrix <- t(matrix(log(K_over_S),nb_strikes,H)) -
+    (b*matrix(1:H,H,nb_strikes))
 
-  contour(x1, x2, dens,
-          las = 1,
-          xlim = c(min_w, max_w),
-          ylim = c(min_w, max_w),
-          levels = dens_levels,
-          labels = paste0(100 * prob_levels, "%"),
-          drawlabels = TRUE,
-          xlab = expression(r[t]),
-          ylab = expression(x[t]),
-          main = maintitle,
-          labcex = 0.8,
-          vfont = c("sans serif", "bold"),
-          lwd = 2, col = "grey")
+  TT <- dim(W)[1] # number of dates.
+  vec1TT <- matrix(1,TT,1)
 
-  grid()
+  # Use of "truncated.payoff" for payoff involving S:
+  parameterization$v <- a
+  parameterization$u <- a
+  G_0a0a <- truncated.payoff(W,
+                             b.matrix = b.matrix,
+                             varphi = varphi,
+                             parameterization = parameterization,
+                             max_x = max_x,
+                             dx_statio = dx_statio,
+                             min_dx = min_dx,
+                             nb_x1 = nb_x1)
+  # Use of "truncated.payoff" for payoff involving K:
+  parameterization$v <- a
+  parameterization$u <- 0*a
+  G_000a <- truncated.payoff(W,
+                             b.matrix = b.matrix,
+                             varphi = varphi,
+                             parameterization = parameterization,
+                             max_x = max_x,
+                             dx_statio = dx_statio,
+                             min_dx = min_dx,
+                             nb_x1 = nb_x1)
 
-  # Mark unconditional mean
-  points(Ew[1], Ew[2], pch = 3, lwd = 2)
-  text(Ew[1], Ew[2], labels = expression(E[t](w[T])), pos = 4)
+  # Computation of swap:
+  res_aa <- reverse.MHLT(psi = psi,
+                         u1 = a,
+                         u2 = a,
+                         H  = H,
+                         psi.parameterization = parameterization$model)
+  A_aa <- matrix(res_aa$A,nw,H)
+  B_aa <- matrix(res_aa$B,H,1)
 
-  invisible(list(x1 = x1, x2 = x2, dens = dens,
-                 dens_levels = dens_levels, prob_levels = prob_levels))
+  res_00 <- reverse.MHLT(psi = psi,
+                         u1 = 0*a,
+                         u2 = 0*a,
+                         H  = H,
+                         psi.parameterization = parameterization$model)
+  A_00 <- matrix(res_00$A,nw,H)
+  B_00 <- matrix(res_00$B,H,1)
+
+  varphi_th_aa <- exp(W %*% A_aa + vec1TT %*% t(B_aa + b*(1:H)))
+  varphi_th_00 <- exp(W %*% A_00 + vec1TT %*% t(B_00))
+
+  array_varphi_th_aa <- array(varphi_th_aa,c(TT,nb_strikes,H))
+  array_varphi_th_00 <- array(varphi_th_00,c(TT,nb_strikes,H))
+
+  array_S <- array(S,c(TT,nb_strikes,H))
+
+  matrix_K <- matrix(S,ncol=1) %*% matrix(K_over_S,nrow=1)
+  array_K  <- array(matrix_K,c(TT,nb_strikes,H))
+
+  Calls <- array_S * array_varphi_th_aa - array_K * array_varphi_th_00 -
+    array_S * G_0a0a + array_K * G_000a
+
+  Puts <- array_K * G_000a - array_S * G_0a0a
+
+  return(
+    list(Calls = Calls,
+         Puts = Puts,
+         G_000a = G_000a,
+         G_0a0a = G_0a0a)
+  )
 }
+
+
+
 
