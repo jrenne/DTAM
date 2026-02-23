@@ -1448,7 +1448,6 @@ compute_AB_thk <- function(xi0, xi1,
   A <- array(NaN, c(n, q, H))
   B <- array(NaN, c(1, q, H))
   for (h in 1:H) {
-
     X <- matrix(-xi1, n, q)*(h>1) + A.h_1 + u2
 
     psi.u <- psi(X, psi.parameterization)
