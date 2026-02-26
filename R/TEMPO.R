@@ -1,6 +1,5 @@
 #
 #
-#
 # psi.stocks2fact <- function(u, psi.parameterization){
 #   alpha <- psi.parameterization$alpha
 #   beta  <- psi.parameterization$beta
@@ -39,19 +38,21 @@
 #     all_w1 <- c(all_w1,w1)
 #   }
 #
-#
 #   return(cbind(all_w1,all_w2))
 # }
+#
+#
+# freq <- 4 # quarterly data
 #
 # alpha <- .05
 # rho   <- .9
 # mu    <- 2
 # beta  <- rho/mu
-# sigma <- .01
-# chi   <- .0002
-# phi   <- .2
-# kappa <- .003
-# delta <- .004
+# sigma <- .002
+# chi   <- .00005/freq
+# phi   <- .8
+# kappa <- .000
+# mu_pi0 <- .03/freq
 #
 # model <- list(
 #   alpha = alpha,
@@ -61,7 +62,7 @@
 #   chi   = chi,
 #   phi   = phi,
 #   kappa = kappa,
-#   delta = delta,
+#   mu_pi0 = mu_pi0,
 #   n_w = 2
 # )
 #
@@ -73,28 +74,36 @@
 # w1 <- sim.w[,1]
 # w2 <- sim.w[,2]
 #
-# dS <- model$delta + w1 - model$kappa * w2
-# S  <- exp(cumsum(dS))
-#
-# K_over_S <- seq(.8,1.2,by=.2)
+# pi_t <- model$mu_pi0 + w1 - model$kappa * w2
+# annualized_pi_t <- freq * pi_t
 #
 # parameterization = list()
 # parameterization$model <- model
 # parameterization$xi0 = 0
 # parameterization$xi1 = matrix(0,2,1)
+# parameterization$mu_pi0 = model$mu_pi0
+# parameterization$mu_pi1 = matrix(c(1,-model$kappa),2,1)
 #
-# res <- price_Stock_calls_puts(W = sim.w, # Values of state vector (T x n)
-#                               S = S, # ex-dividend stock price (T x 1)
-#                               H = 5, # maximum maturity, in model periods
-#                               a = matrix(c(1,-kappa),ncol=1),
-#                               b = delta, # specif. of ex-dividend stock returns
-#                               K_over_S = K_over_S, # vector of strikes
-#                               psi = psi.stocks2fact, # Laplace transform of W
-#                               parameterization = parameterization,
-#                               max_x = 1000, # settings for Riemann sum comput.
-#                               dx_statio = 1,
-#                               min_dx = 1e-05,
-#                               nb_x1 = 10000)
+# all_K <- seq(0,.05,by=.01)/freq
+#
+# ell <- 0
+#
+# H <- 8
+#
+# Pi_t_minus_ell <- exp(ell*model$mu_pi0)
+#
+# res <- price_Inflation_caps_floors(W = sim.w, # Values of state vector (T x n)
+#                                    H = H, # maximum maturity, in model periods
+#                                    ell = ell, # Indexation lag
+#                                    all_K = all_K, # vector of strikes, expressed at model frequency
+#                                    # e.g.: quarter. data and K=.01 means annualized strike of 4%
+#                                    Pi_t_minus_ell = Pi_t_minus_ell, # Indexation lag multiplicative factor
+#                                    psi = psi.stocks2fact, # Laplace transform of W
+#                                    parameterization, # see details below
+#                                    max_x = 10000, # settings for Riemann sum comput.
+#                                    dx_statio = 10,
+#                                    min_dx = 1e-05,
+#                                    nb_x1 = 1000)
 #
 # par(mfrow=c(3,1))
 #
@@ -102,32 +111,38 @@
 #
 # plot(w2,type="l",las=1,xlab="",ylab="",col="white",
 #      main=expression(paste("(a) Crisis factor (",w[2*','*t],")",sep=""))
-#      )
+# )
 # grid()
 # lines(w2,lwd=2)
 #
+# ylim_pi <- seq(-.1,.15,by=.05)
+#
 # plot(w1,type="l",col="white",xaxt="n",yaxt="n",
-#      ylim=c(-.15,.15),
+#      ylim=c(-.07,.12),
 #      las=1,xlab="",ylab="",
-#      main=expression(paste("(b) Stock returns (in grey)",sep=""))
+#      main=expression(paste("(b) Annualized inflation",sep=""))
 # )
 # grid()
-# ylim_dS <- seq(-.15,.15,by=.05)
-# axis(side=2,at=ylim_dS,labels = sprintf("%.2f", ylim_dS),las=1,
+# axis(side=2,at=ylim_pi,labels = sprintf("%.2f", ylim_pi),las=1,
 #      col.axis = "darkgrey",col = "darkgrey")
-# lines(dS,col="darkgrey",lwd=2)
+# lines(annualized_pi_t,col="black",lwd=2)
 #
-# par(new=TRUE)
-# plot(S,type="l",col="white",xaxt="n",yaxt="n",
-#      ylim=c(.2,1.8),
-#      xlab="",ylab="")
-# lines(S,col="black",lwd=2)
-# ylim_S <- seq(0,2,by=.25)
-# axis(side=4,at=ylim_S,labels = sprintf("%.2f", ylim_S),las=1,
-#      col.axis = "black",col = "black")
-#
-# plot(res$Puts[,1,5]/S,type="l",las=1,xlab="",ylab="",
-#      main=expression(paste("(c) Calls and put prices",sep=""))
-# )
+# h <- 2
+# plot(res$Caps[,1,h],type="l",las=1,
+#      ylim = range(res$Caps[,,h],na.rm = TRUE),
+#      col="white",
+#      xlab="", ylab="",
+#      main=expression(paste("(c) Calls and put prices",sep="")))
+# for(i in 1:length(all_K)){
+#   lines(res$Caps[,i,h],col=i)
+# }
+# plot(res$Floors[,1,h],type="l",las=1,
+#      ylim = range(res$Floors[,,h],na.rm = TRUE),
+#      col="white",
+#      xlab="", ylab="",
+#      main=expression(paste("(c) Calls and put prices",sep="")))
+# for(i in 1:length(all_K)){
+#   lines(res$Floors[,i,h],col=i)
+# }
 #
 #

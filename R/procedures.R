@@ -1448,10 +1448,9 @@ compute_AB_thk <- function(xi0, xi1,
   A <- array(NaN, c(n, q, H))
   B <- array(NaN, c(1, q, H))
   for (h in 1:H) {
-    X <- matrix(-xi1, n, q)*(h>1) + A.h_1 + u2
-
+    X <- matrix(-xi1, n, q) * (h > 1) + A.h_1 + u2 + u1 * x * (h > k)
     psi.u <- psi(X, psi.parameterization)
-    A.h <- matrix(psi.u$a, n, q) + u1 * ((h==k) + x*(h>k))
+    A.h <- matrix(psi.u$a, n, q) + u1 * (h == k)
     B.h <- psi.u$b + B.h_1
     A[, , h] <- A.h
     B[, , h] <- B.h
@@ -1616,6 +1615,8 @@ price_IR_caps_floors <- function(W, # Values of state vector (T x n)
   TT <- dim(W)[1] # number of dates.
   vec1TT <- matrix(1,TT,1)
 
+  nb_strikes <- length(all_K)
+
   parameterization$tau <- tau
   parameterization$u   <- NaN
 
@@ -1662,8 +1663,8 @@ price_IR_caps_floors <- function(W, # Values of state vector (T x n)
                                      min_dx = min_dx,
                                      nb_x1 = nb_x1)
 
-  matrix_K <- t(matrix(all_K,length(all_K),TT))
-  array_K  <- array(matrix_K,c(TT,length(all_K),H))
+  matrix_K <- t(matrix(all_K,nb_strikes,TT))
+  array_K  <- array(matrix_K,c(TT,nb_strikes,H))
 
   Caplet <- exp(-B_tau) * res_truncated1 -
     (1 + alpha_tau * array_K) * res_truncated2
@@ -1676,7 +1677,7 @@ price_IR_caps_floors <- function(W, # Values of state vector (T x n)
   maturities.in.model.period <- seq(tau,H,by=tau)
 
   Caps <- array(NaN,c(TT,
-                      length(all_K),
+                      nb_strikes,
                       length(maturities.in.model.period)))
   dimnames(Caps) <- list(
     time     = paste0("t", 1:TT),
@@ -1823,12 +1824,165 @@ price_Stock_calls_puts <- function(W, # Values of state vector (T x n)
 
   return(
     list(Calls = Calls,
-         Puts = Puts,
-         G_000a = G_000a,
-         G_0a0a = G_0a0a)
+         Puts = Puts)
   )
 }
 
 
 
+price_Inflation_caps_floors <- function(W, # Values of state vector (T x n)
+                                        H, # maximum maturity, in model periods
+                                        ell = 0, # Indexation lag
+                                        all_K, # vector of strikes, expressed at model frequency
+                                        # e.g.: quarter. data and K=.01 means annualized strike of 4%
+                                        Pi_t_minus_ell = NaN, # Indexation lag multiplicative factor
+                                        psi, # Laplace transform of W
+                                        parameterization, # see details below
+                                        max_x = 100000, # settings for Riemann sum comput.
+                                        dx_statio = 10,
+                                        min_dx = 1e-05,
+                                        nb_x1 = 5000
+){
+  # W is the matrix of state-vector values, of dimension T x n (T = number of dates)
+  # "parameterization" includes:
+  #     - "model" (model should include "n_w", the dimension of w_t)
+  #     - "xi0", "xi1" (parameterization of short-term rate, not annualized)
+  #     - "mu_pi0" and "mu_pi1" (parameterization of inflation rate, not annualized)
+
+  nb_strikes <- length(all_K)
+  n_w <- dim(W)[2]
+
+  xi0 <- parameterization$xi0
+  xi1 <- parameterization$xi1
+
+  mu_pi0 <- parameterization$mu_pi0
+  mu_pi1 <- parameterization$mu_pi1
+
+  TT <- dim(W)[1] # number of dates.
+  vec1TT <- matrix(1,TT,1)
+
+  model <- parameterization$model
+
+  if((ell != 0)&is.na(Pi_t_minus_ell[1])){
+    stop("Pi_t_minus_ell cannot be NaN if ell > 0.")
+  }
+
+  if((ell == 0) & is.na(Pi_t_minus_ell[1])){
+    Pi_t_minus_ell <- matrix(1,TT,1)
+  }
+
+  varphi <- function(x,parameterization,H){
+    # This function is an argument of truncated.payoff
+
+    u <- parameterization$u
+    v <- parameterization$v # determine thresholds (dimension nw x 1)
+    i.v.x <- matrix(v,ncol=1) %*% matrix(c(1i*x),nrow=1)
+
+    ell <- parameterization$ell
+
+    nw <- dim(i.v.x)[1]
+    q  <- dim(i.v.x)[2]
+    U <- matrix(u, nw, q) + i.v.x
+
+    res <- compute_AB_thk(xi0 = parameterization$xi0,
+                          xi1 = parameterization$xi1,
+                          u = U,
+                          H = H, # maximum maturity, in model periods
+                          k = ell, # indexation lag of the payoff
+                          psi = psi,
+                          psi.parameterization = parameterization$model,
+                          u2 = NaN,
+                          x = 1)
+    return(res)
+  }
+
+  b.matrix <- matrix(1:H,ncol=1) %*% matrix(all_K, nrow=1) -
+    matrix((1:H)-ell,ncol=1) %*% matrix(mu_pi0, 1, nb_strikes) -
+    log(Pi_t_minus_ell)
+
+  parameterization$ell <- ell
+  parameterization$u   <- NaN
+
+  # Use of "truncated.payoff" for caps:
+  parameterization$v <- matrix(mu_pi1,ncol=1)
+  parameterization$u <- matrix(mu_pi1,ncol=1)
+  res_truncated1 <- truncated.payoff(W,
+                                     b.matrix = b.matrix,
+                                     varphi = varphi,
+                                     parameterization = parameterization,
+                                     max_x = max_x,
+                                     dx_statio = dx_statio,
+                                     min_dx = min_dx,
+                                     nb_x1 = nb_x1)
+  parameterization$u <- matrix(0*mu_pi1, ncol = 1)
+  res_truncated2 <- truncated.payoff(W,
+                                     b.matrix = b.matrix,
+                                     varphi = varphi,
+                                     parameterization = parameterization,
+                                     max_x = max_x,
+                                     dx_statio = dx_statio,
+                                     min_dx = min_dx,
+                                     nb_x1 = nb_x1)
+
+  # Computation of inflation swaps:
+
+  res_mu_pi1 <- compute_AB_thk(xi0 = parameterization$xi0,
+                               xi1 = parameterization$xi1,
+                               u = cbind(mu_pi1,0*mu_pi1),
+                               H = H, # maximum maturity, in model periods
+                               k = ell, # indexation lag of the payoff
+                               psi = psi,
+                               psi.parameterization = parameterization$model,
+                               u2 = NaN,
+                               x = 1)
+  # u1 = mu_pi1:
+  A1 <- matrix(res_mu_pi1$A[,1,],n_w,H)
+  B1 <- matrix(res_mu_pi1$B[,1,],H,1)
+  # u1 = 0*mu_pi1:
+  A0 <- matrix(res_mu_pi1$A[,2,],n_w,H)
+  B0 <- matrix(res_mu_pi1$B[,2,],H,1)
+
+  varphi_th_1 <- exp(W %*% A1 +
+                       vec1TT %*% t(B1 + mu_pi0 * matrix((1:H)-ell,H,1)))
+  # Along the way, save swap rates:
+  swaps <-  log(Pi_t_minus_ell * varphi_th_1) / matrix(1:H,TT,H,byrow = TRUE)
+  varphi_th_1 <- varphi_th_1 %x% matrix(1,1,nb_strikes)
+  varphi_th_0 <- exp(W %*% A0 + vec1TT %*% t(B0))
+  varphi_th_0 <- varphi_th_0 %x% matrix(1,1,nb_strikes)
+
+  array_varphi_th_1 <- array(varphi_th_1,c(TT,nb_strikes,H))
+  array_varphi_th_0 <- array(varphi_th_0,c(TT,nb_strikes,H))
+
+  matrix_K <- t(matrix(all_K,nb_strikes,TT))
+  array_K  <- array(matrix(1:H,nrow=1) %x% matrix_K,
+                    c(TT,nb_strikes,H))
+  array_K <- exp(array_K)
+
+  matrix_h_mu_pi0 <- matrix(((1:H)-ell)*mu_pi0,TT,H,byrow=TRUE)
+  array_h_mu_pi0 <- array(matrix_h_mu_pi0 %x% matrix(1,1,nb_strikes),
+                          c(TT,nb_strikes,H))
+  array_h_mu_pi0 <- exp(array_h_mu_pi0)
+
+  array_Pi_t_minus_ell  <- array(Pi_t_minus_ell,c(TT,nb_strikes,H))
+
+  Caps <-
+    array_Pi_t_minus_ell * array_varphi_th_1 - array_K * array_varphi_th_0 +
+    array_K*res_truncated2 - array_Pi_t_minus_ell*array_h_mu_pi0*res_truncated1
+
+  Floors <- array_K*res_truncated2 -
+    array_Pi_t_minus_ell*array_h_mu_pi0*res_truncated1
+
+  dimnames(Caps) <- list(
+    time     = paste0("t", 1:TT),
+    strike   = paste0(100*all_K,"%"),
+    maturity = paste0("matur_",1:H,"_periods")
+  )
+  dimnames(Floors) <- dimnames(Caps)
+
+  return(
+    list(Caps = Caps,
+         Floors = Floors,
+         swaps = swaps)
+  )
+}
 
