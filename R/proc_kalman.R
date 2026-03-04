@@ -43,7 +43,7 @@ Kalman_filter <- function(Y_t,nu_t,H,N,mu_t,G,M,Sigma_0,rho_0,
   Omega_tp1_t = matrix(0,T,ny*ny)
 
   #Initilize log-Likelihood:
-  logl = ny*T/2*log(2*pi)
+  logl = 0
 
   #Kalman algorithm:
 
@@ -127,7 +127,7 @@ Kalman_filter <- function(Y_t,nu_t,H,N,mu_t,G,M,Sigma_0,rho_0,
       rho_tt[t,] <- reconciliationf(rho_tt[t,],opt)
 
       loglik.vector <- rbind(loglik.vector,
-                             ny.aux/2*log(2*pi) - 1/2*(log(det.omega) +
+                             - ny.aux/2*log(2*pi) - 1/2*(log(det.omega) +
                                                          t(lambda_t) %*% MASS::ginv(omega) %*% lambda_t)
       )
       logl <- logl + loglik.vector[t]
