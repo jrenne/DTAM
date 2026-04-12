@@ -1,12 +1,26 @@
 Package: DTAM
 Type: Package
-Title: Data and procedures for Discrete-Time Asst Pricing
-Version: 0.1.0
-Author: Jean-Paul Renne and Guillaume Roussellet
-Maintainer: Jean-Paul Renne <jean-paul.renne@unil.ch>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Title: Discrete-Time Affine Models
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Jean-Paul",
+           family = "Renne",
+           role = c("aut", "cre"),
+           email = "jean-paul.renne@unil.ch")
+Description: Tools for simulation, estimation, and pricing in discrete-time affine asset pricing models.
+    The package provides utilities for term structure modeling, option pricing, and macro-finance applications.
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.3.2
+Depends: R (>= 4.0)
+Imports:
+    stats,
+    graphics,
+    MASS
+Suggests:
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+
