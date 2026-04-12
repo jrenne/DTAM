@@ -23,7 +23,8 @@
 #' `Sigma = Sigma12 %*% t(Sigma12)` and `Omega = Omega12 %*% t(Omega12)`.
 #'
 #' The function computes the steady-state Kalman gain and then constructs the
-#' joint dynamics of the stacked vector \eqn{(w_t', w_{t|t}')'}.
+#' joint dynamics of the stacked vector
+#' \eqn{(w_t^\prime, w_{t|t}^\prime)^\prime}{(w_t', w_{t|t}')'}.
 #'
 #' @examples
 #' # This function requires a fully specified model list.
