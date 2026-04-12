@@ -33,7 +33,7 @@ w_t = \mu + \Phi w_{t-1} + \Lambda_0 w_{t|t} + \Lambda_1 w_{t-1|t-1}
 \code{Sigma = Sigma12 \%*\% t(Sigma12)} and \code{Omega = Omega12 \%*\% t(Omega12)}.
 
 The function computes the steady-state Kalman gain and then constructs the
-joint dynamics of the stacked vector \verb{(w_t', w_\{t|t\}')'}.
+joint dynamics of the stacked vector \eqn{(w_t', w_{t|t}')'}.
 }
 \examples{
 # This function requires a fully specified model list.
