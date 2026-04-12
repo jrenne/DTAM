@@ -26,6 +26,10 @@
 #' joint dynamics of the stacked vector
 #' \eqn{(w_t^\prime, w_{t|t}^\prime)^\prime}{(w_t', w_{t|t}')'}.
 #'
+#' @references
+#' Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
+#' \emph{Asset Pricing with Discrete-Time Affine Processes}.
+#'
 #' @examples
 #' # This function requires a fully specified model list.
 #' # See the package vignettes or examples in the source code.

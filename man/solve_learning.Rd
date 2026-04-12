@@ -41,3 +41,7 @@ joint dynamics of the stacked vector
 # See the package vignettes or examples in the source code.
 
 }
+\references{
+Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
+\emph{Asset Pricing with Discrete-Time Affine Processes}.
+}
