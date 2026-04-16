@@ -1,38 +1,95 @@
 #' Solve a learning model with filtering
 #'
-#' Solves a linear learning model with latent states and noisy observations,
-#' computes the steady-state filtering objects, and returns the implied joint
-#' dynamics of the state vector and its filtered estimate.
+#' Solves a linear state-space model with imperfect information, computes the
+#' steady-state Kalman filter, and returns a VAR representation for the stacked
+#' vector of states and filtered beliefs.
 #'
-#' The model is of the form
+#' The transition and measurement equations are
 #' \deqn{
 #' w_t = \mu + \Phi w_{t-1} + \Lambda_0 w_{t|t} + \Lambda_1 w_{t-1|t-1}
-#'       + \Sigma^{1/2}\varepsilon_t.
+#'       + \Sigma^{1/2}\varepsilon_t,
+#' }{
+#' w_t = mu + Phi w_{t-1} + Lambda0 w_{t|t} + Lambda1 w_{t-1|t-1} +
+#'   Sigma^{1/2} eps_t,
+#' }
+#' and
+#' \deqn{
+#' y_t = B + A w_t + \Omega^{1/2}\eta_t.
+#' }{
+#' y_t = B + A w_t + Omega^{1/2} eta_t.
 #' }
 #'
-#' @param model A list containing the model matrices:
-#'   `mu`, `Phi`, `Sigma12`, `Omega12`, `A`, `B`, `Lambda0`, and `Lambda1`.
-#' @param max.iter Maximum number of iterations used in the fixed-point loop.
+#' @param model A list describing the model. It must contain:
+#'   `mu` (state intercept), `Phi` (state-transition matrix), `Sigma12`
+#'   (square root of the state-shock covariance matrix), `A` and `B`
+#'   (measurement-equation matrices), `Omega12` (square root of the
+#'   measurement-error covariance matrix), and `Lambda0`, `Lambda1`
+#'   (feedback matrices from filtered beliefs to the transition equation).
+#' @param max.iter Maximum number of iterations used to compute the
+#'   steady-state filtering covariance matrix.
 #'
-#' @return A list containing the original model inputs together with the solved
-#'   objects `R`, `P`, `K`, `S`, `mu_ww`, `Phi_ww`, `Sigma_ww`, and
-#'   `Sigma12_ww`.
+#' @return A list containing the original model inputs and the solved objects:
+#'   `R`, `P`, `K`, and `S` for the steady-state filter, as well as `mu_ww`,
+#'   `Phi_ww`, `Sigma_ww`, and `Sigma12_ww` for the stacked process
+#'   \eqn{(w_t^\prime, w_{t|t}^\prime)^\prime}{(w_t', w_{t|t}')'}.
 #'
 #' @details
-#' `Sigma12` and `Omega12` are interpreted as square-root matrices such that
-#' `Sigma = Sigma12 %*% t(Sigma12)` and `Omega = Omega12 %*% t(Omega12)`.
+#' `Sigma12` and `Omega12` are interpreted as square-root matrices:
+#' `Sigma = Sigma12 %*% t(Sigma12)` and
+#' `Omega = Omega12 %*% t(Omega12)`.
 #'
-#' The function computes the steady-state Kalman gain and then constructs the
-#' joint dynamics of the stacked vector
-#' \eqn{(w_t^\prime, w_{t|t}^\prime)^\prime}{(w_t', w_{t|t}')'}.
+#' The function iterates on the steady-state Kalman covariance matrix, computes
+#' the associated Kalman gain, and then derives the law of motion for the
+#' stacked vector formed by the true state and its filtered estimate.
+#'
+#' The measurement intercept `B` is included in the input specification for
+#' consistency with the state-space notation, although the steady-state
+#' covariance recursion itself depends only on `A` and `Omega12`.
 #'
 #' @references
 #' Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
 #' *Asset Pricing with Discrete-Time Affine Processes*.
 #'
 #' @examples
-#' # This function requires a fully specified model list.
-#' # See the package vignettes or examples in the source code.
+#' # Example adapted from the imperfect-information chapter of the companion
+#' # Bookdown project. The latent state is two-dimensional and the observation
+#' # is noisy consumption growth.
+#' set.seed(123)
+#'
+#' mu_c <- 0
+#' phi <- 0.979
+#' sigma <- 0.0078
+#' varphi_e <- 0.044
+#'
+#' mu <- matrix(c(0, mu_c), 2, 1)
+#' Phi <- matrix(0, 2, 2)
+#' Phi[1, 1] <- phi
+#' Phi[2, 1] <- 1
+#'
+#' Sigma12 <- matrix(0, 2, 2)
+#' Sigma12[1, 1] <- varphi_e * sigma
+#' Sigma12[2, 2] <- sigma
+#'
+#' A <- matrix(c(0, 1), 1, 2)
+#' B <- 0
+#' Omega12 <- 1e-7
+#'
+#' model <- list(
+#'   mu = mu,
+#'   Phi = Phi,
+#'   Sigma12 = Sigma12,
+#'   A = A,
+#'   B = B,
+#'   Omega12 = Omega12,
+#'   Lambda0 = 0 * Phi,
+#'   Lambda1 = 0 * Phi
+#' )
+#'
+#' model_sol <- solve_learning(model)
+#'
+#' # Steady-state filter objects:
+#' model_sol$K
+#' model_sol$P
 #'
 #' @export
 solve_learning <- function(model, max.iter = 200) {

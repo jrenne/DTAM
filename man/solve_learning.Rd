@@ -7,38 +7,95 @@
 solve_learning(model, max.iter = 200)
 }
 \arguments{
-\item{model}{A list containing the model matrices:
-\code{mu}, \code{Phi}, \code{Sigma12}, \code{Omega12}, \code{A}, \code{B}, \code{Lambda0}, and \code{Lambda1}.}
+\item{model}{A list describing the model. It must contain:
+\code{mu} (state intercept), \code{Phi} (state-transition matrix), \code{Sigma12}
+(square root of the state-shock covariance matrix), \code{A} and \code{B}
+(measurement-equation matrices), \code{Omega12} (square root of the
+measurement-error covariance matrix), and \code{Lambda0}, \code{Lambda1}
+(feedback matrices from filtered beliefs to the transition equation).}
 
-\item{max.iter}{Maximum number of iterations used in the fixed-point loop.}
+\item{max.iter}{Maximum number of iterations used to compute the
+steady-state filtering covariance matrix.}
 }
 \value{
-A list containing the original model inputs together with the solved
-objects \code{R}, \code{P}, \code{K}, \code{S}, \code{mu_ww}, \code{Phi_ww}, \code{Sigma_ww}, and
-\code{Sigma12_ww}.
-}
-\description{
-Solves a linear learning model with latent states and noisy observations,
-computes the steady-state filtering objects, and returns the implied joint
-dynamics of the state vector and its filtered estimate.
-}
-\details{
-The model is of the form
-\deqn{
-w_t = \mu + \Phi w_{t-1} + \Lambda_0 w_{t|t} + \Lambda_1 w_{t-1|t-1}
-      + \Sigma^{1/2}\varepsilon_t.
-}
-
-\code{Sigma12} and \code{Omega12} are interpreted as square-root matrices such that
-\code{Sigma = Sigma12 \%*\% t(Sigma12)} and \code{Omega = Omega12 \%*\% t(Omega12)}.
-
-The function computes the steady-state Kalman gain and then constructs the
-joint dynamics of the stacked vector
+A list containing the original model inputs and the solved objects:
+\code{R}, \code{P}, \code{K}, and \code{S} for the steady-state filter, as well as \code{mu_ww},
+\code{Phi_ww}, \code{Sigma_ww}, and \code{Sigma12_ww} for the stacked process
 \eqn{(w_t^\prime, w_{t|t}^\prime)^\prime}{(w_t', w_{t|t}')'}.
 }
+\description{
+Solves a linear state-space model with imperfect information, computes the
+steady-state Kalman filter, and returns a VAR representation for the stacked
+vector of states and filtered beliefs.
+}
+\details{
+The transition and measurement equations are
+\deqn{
+w_t = \mu + \Phi w_{t-1} + \Lambda_0 w_{t|t} + \Lambda_1 w_{t-1|t-1}
+      + \Sigma^{1/2}\varepsilon_t,
+}{
+w_t = mu + Phi w_{t-1} + Lambda0 w_{t|t} + Lambda1 w_{t-1|t-1} +
+  Sigma^{1/2} eps_t,
+}
+and
+\deqn{
+y_t = B + A w_t + \Omega^{1/2}\eta_t.
+}{
+y_t = B + A w_t + Omega^{1/2} eta_t.
+}
+
+\code{Sigma12} and \code{Omega12} are interpreted as square-root matrices:
+\code{Sigma = Sigma12 \%*\% t(Sigma12)} and
+\code{Omega = Omega12 \%*\% t(Omega12)}.
+
+The function iterates on the steady-state Kalman covariance matrix, computes
+the associated Kalman gain, and then derives the law of motion for the
+stacked vector formed by the true state and its filtered estimate.
+
+The measurement intercept \code{B} is included in the input specification for
+consistency with the state-space notation, although the steady-state
+covariance recursion itself depends only on \code{A} and \code{Omega12}.
+}
 \examples{
-# This function requires a fully specified model list.
-# See the package vignettes or examples in the source code.
+# Example adapted from the imperfect-information chapter of the companion
+# Bookdown project. The latent state is two-dimensional and the observation
+# is noisy consumption growth.
+set.seed(123)
+
+mu_c <- 0
+phi <- 0.979
+sigma <- 0.0078
+varphi_e <- 0.044
+
+mu <- matrix(c(0, mu_c), 2, 1)
+Phi <- matrix(0, 2, 2)
+Phi[1, 1] <- phi
+Phi[2, 1] <- 1
+
+Sigma12 <- matrix(0, 2, 2)
+Sigma12[1, 1] <- varphi_e * sigma
+Sigma12[2, 2] <- sigma
+
+A <- matrix(c(0, 1), 1, 2)
+B <- 0
+Omega12 <- 1e-7
+
+model <- list(
+  mu = mu,
+  Phi = Phi,
+  Sigma12 = Sigma12,
+  A = A,
+  B = B,
+  Omega12 = Omega12,
+  Lambda0 = 0 * Phi,
+  Lambda1 = 0 * Phi
+)
+
+model_sol <- solve_learning(model)
+
+# Steady-state filter objects:
+model_sol$K
+model_sol$P
 
 }
 \references{
