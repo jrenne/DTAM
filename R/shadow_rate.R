@@ -125,6 +125,7 @@ compute_F_Shadow_Gaussian <-
     ))
   }
 
+#' @export
 psi.QPoisson <- function(u,psi.parameterization){
   # Laplace transform of a process defined as follows:
   # N_t^+ ~ Poisson(x_t'·Omega^+·x_t) and N_t^- ~ Poisson(x_t'·Omega^-·x_t)
@@ -167,6 +168,7 @@ psi.QPoisson <- function(u,psi.parameterization){
   return(list(a = a, b = b))
 }
 
+#' @export
 psi.VARG_Poisson <- function(u,psi.parameterization){
   # Laplace transform of a process defined as follows:
   # N_t^+ ~ Poisson(z_t^+) and N_t^- ~ Poisson(z_t^-),
@@ -195,6 +197,7 @@ psi.VARG_Poisson <- function(u,psi.parameterization){
   return(list(a = a, b = b))
 }
 
+#' @export
 psi.AR_CH <- function(u,psi.parameterization){
   # Laplace transform of a process defined as follows:
   # s_t = mu + phi·s_{t+1} + sqrt(z_t)·eps_t, with eps_t ~ N(0,1) and
@@ -271,6 +274,74 @@ varphi4G_SR_QPoisson <- function(x,parameterization,H){
   return(list(A=A,B=B))
 }
 
+#' Affine approximation for shadow-rate forward-rate components
+#'
+#' Computes the affine approximation of the sequence of forward-rate correction
+#' terms that arise in shadow-rate models.
+#'
+#' @param W Matrix of state values, with one row per date.
+#' @param psi Conditional Laplace transform of the state vector.
+#' @param psi.parameterization Parameter list passed to `psi`.
+#' @param ell_bar Lower bound applied to the short rate.
+#' @param b Scalar intercept in the short-rate specification.
+#' @param a Loading vector in the short-rate specification.
+#' @param c Loading vector entering the affine approximation formula.
+#' @param chi Sign/convention parameter used in the approximation formula.
+#' @param H Maximum horizon, in model periods.
+#' @param eps Small finite-difference increment used to compute the derivative
+#'   term `dG`.
+#' @param max_x Maximum truncation point of the numerical integration grid.
+#' @param dx_statio Constant step size used on the upper tail of the integration
+#'   grid.
+#' @param min_dx Smallest step size used at the beginning of the grid.
+#' @param nb_x1 Number of log-spaced grid points used before switching to
+#'   `dx_statio`.
+#' @param du Finite-difference step used to compute conditional variance terms.
+#'
+#' @return A list with two matrices, `F_c_equal_0` and `F`, each of dimension
+#'   `T x H`, where `T` is the number of rows of `W`.
+#'
+#' @details
+#' The function combines:
+#' `truncated.payoff()` to evaluate the truncated exponential component,
+#' `compute_expect_variance()` and `compute_expect_variance_H()` to recover the
+#' conditional mean and variance terms entering the affine approximation.
+#'
+#' This routine is used in the nonlinear/shadow-rate chapter of the companion
+#' Bookdown project.
+#'
+#' @references
+#' Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
+#' *Asset Pricing with Discrete-Time Affine Processes*.
+#'
+#' @examples
+#' rho <- 0.96
+#' Phi <- matrix(rho, 1, 1)
+#' mu <- matrix(0.03 * (1 - rho), 1, 1)
+#' Sigma <- (1 - rho^2) * 0.02^2 * matrix(1)
+#' model <- list(mu = mu, Phi = Phi, Sigma = Sigma, n_w = 1)
+#'
+#' set.seed(123)
+#' W <- simul.GVAR(model, nb.sim = 40)
+#'
+#' res <- compute_F_Shadow_affine(
+#'   W = W,
+#'   psi = psi.GaussianVAR,
+#'   psi.parameterization = model,
+#'   ell_bar = 0,
+#'   b = 0,
+#'   a = matrix(1, 1, 1),
+#'   c = matrix(0, 1, 1),
+#'   H = 6,
+#'   max_x = 300,
+#'   dx_statio = 2,
+#'   min_dx = 1e-4,
+#'   nb_x1 = 200
+#' )
+#'
+#' dim(res$F)
+#'
+#' @export
 compute_F_Shadow_affine <- function(W,psi,psi.parameterization,
                                     ell_bar=0,
                                     b,a,c,chi=-1,
@@ -397,5 +468,3 @@ compute_F_Shadow_affine <- function(W,psi,psi.parameterization,
   return(list(F_c_equal_0 = F_c_equal_0,
               F = F_c))
 }
-
-

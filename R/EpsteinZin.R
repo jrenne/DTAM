@@ -1,8 +1,4 @@
 
-
-
-
-
 solve_EZ_UnitEIS <- function(model,psi,Phi=NaN,du = 1e-06,
                              nb_iter_u1 = 20){
   # This procedure computes the SDF and the utility function
@@ -130,9 +126,6 @@ solve_CRRA <- function(model,psi,Phi=NaN,du = 1e-06){
 
   return(model_solved)
 }
-
-
-
 solve_EZ_SDF <- function(model,psi,z_bar_ini=5,
                          nb_loop_z_bar=20,nb_loop_mu_z1=100){
   # This procedure computes the SDF in the CES-CRRA Epstein-Zin case.
@@ -211,8 +204,6 @@ solve_EZ_SDF <- function(model,psi,z_bar_ini=5,
 
   return(model_solved)
 }
-
-
 solve_EZ_stock_return <- function(model,psi,Ew=NaN,z_s_bar_ini=5,
                                   nb_loop_z_bar=20,nb_loop_mu_z1=100,
                                   mu_s1_ini=NaN){
@@ -295,8 +286,7 @@ solve_EZ_stock_return <- function(model,psi,Ew=NaN,z_s_bar_ini=5,
 
   return(model_solved)
 }
-
-
+#' @export
 psi.BansalShaliastovich <- function (u,psi.parameterization){
   # This function computes the log Laplace transform associated with
   # the model by Bansal and Shaliastovich (2012, RFS)
@@ -310,4 +300,3 @@ psi.BansalShaliastovich <- function (u,psi.parameterization){
                psi.parameterization$chi.1 %*% (u.x * u.x) + t(psi.parameterization$nu) %*% u.z)
   return(list(a = a,b = b))
 }
-

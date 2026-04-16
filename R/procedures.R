@@ -515,7 +515,7 @@ compute_expect_variance_H <- function(VAR_representation,
 # res <- compute_expect_variance_H(VAR_representation,
 #                                  theta1=theta1,H=H)
 
-
+#' @export
 psi.VARG <- function(u,psi.parameterization){
   # Laplace transform of a VARG with conditionally independent components.
   # Conditionally on w_t,w_{t-1},..., the distribution of the jth component is:
@@ -771,7 +771,7 @@ prices_CDS_RFV_VARG <- function(model,H=10,indic_delta1 = NaN,
 
 
 # Top-down approach ============================================================
-
+#' @export
 psi.w.TopDown <- function(u,model,psi.y=psi.y.TopDown){
   # This function evaluates the LT of the state vector w_t in the context of the
   # top-down approach of Gourieroux, Monfort, Mouabbi, and Renne.
@@ -800,7 +800,7 @@ psi.w.TopDown <- function(u,model,psi.y=psi.y.TopDown){
               a.wn = a.wn,
               a    = rbind(a.wy,a.wn)))
 }
-
+#' @export
 psiQ.w.TopDown <- function(u,model,psi.y=psi.y.TopDown){
   # Same as psiQ.w.TopDown, but under the risk-neutral (Q) measure
 
@@ -821,7 +821,7 @@ psiQ.w.TopDown <- function(u,model,psi.y=psi.y.TopDown){
               a.wn = a.wn,
               a    = rbind(a.wy,a.wn)))
 }
-
+#' @export
 psi.y.TopDown <- function(u.y,model){
   # This function returns the LT of y_{t+1}|w_t.
   # It can be evaluated for different u.y's, i.e., u.y can be a matrix.
@@ -1057,6 +1057,95 @@ varphi4G_TopDown <- function(x,parameterization,H){
 }
 
 
+#' Price truncated exponential-affine payoffs by Fourier inversion
+#'
+#' Computes expectations of exponentially affine payoffs multiplied by an
+#' indicator of the form
+#' \deqn{
+#' \mathbb{E}\left[
+#'   \exp(u_0^\prime w_t + \cdots + u_h^\prime w_{t+h})
+#'   \mathbf{1}\{v_0^\prime w_t + \cdots + v_h^\prime w_{t+h} < b\}
+#' \right].
+#' }{
+#' E[exp(u0' w_t + ... + uh' w_{t+h}) 1{v0' w_t + ... + vh' w_{t+h} < b}].
+#' }
+#'
+#' The function evaluates these quantities simultaneously for multiple horizons
+#' and multiple threshold values.
+#'
+#' @param W Matrix of state values, with one row per evaluation date.
+#' @param b.matrix Matrix of thresholds, with one row per horizon and one column
+#'   per threshold value.
+#' @param varphi Function returning affine coefficients as a function of the
+#'   Fourier variable. It must accept arguments `(x, parameterization, H)`.
+#' @param parameterization List passed to `varphi`. It must contain `model`, and
+#'   `parameterization$model` must include `n_w`, the dimension of the state
+#'   vector.
+#' @param max_x Upper truncation point for the numerical integration grid.
+#' @param dx_statio Step size used in the upper tail of the grid.
+#' @param min_dx Smallest step size used at the start of the grid.
+#' @param nb_x1 Number of log-spaced grid points used before switching to the
+#'   constant step size `dx_statio`.
+#'
+#' @return An array of dimension `T x k x H`, where `T` is the number of rows of
+#'   `W`, `k` is the number of threshold values, and `H` is the number of
+#'   horizons.
+#'
+#' @details
+#' The function implements a Fourier-inversion approach. The helper `varphi`
+#' determines the affine transform associated with the payoff and thresholding
+#' structure.
+#'
+#' This routine is a central numerical building block for the package’s
+#' nonlinear bond and option pricing functions.
+#'
+#' @references
+#' Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
+#' *Asset Pricing with Discrete-Time Affine Processes*.
+#'
+#' @examples
+#' model <- list(
+#'   mu = matrix(0.01, 1, 1),
+#'   Phi = matrix(0.95, 1, 1),
+#'   Sigma = matrix(0.02, 1, 1),
+#'   n_w = 1
+#' )
+#'
+#' W <- simul.GVAR(model, nb.sim = 20)
+#'
+#' varphi_demo <- function(x, parameterization, H) {
+#'   u <- matrix(as.numeric(parameterization$u), ncol = 1)
+#'   v <- matrix(as.numeric(parameterization$v), ncol = 1)
+#'   i.v.x <- v %*% matrix(1i * as.numeric(x), nrow = 1)
+#'   res <- reverse.MHLT(
+#'     psi = psi.GaussianVAR,
+#'     u1 = u + i.v.x,
+#'     u2 = matrix(0, nrow = 1, ncol = ncol(i.v.x)),
+#'     H = H,
+#'     psi.parameterization = parameterization$model
+#'   )
+#'   list(A = res$A, B = res$B)
+#' }
+#'
+#' parameterization <- list(
+#'   model = model,
+#'   u = matrix(0, 1, 1),
+#'   v = matrix(1, 1, 1)
+#' )
+#'
+#' prices <- truncated.payoff(
+#'   W = W,
+#'   b.matrix = matrix(0, nrow = 3, ncol = 1),
+#'   varphi = varphi_demo,
+#'   parameterization = parameterization,
+#'   max_x = 200,
+#'   dx_statio = 2,
+#'   min_dx = 1e-4,
+#'   nb_x1 = 200
+#' )
+#'
+#' length(prices)
+#'
 truncated.payoff <- function(W, # values of w_t
                              b.matrix, # thresholds (H x k, 1 row per maturity)
                              varphi,
@@ -1791,6 +1880,81 @@ log_mvdnorm <- function(X, Sigma){
 #   c(var(t(X)))
 # )
 
+#' Price interest-rate caps and floors
+#'
+#' Prices caplets, floorlets, caps, and floors in an affine term-structure model
+#' using Fourier inversion and affine pricing recursions.
+#'
+#' @param W Matrix of state values, with one row per date.
+#' @param H Maximum maturity, in model periods.
+#' @param tau Maturity of the reference rate, in model periods.
+#' @param freq Number of model periods per year.
+#' @param all_K Vector of annualized strike rates.
+#' @param psi Conditional Laplace transform of the state vector.
+#' @param parameterization List containing at least `model`, `xi0`, and `xi1`.
+#'   The embedded `model` object must include `n_w`.
+#' @param max_x Maximum truncation point of the numerical integration grid.
+#' @param dx_statio Constant step size used on the upper tail of the integration
+#'   grid.
+#' @param min_dx Smallest step size used at the beginning of the grid.
+#' @param nb_x1 Number of log-spaced grid points used before switching to
+#'   `dx_statio`.
+#'
+#' @return A list containing:
+#'   `A_tau`, `B_tau`, `a_tau`, `b_tau` for the affine representation of the
+#'   reference rate, plus arrays `Caplet`, `Floorlet`, `Caps`, and `Floors`.
+#'
+#' @details
+#' The function first computes the affine representation of the reference rate,
+#' then prices caplets and floorlets through repeated calls to
+#' `truncated.payoff()`, and finally aggregates them into caps and floors across
+#' maturities.
+#'
+#' The entries of `all_K` are annualized strikes, whereas the underlying model
+#' is expressed at the model frequency set by `freq`.
+#'
+#' @references
+#' Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
+#' *Asset Pricing with Discrete-Time Affine Processes*.
+#'
+#' @examples
+#' model <- list(
+#'   alpha = matrix(c(0.1, 0.2), ncol = 1),
+#'   nu = matrix(c(0.2, 0.3), ncol = 1),
+#'   mu = matrix(c(1, 1), ncol = 1),
+#'   beta = matrix(c(0.9, 0,
+#'                   0.1, 0.8), 2, 2, byrow = TRUE),
+#'   n_w = 2
+#' )
+#'
+#' set.seed(123)
+#' W <- simul_VARG(model, nb_periods = 30)
+#' W <- t(W)
+#'
+#' parameterization <- list(
+#'   model = model,
+#'   xi0 = 0.01 / 12,
+#'   xi1 = matrix(c(0.5, 0.2), ncol = 1)
+#' )
+#'
+#' res <- price_IR_caps_floors(
+#'   W = W,
+#'   H = 12,
+#'   tau = 3,
+#'   freq = 12,
+#'   all_K = c(0.01, 0.02),
+#'   psi = psi.VARG,
+#'   parameterization = parameterization,
+#'   max_x = 500,
+#'   dx_statio = 2,
+#'   min_dx = 1e-4,
+#'   nb_x1 = 300
+#' )
+#'
+#' names(res)
+#' dim(res$Caps)
+#'
+#' @export
 price_IR_caps_floors <- function(W, # Values of state vector (T x n)
                                  H, # maximum maturity, in model periods
                                  tau, # maturity of ref. rate, in model periods

@@ -543,6 +543,7 @@ make_matrices_cond_mean_variance_Quadratic <- function(model, indic_compute_V){
 }
 
 
+#' @export
 psi.GaussianQVAR <- function(u,psi.parameterization){
   # The model is:
   # x_t = mu + Phi·x_{t-1} + Sigma^(1/2)·eps_t,
@@ -707,6 +708,5 @@ make_Mnx <- function(n) {
 # V <- aux + t(aux)
 # Sigma12 %*% solve(diag(2) - 2*t(Sigma12) %*% V %*% Sigma12) %*% t(Sigma12)
 # solve(solve(Sigma12%*%t(Sigma12)) - 2*V)
-
 
 

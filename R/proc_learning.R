@@ -180,7 +180,6 @@ solve_learning <- function(model, max.iter = 200) {
 #' # Requires a solved model object:
 #' # sim <- simul_model(model_sol, H = 200)
 #'
-#' @export
 simul_model <- function(model_sol, H) {
 
   mu_ww      <- model_sol$mu_ww
