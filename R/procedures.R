@@ -367,6 +367,75 @@ Fourier.psi <- function(model,gamma,x,
 #   return(X)
 # }
 
+#' Compute conditional and unconditional moments from an affine transform
+#'
+#' Recovers the affine conditional mean and variance representation of a state
+#' vector from its conditional log-Laplace transform, and deduces the
+#' corresponding unconditional moments.
+#'
+#' @param psi Conditional log-Laplace transform of the state vector. It must
+#'   accept arguments `(u, model)` and return a list with components `a` and
+#'   `b`.
+#' @param model A list containing the parameterization of the state process. It
+#'   must include `n_w`, the dimension of the state vector, together with the
+#'   objects required by `psi`.
+#' @param du Finite-difference step used to approximate first and second
+#'   derivatives of the log-Laplace transform around zero.
+#'
+#' @return A list with:
+#'   `mu`, `Phi`, `Theta0`, `Theta1` describing the affine conditional moments,
+#'   and `Ew`, `Vw` giving the unconditional mean and variance.
+#'
+#' @details
+#' The function numerically differentiates the conditional log-Laplace
+#' transform:
+#'
+#' \deqn{
+#' \mathbb{E}_t[\exp(u^\prime w_{t+1})] =
+#' \exp\left(a(u)^\prime w_t + b(u)\right),
+#' }{
+#' E_t[exp(u' w_{t+1})] = exp(a(u)' w_t + b(u)),
+#' }
+#'
+#' around `u = 0` to recover:
+#'
+#' \deqn{
+#' \mathbb{E}_t(w_{t+1}) = \mu + \Phi w_t,
+#' }{
+#' E_t(w_{t+1}) = mu + Phi w_t,
+#' }
+#'
+#' and
+#'
+#' \deqn{
+#' \mathrm{vec}\{\mathrm{Var}_t(w_{t+1})\} = \Theta_0 + \Theta_1 w_t.
+#' }{
+#' vec(Var_t(w_{t+1})) = Theta0 + Theta1 w_t.
+#' }
+#'
+#' These objects are used throughout the package for recursive preferences,
+#' shadow-rate approximations, and filtering applications.
+#'
+#' @references
+#' Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
+#' *Asset Pricing with Discrete-Time Affine Processes*.
+#'
+#' @examples
+#' model <- list(
+#'   mu = matrix(c(0.01, 0.02), ncol = 1),
+#'   Phi = matrix(c(0.95, 0.00,
+#'                  0.05, 0.90), nrow = 2, byrow = TRUE),
+#'   Sigma = diag(c(0.02, 0.01)),
+#'   n_w = 2
+#' )
+#'
+#' res <- compute_expect_variance(psi.GaussianVAR, model)
+#'
+#' res$mu
+#' res$Phi
+#' res$Ew
+#'
+#' @export
 compute_expect_variance <- function(psi,model,du = 1e-06){
   # This function computes the conditional and unconditional expectations and
   # varances of an affine process.

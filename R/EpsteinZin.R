@@ -1,4 +1,69 @@
 
+#' Solve the Epstein-Zin SDF when EIS equals one
+#'
+#' Solves the recursive utility fixed-point problem in the special case of
+#' Epstein-Zin preferences with unit elasticity of intertemporal substitution
+#' (EIS = 1), and returns the implied affine SDF coefficients.
+#'
+#' @param model A list containing the preference and state-dynamics
+#'   specification. It must include at least `gamma`, `delta`, `mu_c0`,
+#'   `mu_c1`, and `n_w`, together with the objects required by `psi`.
+#' @param psi Conditional log-Laplace transform of the state vector. It must
+#'   accept arguments `(u, model)` and return a list with components `a` and
+#'   `b`.
+#' @param Phi Optional initial guess for the conditional-mean loading matrix of
+#'   the state process. If left as `NaN`, it is computed numerically by
+#'   `compute_expect_variance()`.
+#' @param du Finite-difference step used to recover conditional moments of the
+#'   state process.
+#' @param nb_iter_u1 Maximum number of fixed-point iterations used to solve for
+#'   the continuation-value loading vector.
+#'
+#' @return The input `model` list augmented with `Ew`, `Vw`, `Phi`, `mu`,
+#'   `eta0`, `eta1`, and `alpha`.
+#'
+#' @details
+#' The function first computes the affine conditional mean and unconditional
+#' moments of the state vector, then iterates on the unit-EIS continuation-value
+#' recursion. The output delivers the affine approximation to the stochastic
+#' discount factor through the coefficients `eta0`, `eta1`, and `alpha`.
+#'
+#' @references
+#' Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
+#' *Asset Pricing with Discrete-Time Affine Processes*.
+#'
+#' @examples
+#' # Example adapted from the recursive-preferences chapter of the companion
+#' # Bookdown project.
+#' gamma <- 10
+#' delta <- 0.998
+#' mu_c <- 0.0015
+#' mu_d <- 0.0025
+#' phi <- 0.979
+#' beta <- 3
+#' sigma <- 0.0078
+#' varphi_e <- 0.044
+#' varphi_d <- 4.5
+#'
+#' model <- list(
+#'   mu = matrix(c(0, mu_c, mu_d), 3, 1),
+#'   Phi = matrix(c(phi, 1, beta,
+#'                  0,   0, 0,
+#'                  0,   0, 0), 3, 3, byrow = TRUE),
+#'   Sigma = diag(sigma^2 * c(varphi_e, 1, varphi_d)^2),
+#'   gamma = gamma,
+#'   delta = delta,
+#'   mu_c0 = 0,
+#'   mu_c1 = matrix(c(0, 1, 0), 3, 1),
+#'   n_w = 3
+#' )
+#'
+#' res <- solve_EZ_UnitEIS(model, psi = psi.GaussianVAR, Phi = model$Phi)
+#'
+#' res$eta0
+#' res$alpha
+#'
+#' @export
 solve_EZ_UnitEIS <- function(model,psi,Phi=NaN,du = 1e-06,
                              nb_iter_u1 = 20){
   # This procedure computes the SDF and the utility function
@@ -80,6 +145,68 @@ solve_EZ_UnitEIS <- function(model,psi,Phi=NaN,du = 1e-06,
   return(model_solved)
 }
 
+#' Solve the CRRA stochastic discount factor
+#'
+#' Solves the affine stochastic discount factor implied by standard
+#' time-separable CRRA preferences.
+#'
+#' @param model A list containing the preference and state-dynamics
+#'   specification. It must include at least `gamma`, `delta`, `mu_c0`,
+#'   `mu_c1`, and `n_w`, together with the objects required by `psi`.
+#' @param psi Conditional log-Laplace transform of the state vector. It must
+#'   accept arguments `(u, model)` and return a list with components `a` and
+#'   `b`.
+#' @param Phi Optional argument kept for interface consistency. If provided, it
+#'   is ignored because the function recomputes `Phi` through
+#'   `compute_expect_variance()`.
+#' @param du Finite-difference step used to recover conditional moments of the
+#'   state process.
+#'
+#' @return The input `model` list augmented with `Ew`, `Vw`, `Phi`, `mu`,
+#'   `eta0`, `eta1`, and `alpha`.
+#'
+#' @details
+#' Under CRRA time-separable preferences, the price of risk vector is simply
+#' `-gamma * mu_c1`. The function computes the associated affine short-rate and
+#' SDF coefficients after recovering the conditional moments of the state
+#' process from `psi`.
+#'
+#' @references
+#' Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
+#' *Asset Pricing with Discrete-Time Affine Processes*.
+#'
+#' @examples
+#' # Example adapted from the recursive-preferences chapter of the companion
+#' # Bookdown project.
+#' gamma <- 10
+#' delta <- 0.998
+#' mu_c <- 0.0015
+#' mu_d <- 0.0025
+#' phi <- 0.979
+#' beta <- 3
+#' sigma <- 0.0078
+#' varphi_e <- 0.044
+#' varphi_d <- 4.5
+#'
+#' model <- list(
+#'   mu = matrix(c(0, mu_c, mu_d), 3, 1),
+#'   Phi = matrix(c(phi, 1, beta,
+#'                  0,   0, 0,
+#'                  0,   0, 0), 3, 3, byrow = TRUE),
+#'   Sigma = diag(sigma^2 * c(varphi_e, 1, varphi_d)^2),
+#'   gamma = gamma,
+#'   delta = delta,
+#'   mu_c0 = 0,
+#'   mu_c1 = matrix(c(0, 1, 0), 3, 1),
+#'   n_w = 3
+#' )
+#'
+#' res <- solve_CRRA(model, psi.GaussianVAR)
+#'
+#' res$eta0
+#' res$alpha
+#'
+#' @export
 solve_CRRA <- function(model,psi,Phi=NaN,du = 1e-06){
   # This procedure computes the SDF and the utility function
   #    in the case of CRRA time-separable preferences.
@@ -288,6 +415,88 @@ solve_EZ_SDF <- function(model,psi,z_bar_ini=5,
 
   return(model_solved)
 }
+#' Solve the affine approximation to stock returns under Epstein-Zin preferences
+#'
+#' Computes the Campbell-Shiller style affine approximation to log stock
+#' returns implied by a model already solved for its Epstein-Zin stochastic
+#' discount factor.
+#'
+#' @param model A list containing the state-dynamics specification together with
+#'   the solved SDF quantities returned by `solve_EZ_SDF()` or
+#'   `solve_EZ_UnitEIS()`. It must include at least `mu_d0`, `mu_d1`, `eta0`,
+#'   `eta1`, `alpha`, `Phi`, `Ew`, and `n_w`.
+#' @param psi Conditional log-Laplace transform of the state vector. It must
+#'   accept arguments `(u, model)` and return a list with components `a` and
+#'   `b`.
+#' @param Ew Optional unconditional mean of the state vector. If left as `NaN`,
+#'   the function uses `model$Ew`.
+#' @param z_s_bar_ini Initial guess for the average log price-dividend ratio.
+#' @param nb_loop_z_bar Number of outer fixed-point iterations.
+#' @param nb_loop_mu_z1 Number of inner fixed-point iterations.
+#' @param mu_s1_ini Optional initial guess for the price-dividend loading vector.
+#'
+#' @return The input `model` list augmented with `mu_rs0`, `mu_rs1`, `mu_rs2`,
+#'   `mu_s0`, `mu_s1`, `kappa0s`, `kappa1s`, and `z_s_bar`.
+#'
+#' @details
+#' The function takes as given the affine SDF coefficients and solves the
+#' fixed-point system associated with the log-linearized price-dividend ratio.
+#' The returned coefficients provide an affine approximation to stock returns in
+#' the spirit of Bansal and Yaron (2004).
+#'
+#' @references
+#' Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
+#' *Asset Pricing with Discrete-Time Affine Processes*.
+#'
+#' @examples
+#' # Example adapted from the recursive-preferences chapter of the companion
+#' # Bookdown project.
+#' gamma <- 10
+#' delta <- 0.998
+#' mu_c <- 0.0015
+#' mu_d <- 0.0025
+#' phi <- 0.979
+#' beta <- 3
+#' sigma <- 0.0078
+#' varphi_e <- 0.044
+#' varphi_d <- 4.5
+#'
+#' model <- list(
+#'   mu = matrix(c(0, mu_c, mu_d), 3, 1),
+#'   Phi = matrix(c(phi, 1, beta,
+#'                  0,   0, 0,
+#'                  0,   0, 0), 3, 3, byrow = TRUE),
+#'   Sigma = diag(sigma^2 * c(varphi_e, 1, varphi_d)^2),
+#'   rho = 1 / 1.5,
+#'   gamma = gamma,
+#'   delta = delta,
+#'   mu_c0 = 0,
+#'   mu_c1 = matrix(c(0, 1, 0), 3, 1),
+#'   mu_d0 = 0,
+#'   mu_d1 = matrix(c(0, 0, 1), 3, 1),
+#'   n_w = 3
+#' )
+#'
+#' model_solved <- solve_EZ_SDF(
+#'   model,
+#'   psi.GaussianVAR,
+#'   z_bar_ini = 5,
+#'   nb_loop_z_bar = 20,
+#'   nb_loop_mu_z1 = 20
+#' )
+#'
+#' stock_solved <- solve_EZ_stock_return(
+#'   model_solved,
+#'   psi.GaussianVAR,
+#'   z_s_bar_ini = 5,
+#'   nb_loop_z_bar = 20,
+#'   nb_loop_mu_z1 = 20
+#' )
+#'
+#' stock_solved$mu_rs0
+#' stock_solved$mu_s1
+#'
+#' @export
 solve_EZ_stock_return <- function(model,psi,Ew=NaN,z_s_bar_ini=5,
                                   nb_loop_z_bar=20,nb_loop_mu_z1=100,
                                   mu_s1_ini=NaN){
