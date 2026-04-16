@@ -140,23 +140,6 @@ solve_RE <- function(model) {
   Q <- qz$Q
   Z <- qz$Z
 
-  # S_ss <- S[1:n,1:n]
-  # S_su <- S[1:n,(n+1):(n+n)]
-  # S_uu <- S[(n+1):(n+n),(n+1):(n+n)]
-  # T_ss <- T[1:n,1:n]
-  # T_su <- T[1:n,(n+1):(n+n)]
-  # T_uu <- T[(n+1):(n+n),(n+1):(n+n)]
-  # Q_ss <- Q[1:n,1:n]
-  # Q_su <- Q[1:n,(n+1):(n+n)]
-  # Q_us <- Q[(n+1):(n+n),1:n]
-  # Q_uu <- Q[(n+1):(n+n),(n+1):(n+n)]
-  # Z_ss <- Z[1:n,1:n]
-  # Z_su <- Z[1:n,(n+1):(n+n)]
-  # Z_us <- Z[(n+1):(n+n),1:n]
-  # Z_uu <- Z[(n+1):(n+n),(n+1):(n+n)]
-  # print(solve(Z_ss) %*% Z_us)
-  # print(solve(S_ss) %*% T_ss)
-
   # Check QZ decomposition:
   max(abs((A - Q %*% S %*% t(Z))))
   max(abs((B - Q %*% T %*% t(Z))))

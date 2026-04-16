@@ -134,28 +134,6 @@ compute_Gaussian_fast <- function(model,Maturities_decompo){
 #
 # t(u) %*% mu_h + (t(u) %*% Sigma_h %*% u)/2
 # t(u) %*% Phi_h
-
-simul.GVAR_OLD <- function(model,nb.sim,x0=NaN){
-  n <- dim(model$Phi)[1]
-  if(is.na(x0[1])){
-    x0 <- solve(diag(n) - model$Phi) %*% model$mu
-  }
-
-  if(is.null(model$Sigma12)){
-    Sigma12 <- t(chol(model$Sigma))
-  }else{
-    Sigma12 <- model$Sigma12
-  }
-
-  X <- c(x0)
-  x <- x0
-  for(t in 2:nb.sim){
-    x <- model$mu + model$Phi %*% x + Sigma12 %*% rnorm(dim(Sigma12)[2])
-    X <- rbind(X,c(x))
-  }
-  return(X)
-}
-
 #' Simulate a Gaussian VAR process
 #'
 #' Simulates trajectories from a Gaussian VAR(1) model of the form

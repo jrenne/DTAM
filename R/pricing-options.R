@@ -49,9 +49,6 @@ price_IR_caps_floors <- function(W, # Values of state vector (T x n)
   #     - "model" (model should include "n_w", the dimension of w_t)
   #     - "xi0", "xi1" (parameterization of short-term rate, not annualized)
 
-  xi0 <- parameterization$xi0
-  xi1 <- parameterization$xi1
-
   alpha_tau <- tau/freq # year fraction corresponding to tau
 
   varphi <- function(x,parameterization,H){
@@ -93,7 +90,6 @@ price_IR_caps_floors <- function(W, # Values of state vector (T x n)
   b.matrix <- t(matrix(thresholds,length(thresholds),H))
 
   TT <- dim(W)[1] # number of dates.
-  vec1TT <- matrix(1,TT,1)
 
   nb_strikes <- length(all_K)
 

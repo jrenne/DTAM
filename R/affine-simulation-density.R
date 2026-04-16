@@ -1,23 +1,3 @@
-simul.ARG_OLD <- function(nb.sim,mu,nu,rho,alpha=0,w0=NaN){
-  # This function simulates an ARG or an ARG0 process
-
-  unc.mean <- (alpha + nu) * mu/(1-rho)
-
-  if(is.na(w0)){
-    w_0 <- unc.mean
-  }else{
-    w_0 <- w0
-  }
-  W <- w_0
-  w <- w_0
-  for(t in 2:nb.sim){
-    z <- rpois(1,rho*w/mu + alpha)
-    w <- mu * rgamma(1,shape=nu+z)
-    W <- c(W,w)
-  }
-  return(W)
-}
-
 #' Simulate scalar affine count and intensity processes
 #'
 #' `simul.ARG()` simulates a scalar ARG/ARG0 process. `simul.compound.poisson()`
@@ -222,21 +202,6 @@ Fourier.psi <- function(model,gamma,x,
 
   return(f.cdf)
 }
-
-# simul.VAR <- function (Model, nb.sim, x0 = NaN)
-# {
-#   n <- dim(Model$Phi)[1]
-#   if (is.na(x0[1])) {
-#     x0 <- solve(diag(n) - Model$Phi) %*% Model$mu
-#   }
-#   X <- c(x0)
-#   x <- x0
-#   for (t in 2:nb.sim) {
-#     x <- Model$mu + Model$Phi %*% x + Model$Sigma %*% rnorm(n)
-#     X <- rbind(X, c(x))
-#   }
-#   return(X)
-# }
 
 #' Compute conditional and unconditional moments from an affine transform
 #'

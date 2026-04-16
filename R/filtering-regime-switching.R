@@ -58,10 +58,7 @@ KH_filter <- function(Omega, Eta){
   nb_dates  <- nrow(Eta)
 
   ksi_matrix   <- matrix(0, nrow = nb_dates, ncol = J)
-  ksi_1_matrix <- matrix(0, nrow = nb_dates, ncol = J)
   ksi_t        <- matrix(0, nrow = J, ncol = 1)
-
-  vec_1_J     <- matrix(1, nrow = J, ncol = 1)
 
   # Compute stationary distribution:
   Omega_2h <- matrix(0, nrow = J, ncol = J)
@@ -336,53 +333,3 @@ compute_LT_RS <- function(alpha,Pi,Maturities_decompo,
 
   return(list(A=A,H=H))
 }
-
-
-# library(mvtnorm)
-# library(expm)
-# library(DTAM)
-#
-# Omega <- matrix(c(.8,.1,0,.2,.8,.2,0,.1,.8),3,3)
-# J <- dim(Omega)[1]
-# TT <- 200
-# z <- simul_RS(Omega,TT=TT,ini_state = NaN)
-#
-# nF <- 2
-# M <- matrix(c(0,1,1,0,1,1),nF,J)
-# N <- .5*matrix(c(.5,1,.3,1,2,.6),nF,J)
-#
-# F <- z %*% t(M) + (z %*% t(N))*matrix(rnorm(nF*TT),TT,nF)
-#
-# Omega <- array(Omega,c(3,3,TT))
-#
-# res_KH     <- KH_filter(Omega, Eta = f_Eta(F,M,N))
-# #res_KH_new <- KH_filter_new(Omega, Eta = f_Eta(F,M,N))
-#
-# res_smoother <- res_smoother <- KH_smoother(Omega, Eta = f_Eta(F,M,N))
-#
-# par(mfrow=c(2,1))
-# plot(z[,1],type="l",lwd=2)
-# lines(res_KH$ksi_matrix[,1],col="red")
-# lines(res_smoother[,1],col="blue")
-# plot(z[,2],type="l",lwd=2)
-# lines(res_KH$ksi_matrix[,2],col="red")
-# lines(res_smoother[,2],col="blue")
-#
-#
-# alpha <- c(-.03,-.01,-.05)
-# Maturities_decompo <- diag(4)
-# Maturities_decompo[2,1:2] <- c(0,4)
-# Maturities_decompo[3,1:3] <- c(0,1,3)
-# Maturities_decompo[4,1:4] <- c(1,1,1,4)
-#
-# Pi <- matrix(Omega,J,J)
-# res <- compute_LT_RS(alpha,Pi,Maturities_decompo,indic_add_current = FALSE)
-#
-#
-# D <- diag(exp(alpha))
-#
-# print(res$A)
-# print(matrix(1,1,3) %*% ((D %*% t(Omega))%^%max(res$H)))
-#
-#
-#
