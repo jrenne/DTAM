@@ -126,6 +126,90 @@ solve_CRRA <- function(model,psi,Phi=NaN,du = 1e-06){
 
   return(model_solved)
 }
+#' Solve the Epstein-Zin stochastic discount factor
+#'
+#' Solves for the log-linearized Epstein-Zin continuation-value recursion and
+#' returns the induced stochastic discount factor (SDF) coefficients in an
+#' affine state-space environment.
+#'
+#' @param model A list containing the preference and state-dynamics
+#'   specification. It must include at least `rho`, `gamma`, `delta`, `mu_c0`,
+#'   `mu_c1`, and `n_w`, together with the objects required by `psi`.
+#' @param psi Conditional log-Laplace transform of the state vector. It must
+#'   accept arguments `(u, model)` and return a list with components `a` and
+#'   `b`.
+#' @param z_bar_ini Initial guess for the mean log price-consumption ratio used
+#'   in the fixed-point recursion.
+#' @param nb_loop_z_bar Number of outer iterations used to update `z_bar`.
+#' @param nb_loop_mu_z1 Number of inner iterations used to update the loading
+#'   vector `mu_z1`.
+#'
+#' @return The input `model` list augmented with:
+#'   `Ew`, `Vw`, `Phi`, `mu`, `mu_z0`, `mu_z1`, `z_bar`, `eta0`, `eta1`,
+#'   `alpha`, `kappa0`, and `kappa1`.
+#'
+#' @details
+#' The function computes unconditional moments of the state vector using
+#' `compute_expect_variance()`, then solves the fixed-point system associated
+#' with the Epstein-Zin price-consumption ratio. The resulting objects define:
+#'
+#' \deqn{
+#' -\log \mathcal{M}_{t,t+1} = \eta_0 + \eta_1^\prime w_t +
+#' \alpha^\prime \varepsilon_{t+1},
+#' }{
+#' -log M_{t,t+1} = eta0 + eta1' w_t + alpha' eps_{t+1},
+#' }
+#'
+#' in the affine approximation implemented in the package.
+#'
+#' The output can be passed to downstream pricing routines such as
+#' `solve_EZ_stock_return()` or used directly to study risk prices and implied
+#' short rates.
+#'
+#' @references
+#' Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
+#' *Asset Pricing with Discrete-Time Affine Processes*.
+#'
+#' @examples
+#' # Example adapted from the recursive-preferences chapter of the companion
+#' # Bookdown project.
+#' gamma <- 10
+#' EIS <- 1.5
+#' delta <- 0.998
+#' mu_c <- 0.0015
+#' mu_d <- 0.0025
+#' phi <- 0.979
+#' beta <- 3
+#' sigma <- 0.0078
+#' varphi_e <- 0.044
+#' varphi_d <- 4.5
+#'
+#' model <- list(
+#'   mu = matrix(c(0, mu_c, mu_d), 3, 1),
+#'   Phi = matrix(c(phi, 1, beta,
+#'                  0,   0, 0,
+#'                  0,   0, 0), 3, 3, byrow = TRUE),
+#'   Sigma = diag(sigma^2 * c(varphi_e, 1, varphi_d)^2),
+#'   rho = 1 / EIS,
+#'   gamma = gamma,
+#'   delta = delta,
+#'   mu_c0 = 0,
+#'   mu_c1 = matrix(c(0, 1, 0), 3, 1),
+#'   n_w = 3
+#' )
+#'
+#' model_solved <- solve_EZ_SDF(
+#'   model,
+#'   psi.GaussianVAR,
+#'   z_bar_ini = 5,
+#'   nb_loop_z_bar = 20,
+#'   nb_loop_mu_z1 = 20
+#' )
+#'
+#' model_solved$eta0
+#' model_solved$alpha
+#'
+#' @export
 solve_EZ_SDF <- function(model,psi,z_bar_ini=5,
                          nb_loop_z_bar=20,nb_loop_mu_z1=100){
   # This procedure computes the SDF in the CES-CRRA Epstein-Zin case.

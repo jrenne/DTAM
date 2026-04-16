@@ -1,3 +1,83 @@
+#' Solve a preferred-habitat term-structure model
+#'
+#' Solves the preferred-habitat term-structure model under one of three
+#' configurations: a single yield curve, two interacting yield curves, or a
+#' single yield curve with stock/perpetuity pricing.
+#'
+#' @param model A list describing the model. For the single-curve case it must
+#'   contain at least `gamma`, `mu`, `Phi`, `Sigma`, `alpha`, `beta`, `xi`,
+#'   `a1`, and `b1`. Additional fields such as `alpha_star`, `beta_star`,
+#'   `xi_star`, `mu_e0`, `mu_e1`, `a1_star`, `b1_star`, `omega`, `mu_K0`,
+#'   `mu_K1`, `alpha_K`, `beta_K`, and `xi_K` activate the two-curve and stock
+#'   variants.
+#' @param max_iter Number of fixed-point iterations used to solve the model.
+#' @param zeta_bar Initial guess for the average log price-dividend ratio in the
+#'   stock/perpetuity case.
+#'
+#' @return A list containing the solved affine bond-pricing coefficients and
+#'   related equilibrium objects. Core outputs include:
+#'   `A`, `B`, `a`, `b`, `alpha`, `beta`, `lambda0`, `lambda1`, `muQ`, and
+#'   `PhiQ`. Additional objects such as `A_star`, `a_star`, `mu_e0`, `mu_e1`,
+#'   `mu_zeta0`, `mu_zeta1`, `C_K`, `D_K`, and `Theta_K` are returned when the
+#'   corresponding model extensions are active.
+#'
+#' @details
+#' The model combines an affine short-rate specification with maturity-specific
+#' net supply effects borne by risk-averse arbitrageurs. The function iterates
+#' on bond-loadings, risk prices, and (when relevant) auxiliary two-curve or
+#' stock-pricing objects until convergence.
+#'
+#' In the single-curve case, the output `a` and `b` provide the yield
+#' coefficients:
+#'
+#' \deqn{
+#' y_{t,h} = b_h + a_h^\prime w_t.
+#' }{
+#' y_{t,h} = b_h + a_h' w_t.
+#' }
+#'
+#' @references
+#' Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
+#' *Asset Pricing with Discrete-Time Affine Processes*.
+#'
+#' @examples
+#' # Example adapted from the preferred-habitat chapter of the companion
+#' # Bookdown project.
+#' H <- 12
+#' a <- 20
+#' n <- 2
+#' mu <- matrix(c(0.03, 0), n, 1)
+#' Phi <- matrix(c(0.95, 0,
+#'                 0,    0.90), n, n, byrow = TRUE)
+#' Sigma <- diag(c(1e-4, 2e-4))
+#' a1 <- matrix(c(1, 0), n, 1)
+#' b1 <- 0
+#'
+#' Alpha <- cbind(
+#'   0.02 * exp(-0.15 * (1:H)),
+#'   0.01 * exp(-0.10 * (1:H))
+#' )
+#' Beta <- 0.6 * exp(-0.08 * (1:H))
+#' xi <- 0.02 * (1:H) * exp(-0.08 * (1:H))
+#'
+#' model_VV <- list(
+#'   gamma = a,
+#'   mu = mu,
+#'   Phi = Phi,
+#'   Sigma = Sigma,
+#'   alpha = Alpha,
+#'   beta = Beta,
+#'   xi = xi,
+#'   a1 = a1,
+#'   b1 = b1
+#' )
+#'
+#' RES <- solve_PH_TSM(model_VV, max_iter = 100)
+#'
+#' dim(RES$a)
+#' RES$beta[1]
+#'
+#' @export
 solve_PH_TSM <- function(model,
                          max_iter = 100,
                          zeta_bar = 3){
