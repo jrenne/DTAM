@@ -473,7 +473,7 @@ solve_EZ_SDF <- function(model,psi,z_bar_ini=5,
 #'   mu_c0 = 0,
 #'   mu_c1 = matrix(c(0, 1, 0), 3, 1),
 #'   mu_d0 = 0,
-#'   mu_d1 = matrix(c(0, 0, 1), 3, 1),
+#'   mu_d1 = matrix(c(0, 1, 0.5), 3, 1),
 #'   n_w = 3
 #' )
 #'
