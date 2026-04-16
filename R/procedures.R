@@ -969,7 +969,8 @@ prices_CDS_RFV_VARG <- function(model,H=10,indic_delta1 = NaN,
 #'   alpha.y = c(0.1),
 #'   nu.y = c(1),
 #'   mu.y = c(0.4),
-#'   alpha.m = matrix(0, 2, 1)
+#'   alpha.m = matrix(0, 2, 1),
+#'   n_w = 2
 #' )
 #' psi.y.TopDown(matrix(0.05, 1, 1), model)$b
 #' sim <- simul.TopDown(model, nb_periods = 10)
@@ -1073,6 +1074,7 @@ simul.TopDown <- function(model,nb_periods,W0=NaN){
   J   <- dim(beta.nn)[1]
   n.w <- n.y + J
 
+  EV <- NULL
   if(is.na(W0)[1]){
     EV <- compute_expect_variance(psi.w.TopDown,model)
     Ew <- EV$Ew
@@ -1638,7 +1640,7 @@ compute_affine_payoff_TopDown <- function(model,gamma,H,
 #'
 #' @examples
 #' model <- list(
-#'   kappa0 = c(0.01, 0),
+#'   kappa0 = matrix(c(0.01, 0), 1, 2),
 #'   kappa1 = matrix(c(0.1, 0), 1, 2),
 #'   xi0 = 0.01,
 #'   xi1 = matrix(0.1, 1, 1),
@@ -1650,6 +1652,7 @@ compute_affine_payoff_TopDown <- function(model,gamma,H,
 #' Y <- matrix(c(0, 0.1, -0.1), 3, 1)
 #' res <- compute_bond_price_Ratings(model, Y, H = 2, psi = psi.GaussianVAR)
 #' dim(res$RF_bond_price)
+#' simul.rating.migration(model, Y, tau_ini = 1)
 #'
 #' @name Ratings_tools
 #' @export

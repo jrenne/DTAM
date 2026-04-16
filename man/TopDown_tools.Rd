@@ -48,7 +48,8 @@ model <- list(
   alpha.y = c(0.1),
   nu.y = c(1),
   mu.y = c(0.4),
-  alpha.m = matrix(0, 2, 1)
+  alpha.m = matrix(0, 2, 1),
+  n_w = 2
 )
 psi.y.TopDown(matrix(0.05, 1, 1), model)$b
 sim <- simul.TopDown(model, nb_periods = 10)

@@ -33,7 +33,7 @@ rating path conditional on an exogenous state trajectory.
 }
 \examples{
 model <- list(
-  kappa0 = c(0.01, 0),
+  kappa0 = matrix(c(0.01, 0), 1, 2),
   kappa1 = matrix(c(0.1, 0), 1, 2),
   xi0 = 0.01,
   xi1 = matrix(0.1, 1, 1),
@@ -45,5 +45,6 @@ model <- list(
 Y <- matrix(c(0, 0.1, -0.1), 3, 1)
 res <- compute_bond_price_Ratings(model, Y, H = 2, psi = psi.GaussianVAR)
 dim(res$RF_bond_price)
+simul.rating.migration(model, Y, tau_ini = 1)
 
 }
