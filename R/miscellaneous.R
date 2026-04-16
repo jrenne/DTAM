@@ -173,10 +173,64 @@ simul.GVAR_OLD <- function(model,nb.sim,x0=NaN){
   return(X)
 }
 
+#' Simulate a Gaussian VAR process
+#'
+#' Simulates trajectories from a Gaussian VAR(1) model of the form
+#' \deqn{
+#' x_t = \mu + \Phi x_{t-1} + \Sigma^{1/2}\varepsilon_t,
+#' }{
+#' x_t = mu + Phi x_{t-1} + Sigma^{1/2} eps_t,
+#' }
+#' where \eqn{\varepsilon_t \sim \mathcal{N}(0, I)}{eps_t ~ N(0, I)}.
+#'
+#' @param model A list describing the VAR. It must contain `mu` and `Phi`, and
+#'   either `Sigma12` (the square-root innovation matrix) or `Sigma`
+#'   (the innovation covariance matrix).
+#' @param nb.sim Number of simulated dates.
+#' @param x0 Initial state vector. If left at the default, the function starts
+#'   from the unconditional mean implied by `mu` and `Phi`.
+#' @param nb.replic Number of independent simulated paths. When `nb.replic = 1`,
+#'   the output is a matrix. For `nb.replic > 1`, the output is a three-way
+#'   array.
+#'
+#' @return If `nb.replic = 1`, a matrix of dimension `nb.sim x n`, where `n` is
+#'   the dimension of the state vector. If `nb.replic > 1`, an array of
+#'   dimension `nb.sim x n x nb.replic`.
+#'
+#' @details
+#' If `model$Sigma12` is not provided, the function computes it as
+#' `t(chol(model$Sigma))`.
+#'
+#' This function is used repeatedly in the Bookdown companion project to
+#' generate sample paths for affine Gaussian models before pricing or
+#' estimation steps.
+#'
+#' @references
+#' Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
+#' *Asset Pricing with Discrete-Time Affine Processes*.
+#'
+#' @examples
+#' # Example adapted from the Bookdown companion project.
+#' set.seed(123)
+#'
+#' model <- list(
+#'   mu = matrix(c(0, 0), ncol = 1),
+#'   Phi = matrix(c(0.95, 0.05,
+#'                  0.00, 0.90), nrow = 2, byrow = TRUE),
+#'   Sigma12 = diag(c(0.1, 0.2))
+#' )
+#'
+#' sim <- simul.GVAR(model, nb.sim = 50)
+#' dim(sim)
+#'
+#' sim_multi <- simul.GVAR(model, nb.sim = 20, nb.replic = 3)
+#' dim(sim_multi)
+#'
+#' @export
 simul.GVAR <- function(model,nb.sim,x0=NaN,nb.replic=1){
   # Simulate a Gaussian VAR model.
-  # If nb.replic > 1, simluate several processes of length nb.sim in parallel;
-  #.    the output matrix then is an array (three dimensions).
+  # If nb.replic > 1, simulate several processes of length nb.sim in parallel;
+  # the output then is an array (three dimensions).
 
   n <- dim(model$Phi)[1]
   if(is.na(x0[1])){
@@ -270,5 +324,3 @@ plot_isodensity_gaussian <- function(Ew, Vw, n = 200,
   invisible(list(x1 = x1, x2 = x2, dens = dens,
                  dens_levels = dens_levels, prob_levels = prob_levels))
 }
-
-

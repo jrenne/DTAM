@@ -1,4 +1,97 @@
-
+#' Kalman filter for linear Gaussian state-space models
+#'
+#' Applies the Kalman filter to a linear Gaussian state-space system with
+#' possibly time-varying intercepts and missing observations.
+#'
+#' The measurement and transition equations are
+#' \deqn{
+#' y_t = \mu_t + G \rho_t + M \varepsilon_t,
+#' }{
+#' y_t = mu_t + G rho_t + M eps_t,
+#' }
+#' and
+#' \deqn{
+#' \rho_t = \nu_t + H \rho_{t-1} + N \xi_t.
+#' }{
+#' rho_t = nu_t + H rho_{t-1} + N xi_t.
+#' }
+#'
+#' @param Y_t Matrix of observations, with one row per date. Missing entries are
+#'   allowed and are ignored in the updating step.
+#' @param nu_t Matrix of transition intercepts, one row per date.
+#' @param H State-transition matrix.
+#' @param N Transition shock-loading matrix.
+#' @param mu_t Matrix of measurement intercepts, one row per date.
+#' @param G Measurement loading matrix.
+#' @param M Measurement shock-loading matrix.
+#' @param Sigma_0 Initial covariance matrix of the latent state.
+#' @param rho_0 Initial mean of the latent state.
+#' @param indic_pos Optional indicator vector. Components marked with `1` are
+#'   truncated below at zero after prediction and updating.
+#' @param Rfunction Function returning the measurement-error covariance matrix.
+#'   By default, it is `function(M, ...) M %*% t(M)`.
+#' @param Qfunction Function returning the transition-error covariance matrix.
+#'   By default, it is `function(N, ...) N %*% t(N)`.
+#' @param reconciliationf Optional reconciliation function applied after the
+#'   update step, used for example in the quadratic Kalman filter.
+#'
+#' @return A list containing filtered states (`r`), filtered covariance matrices
+#'   (`Sigma_tt`), one-step-ahead predictions (`r_tp1_t`, `S_tp1_t`, `y_tp1_t`,
+#'   `Omega_tp1_t`), fitted observables (`fitted.obs`), and the log-likelihood
+#'   contributions (`loglik`, `loglik.vector`).
+#'
+#' @details
+#' The function automatically adapts the measurement update when some
+#' observations are missing at a given date.
+#'
+#' The default covariance functions are
+#' `Rfunction(M, ...) = M %*% t(M)` and
+#' `Qfunction(N, ...) = N %*% t(N)`, but custom functions can be supplied to
+#' accommodate state-dependent volatility structures.
+#'
+#' @references
+#' Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
+#' *Asset Pricing with Discrete-Time Affine Processes*.
+#'
+#' @examples
+#' # Example adapted from the filtering chapter of the Bookdown companion
+#' # project. A one-dimensional latent AR(1) state drives two observables.
+#' set.seed(123)
+#' T <- 100
+#' phi <- 0.9
+#'
+#' Alpha <- matrix(c(0.8, 0.1,
+#'                   0.2, 0.7), nrow = 2, byrow = TRUE)
+#' Gamma <- matrix(c(1, 0.5), ncol = 1)
+#' D <- diag(c(0.15, 0.15))
+#'
+#' y <- matrix(0, nrow = 2, ncol = 1)
+#' x <- 0
+#' Y <- X <- NULL
+#' Alpha_Y_1 <- NULL
+#'
+#' for (t in 1:T) {
+#'   Alpha_Y_1 <- rbind(Alpha_Y_1, c(Alpha %*% y))
+#'   y <- Alpha %*% y + Gamma * x + D %*% rnorm(2)
+#'   x <- phi * x + rnorm(1)
+#'   Y <- rbind(Y, t(y))
+#'   X <- rbind(X, x)
+#' }
+#'
+#' nu_t <- matrix(0, T, 1)
+#' H <- matrix(phi, 1, 1)
+#' N <- matrix(1, 1, 1)
+#' mu_t <- Alpha_Y_1
+#' G <- Gamma
+#' M <- D
+#' Sigma_0 <- matrix(1 / (1 - phi^2), 1, 1)
+#' rho_0 <- 0
+#'
+#' filter.res <- Kalman_filter(Y, nu_t, H, N, mu_t, G, M, Sigma_0, rho_0)
+#' names(filter.res)
+#' head(filter.res$r)
+#'
+#' @export
 Kalman_filter <- function(Y_t,nu_t,H,N,mu_t,G,M,Sigma_0,rho_0,
                           indic_pos=0,
                           Rfunction=Rf, Qfunction=Qf,
@@ -155,6 +248,64 @@ Qf <- function(N,RHO,t=0){
   return(N %*% t(N))
 }
 
+#' Kalman smoother for linear Gaussian state-space models
+#'
+#' Applies the Rauch-Tung-Striebel smoothing recursion after running
+#' `Kalman_filter()` on the same linear Gaussian state-space system.
+#'
+#' @inheritParams Kalman_filter
+#'
+#' @return A list containing smoothed states (`r_smooth`), smoothed covariance
+#'   matrices (`S_smooth`), fitted observables (`fitted.obs`), model-implied
+#'   observable covariance matrices (`Omega_tT`), and the filtering outputs
+#'   reused by the smoother.
+#'
+#' @details
+#' The function first calls `Kalman_filter()` and then performs the backward
+#' smoothing recursion. It is therefore convenient when both filtered and
+#' smoothed estimates are needed for the same model.
+#'
+#' @references
+#' Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
+#' *Asset Pricing with Discrete-Time Affine Processes*.
+#'
+#' @examples
+#' # Continue the one-state example used for Kalman_filter().
+#' set.seed(123)
+#' T <- 100
+#' phi <- 0.9
+#'
+#' Alpha <- matrix(c(0.8, 0.1,
+#'                   0.2, 0.7), nrow = 2, byrow = TRUE)
+#' Gamma <- matrix(c(1, 0.5), ncol = 1)
+#' D <- diag(c(0.15, 0.15))
+#'
+#' y <- matrix(0, nrow = 2, ncol = 1)
+#' x <- 0
+#' Y <- NULL
+#' Alpha_Y_1 <- NULL
+#'
+#' for (t in 1:T) {
+#'   Alpha_Y_1 <- rbind(Alpha_Y_1, c(Alpha %*% y))
+#'   y <- Alpha %*% y + Gamma * x + D %*% rnorm(2)
+#'   x <- phi * x + rnorm(1)
+#'   Y <- rbind(Y, t(y))
+#' }
+#'
+#' nu_t <- matrix(0, T, 1)
+#' H <- matrix(phi, 1, 1)
+#' N <- matrix(1, 1, 1)
+#' mu_t <- Alpha_Y_1
+#' G <- Gamma
+#' M <- D
+#' Sigma_0 <- matrix(1 / (1 - phi^2), 1, 1)
+#' rho_0 <- 0
+#'
+#' smoother.res <- Kalman_smoother(Y, nu_t, H, N, mu_t, G, M, Sigma_0, rho_0)
+#' names(smoother.res)
+#' head(smoother.res$r_smooth)
+#'
+#' @export
 Kalman_smoother <- function(Y_t,nu_t,H,N,mu_t,G,M,Sigma_0,rho_0,indic_pos=0,
                             Rfunction=Rf, Qfunction=Qf){
 
@@ -223,6 +374,82 @@ Kalman_smoother <- function(Y_t,nu_t,H,N,mu_t,G,M,Sigma_0,rho_0,indic_pos=0,
   return(output)
 }
 
+#' Quadratic Kalman filter
+#'
+#' Applies the quadratic Kalman filter to a state-space model with linear
+#' Gaussian state dynamics and quadratic measurement equations.
+#'
+#' The measurement equation is
+#' \deqn{
+#' y_t = A + B x_t + \sum_i e_i (x_t^\prime C_i x_t) + \eta_t,
+#' }{
+#' y_t = A + B x_t + sum_i e_i (x_t' C_i x_t) + eta_t,
+#' }
+#' with \eqn{\eta_t \sim \mathcal{N}(0,\Omega)}{eta_t ~ N(0, Omega)}, while the
+#' transition equation is
+#' \deqn{
+#' x_t = \mu + \Phi x_{t-1} + \varepsilon_t,
+#' }{
+#' x_t = mu + Phi x_{t-1} + eps_t,
+#' }
+#' with \eqn{\varepsilon_t \sim \mathcal{N}(0,\Sigma)}{eps_t ~ N(0, Sigma)}.
+#'
+#' @param Y_t Matrix of observations, one row per date.
+#' @param QStateSpace A list describing the quadratic state-space model. It must
+#'   contain `A`, `B`, `C`, `mu`, `Phi`, `Sigma`, and `M`.
+#' @param indic_reconciliation Logical indicating whether the augmented state
+#'   vector should be reconciled after each update to enforce consistency between
+#'   `x_t` and `vech(x_t x_t')`.
+#'
+#' @return A list containing the filtered output from [Kalman_filter()] together
+#'   with the quadratic-model objects used internally, including
+#'   `mu_tilde_red`, `Phi_tilde_red`, `B_tilde`, and `Omega`.
+#'
+#' @details
+#' The quadratic Kalman filter augments the state vector with second-order terms
+#' so that the measurement equation becomes linear in the augmented state.
+#'
+#' This implementation is designed for the quadratic filtering applications used
+#' in the Bookdown companion project.
+#'
+#' @references
+#' Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
+#' *Asset Pricing with Discrete-Time Affine Processes*.
+#'
+#' @examples
+#' # Simple two-state quadratic filtering example.
+#' set.seed(123)
+#' T <- 80
+#'
+#' mu <- matrix(c(0, 0), 2, 1)
+#' Phi <- matrix(c(0.85, 0.05,
+#'                 0.00, 0.80), 2, 2, byrow = TRUE)
+#' Sigma <- diag(c(0.15^2, 0.10^2))
+#' M <- matrix(0.1, 1, 1)
+#'
+#' x <- matrix(0, 2, 1)
+#' Y_t <- matrix(0, T, 1)
+#' for (t in 1:T) {
+#'   x <- mu + Phi %*% x + t(chol(Sigma)) %*% rnorm(2)
+#'   Y_t[t, 1] <- 0.1 + 0.8 * x[1] - 0.3 * x[2] + 0.2 * x[1]^2 + c(M %*% rnorm(1))
+#' }
+#'
+#' QStateSpace <- list(
+#'   A = matrix(0.1, 1, 1),
+#'   B = matrix(c(0.8, -0.3), 1, 2),
+#'   C = array(c(0.2, 0,
+#'               0,   0), dim = c(2, 2, 1)),
+#'   mu = mu,
+#'   Phi = Phi,
+#'   Sigma = Sigma,
+#'   M = M
+#' )
+#'
+#' resQKF <- QKF(Y_t, QStateSpace)
+#' names(resQKF)
+#' head(resQKF$r)
+#'
+#' @export
 QKF <- function(Y_t,QStateSpace,indic_reconciliation=TRUE){
   # The state-space is: --------------------------------------------------------
   # --- Measurement equations (y_t of dimension m x 1):
@@ -417,6 +644,3 @@ make_stationary_filter <- function(mu,Phi,Sigma12,A,B,Omega12,
               Phi_ww = Phi_ww,
               Sigma12_ww = Sigma12_ww))
 }
-
-
-

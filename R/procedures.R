@@ -1,4 +1,65 @@
-
+#' Reverse multi-horizon Laplace transform recursion
+#'
+#' Computes the reverse-order multi-horizon Laplace transform recursion for a
+#' Markov state process whose one-step conditional Laplace transform is known.
+#'
+#' Specifically, the function evaluates objects of the form
+#' \deqn{
+#' \mathbb{E}_t \left[
+#'   \exp\left(
+#'     u_2^\prime w_{t+1} + \cdots + u_2^\prime w_{t+h-1} + u_1^\prime w_{t+h}
+#'   \right)
+#' \right].
+#' }{
+#' E_t[exp(u2' w_{t+1} + ... + u2' w_{t+h-1} + u1' w_{t+h})].
+#' }
+#'
+#' @param psi One-period conditional Laplace transform of the state process.
+#' @param u1 Loading matrix applied at the terminal horizon.
+#' @param u2 Loading matrix applied at intermediate horizons. If omitted, the
+#'   function uses `u2 = u1`.
+#' @param H Maximum horizon, in model periods.
+#' @param psi.parameterization List of parameters passed to `psi`.
+#'
+#' @return A list containing arrays `A`, `B`, `a`, and `b`. The arrays `A` and
+#'   `B` provide the affine coefficients of the multi-horizon Laplace transform,
+#'   while `a` and `b` store the same quantities divided by the horizon.
+#'
+#' @details
+#' The function can process several loading vectors in parallel: if `u1` and
+#' `u2` are `n x k`, the recursion is computed simultaneously for the `k`
+#' columns.
+#'
+#' This recursion is a core building block for affine pricing formulas in the
+#' package, including bond pricing and several recursive-utility applications.
+#'
+#' @references
+#' Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
+#' *Asset Pricing with Discrete-Time Affine Processes*.
+#'
+#' @examples
+#' # Example adapted from the affine-process chapter of the companion Bookdown.
+#' model <- list(
+#'   mu = matrix(c(0.00, 0.02), ncol = 1),
+#'   Phi = matrix(c(0.90, 0.00,
+#'                  0.05, 0.85), nrow = 2, byrow = TRUE),
+#'   Sigma = diag(c(0.01, 0.02))
+#' )
+#'
+#' U <- matrix(c(0, 1,
+#'               -1, 1), nrow = 2)
+#'
+#' AB <- reverse.MHLT(
+#'   psi = psi.GaussianVAR,
+#'   u1 = U,
+#'   H = 5,
+#'   psi.parameterization = model
+#' )
+#'
+#' dim(AB$A)
+#' dim(AB$B)
+#'
+#' @export
 reverse.MHLT <- function(psi,u1,u2=NaN,H,psi.parameterization){
   # compute the multi-horizon Laplace transform in the reverse-order case
   # That is, we consider:
@@ -34,6 +95,50 @@ reverse.MHLT <- function(psi,u1,u2=NaN,H,psi.parameterization){
   return(list(A=A,B=B,a=a,b=b))
 }
 
+#' One-step Laplace transform for a Gaussian VAR
+#'
+#' Computes the one-period conditional Laplace transform associated with a
+#' Gaussian VAR(1) state process.
+#'
+#' The state dynamics are
+#' \deqn{
+#' w_t = \mu + \Phi w_{t-1} + \varepsilon_t,
+#' \qquad \varepsilon_t \sim \mathcal{N}(0, \Sigma).
+#' }{
+#' w_t = mu + Phi w_{t-1} + eps_t, eps_t ~ N(0, Sigma).
+#' }
+#'
+#' @param u Matrix of Laplace-transform loadings. Each column corresponds to one
+#'   transform evaluation.
+#' @param psi.parameterization List containing `mu`, `Phi`, and `Sigma`.
+#'
+#' @return A list with two entries:
+#'   `a`, the coefficient multiplying the lagged state in the affine transform,
+#'   and `b`, the constant term.
+#'
+#' @details
+#' If `u` has `k` columns, the function computes the `k` transforms in parallel.
+#'
+#' This function is often used as the `psi` argument of `reverse.MHLT()`,
+#' `compute_AB_classical()`, and `compute_AB_thk()` in Gaussian affine models.
+#'
+#' @references
+#' Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
+#' *Asset Pricing with Discrete-Time Affine Processes*.
+#'
+#' @examples
+#' model <- list(
+#'   mu = matrix(c(0.01, 0.02), ncol = 1),
+#'   Phi = matrix(c(0.95, 0.00,
+#'                  0.05, 0.90), nrow = 2, byrow = TRUE),
+#'   Sigma = diag(c(0.02, 0.01))
+#' )
+#'
+#' u <- matrix(c(1, 0,
+#'               0, 1), nrow = 2)
+#' psi.GaussianVAR(u, model)
+#'
+#' @export
 psi.GaussianVAR <- function(u,psi.parameterization){
   # Laplace transform of a Gaussian VAR:
   # w_t = mu + Phi w_{t-1} + epsilon_{t}, where epsilon_{t}~N(0,Sigma)
@@ -1355,6 +1460,73 @@ simul.rating.migration <- function(model,Y,tau_ini=1){
 }
 
 
+#' Compute affine bond-pricing coefficients
+#'
+#' Computes the affine coefficients used to price risk-free bonds and, when
+#' default-intensity parameters are supplied, defaultable bonds.
+#'
+#' Bond prices take the form
+#' \deqn{
+#' B_{t,h} = \exp\left(B_h + A_h^\prime w_t\right),
+#' }{
+#' B_{t,h} = exp(B_h + A_h' w_t),
+#' }
+#' and yields are
+#' \deqn{
+#' y_{t,h} = b_h + a_h^\prime w_t.
+#' }{
+#' y_{t,h} = b_h + a_h' w_t.
+#' }
+#'
+#' @param xi0 Scalar intercept in the short-rate equation.
+#' @param xi1 Loading vector in the short-rate equation.
+#' @param kappa0 Optional intercept of the default intensity. If left as `NaN`,
+#'   only risk-free bonds are priced.
+#' @param kappa1 Optional loading matrix for default intensities. Different
+#'   columns can correspond to different entities.
+#' @param H Maximum maturity, expressed in model periods.
+#' @param psi Conditional Laplace transform of the state vector.
+#' @param psi.parameterization List of parameters passed to `psi`.
+#'
+#' @return A list with four arrays: `A`, `B`, `a`, and `b`. The first two give
+#'   the affine price coefficients, and the latter two the corresponding yield
+#'   coefficients.
+#'
+#' @details
+#' If `kappa0` and `kappa1` are provided, the function computes both risk-free
+#' and defaultable bond coefficients. Otherwise it returns only the risk-free
+#' coefficients.
+#'
+#' Internally, the recursion relies on `reverse.MHLT()`.
+#'
+#' @references
+#' Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
+#' *Asset Pricing with Discrete-Time Affine Processes*.
+#'
+#' @examples
+#' # Example adapted from the Bookdown companion project.
+#' model <- list(
+#'   mu = matrix(c(0.01, 0.02), ncol = 1),
+#'   Phi = matrix(c(0.95, 0.00,
+#'                  0.05, 0.90), nrow = 2, byrow = TRUE),
+#'   Sigma = diag(c(0.02, 0.01))
+#' )
+#'
+#' xi0 <- 0
+#' xi1 <- matrix(c(1, 0), ncol = 1)
+#'
+#' resAB <- compute_AB_classical(
+#'   xi0 = xi0,
+#'   xi1 = xi1,
+#'   H = 12,
+#'   psi = psi.GaussianVAR,
+#'   psi.parameterization = model
+#' )
+#'
+#' dim(resAB$A)
+#' dim(resAB$a)
+#'
+#' @export
 compute_AB_classical <- function(xi0,xi1,
                                  kappa0=NaN,kappa1=NaN,
                                  H, # maximum maturity
@@ -1411,6 +1583,73 @@ compute_AB_classical <- function(xi0,xi1,
               a=a,b=b))
 }
 
+#' Compute affine coefficients for delayed-horizon payoffs
+#'
+#' Computes affine pricing coefficients for payoffs involving the state vector
+#' at a delayed horizon and, optionally, sums of intermediate future states.
+#'
+#' The function is used for claims of the form
+#' \deqn{
+#' \exp\left(
+#'   u^\prime \left(w_{t+h-k} + x[w_{t+h-k-1} + \cdots + w_{t+1}]\right)
+#'   + u_2^\prime (w_{t+h} + \cdots + w_{t+1})
+#' \right),
+#' }{
+#' exp(u' (w_{t+h-k} + x[w_{t+h-k-1} + ... + w_{t+1}]) +
+#'   u2' (w_{t+h} + ... + w_{t+1})).
+#' }
+#'
+#' @param xi0 Scalar intercept in the short-rate equation.
+#' @param xi1 Loading vector in the short-rate equation.
+#' @param u Loading matrix applied to the delayed-horizon state.
+#' @param H Maximum maturity, in model periods.
+#' @param k Indexation lag of the payoff, in model periods.
+#' @param psi Conditional Laplace transform of the state vector.
+#' @param psi.parameterization List of parameters passed to `psi`.
+#' @param u2 Optional loading matrix applied to the cumulative future state
+#'   terms. If left as `NaN`, the function sets `u2 = 0`.
+#' @param x Scalar multiplier applied to the intermediate-state sum.
+#'
+#' @return A list with arrays `A` and `B`, the affine coefficients of the
+#'   date-`t` price.
+#'
+#' @details
+#' The function returns `NaN` coefficients for horizons `h < k`, since the
+#' delayed payoff is not yet defined at those maturities.
+#'
+#' This helper is used in option-pricing and indexed-payoff applications in the
+#' Bookdown companion project.
+#'
+#' @references
+#' Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
+#' *Asset Pricing with Discrete-Time Affine Processes*.
+#'
+#' @examples
+#' model <- list(
+#'   mu = matrix(c(0.01, 0.02), ncol = 1),
+#'   Phi = matrix(c(0.95, 0.00,
+#'                  0.05, 0.90), nrow = 2, byrow = TRUE),
+#'   Sigma = diag(c(0.02, 0.01))
+#' )
+#'
+#' xi0 <- 0
+#' xi1 <- matrix(c(1, 0), ncol = 1)
+#' u <- matrix(c(0, 1), ncol = 1)
+#'
+#' res <- compute_AB_thk(
+#'   xi0 = xi0,
+#'   xi1 = xi1,
+#'   u = u,
+#'   H = 6,
+#'   k = 2,
+#'   psi = psi.GaussianVAR,
+#'   psi.parameterization = model
+#' )
+#'
+#' dim(res$A)
+#' dim(res$B)
+#'
+#' @export
 compute_AB_thk <- function(xi0, xi1,
                            u,
                            H, # maximum maturity,
@@ -1985,4 +2224,3 @@ price_Inflation_caps_floors <- function(W, # Values of state vector (T x n)
          swaps = swaps)
   )
 }
-
