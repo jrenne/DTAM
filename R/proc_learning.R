@@ -160,26 +160,6 @@ solve_learning <- function(model, max.iter = 200) {
   return(model_sol)
 }
 
-#' Simulate the solved learning model
-#'
-#' Simulates the joint process of the state vector and its filtered estimate
-#' from the solved representation returned by [solve_learning()] or
-#' [solve_Learning_RE()].
-#'
-#' @param model_sol A solved model object containing at least `mu_ww`,
-#'   `Phi_ww`, and `Sigma_ww`.
-#' @param H Simulation horizon.
-#'
-#' @return A list with two matrices:
-#'   \itemize{
-#'   \item `w_t`: simulated state vector,
-#'   \item `w_tt`: simulated filtered state vector.
-#'   }
-#'
-#' @examples
-#' # Requires a solved model object:
-#' # sim <- simul_model(model_sol, H = 200)
-#'
 simul_model <- function(model_sol, H) {
 
   mu_ww      <- model_sol$mu_ww
