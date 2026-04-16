@@ -209,37 +209,153 @@ simul_model <- function(model_sol, H) {
 
 #' Solve a learning model with rational-expectations feedback
 #'
-#' Solves an extended learning model in which the state dynamics depend on
-#' filtered beliefs and on forward-looking expectations under rational
-#' expectations.
+#' Solves an imperfect-information linear model in which state dynamics depend
+#' both on filtered beliefs and on forward-looking rational expectations, and
+#' returns the resulting stacked law of motion for states and filtered beliefs.
 #'
-#' The model is of the form
+#' The transition equation is
 #' \deqn{
 #' w_t = \mu + \Phi w_{t-1}
 #'       + \Lambda_0 w_{t|t} + \Lambda_1 w_{t-1|t-1}
 #'       + \Psi_0 E(w_{t+1}|w_t) + \Psi_1 E(w_t|w_{t-1})
 #'       + \Gamma_0 E(w_{t+1}|y_t) + \Gamma_1 E(w_t|y_{t-1})
-#'       + \Sigma^{1/2}\varepsilon_t.
+#'       + \Sigma^{1/2}\varepsilon_t,
+#' }{
+#' w_t = mu + Phi w_{t-1} + Lambda0 w_{t|t} + Lambda1 w_{t-1|t-1} +
+#'   Psi0 E(w_{t+1}|w_t) + Psi1 E(w_t|w_{t-1}) +
+#'   Gamma0 E(w_{t+1}|y_t) + Gamma1 E(w_t|y_{t-1}) +
+#'   Sigma^{1/2} eps_t,
 #' }
 #'
-#' @param model A list containing the model matrices:
-#'   `mu`, `Phi`, `Sigma12`, `Omega12`, `A`, `B`, `Lambda0`, `Lambda1`,
-#'   `Psi0`, `Psi1`, `Gamma0`, and `Gamma1`.
-#' @param max.iter Maximum number of iterations used in the fixed-point loops.
+#' The observation equation is
+#' \deqn{
+#' y_t = B + A w_t + \Omega^{1/2}\eta_t.
+#' }{
+#' y_t = B + A w_t + Omega^{1/2} eta_t.
+#' }
 #'
-#' @return A list containing the solved model objects, including `R`, `P`, `K`,
-#'   `S`, `mu_ww`, `Phi_ww`, `Sigma_ww`, and `Sigma12_ww`.
+#' @param model A list describing the model. It must contain:
+#'   `mu`, `Phi`, `Sigma12`, `Omega12`, `A`, `B`, `Lambda0`, `Lambda1`,
+#'   `Psi0`, `Psi1`, `Gamma0`, and `Gamma1`. Here `Lambda0` and `Lambda1`
+#'   capture feedback from filtered beliefs, while `Psi0`, `Psi1`, `Gamma0`,
+#'   and `Gamma1` govern the effects of forward-looking expectations formed
+#'   under rational expectations.
+#' @param max.iter Maximum number of iterations used in the successive
+#'   fixed-point loops for the rational-expectations and filtering objects.
+#'
+#' @return A list containing the original model inputs together with the solved
+#'   objects `R`, `P`, `K`, `S`, `mu_ww`, `Phi_ww`, `Sigma_ww`, and
+#'   `Sigma12_ww`.
 #'
 #' @details
-#' The function first solves for the forward-looking matrix `Phi_1`, then for
-#' the feedback matrix `Phi_2`, then computes the steady-state filtering
-#' matrices, and finally constructs the joint law of `(w_t', w_{t|t}')'`.
+#' `Sigma12` and `Omega12` are interpreted as square-root matrices:
+#' `Sigma = Sigma12 %*% t(Sigma12)` and
+#' `Omega = Omega12 %*% t(Omega12)`.
 #'
-#' A warning is issued if the resulting transition matrix is not stationary.
+#' The function first solves for the forward-looking matrix `Phi_1`, then for
+#' the feedback matrix `Phi_2`, next computes the steady-state Kalman filter,
+#' and finally builds the joint dynamics of the stacked vector
+#' \eqn{(w_t^\prime, w_{t|t}^\prime)^\prime}{(w_t', w_{t|t}')'}.
+#'
+#' The returned list contains the original model inputs together with the
+#' solved objects `R`, `P`, `K`, `S`, `mu_ww`, `Phi_ww`, `Sigma_ww`, and
+#' `Sigma12_ww`.
+#'
+#' A warning is issued if the eigenvalues of the resulting stacked transition
+#' matrix indicate non-stationary dynamics.
+#'
+#' @references
+#' Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
+#' *Asset Pricing with Discrete-Time Affine Processes*.
 #'
 #' @examples
-#' # This function requires a fully specified model list.
-#' # See the package vignettes or examples in the source code.
+#' # Example adapted from the imperfect-information chapter of the companion
+#' # Bookdown project. It solves a five-dimensional New Keynesian model with
+#' # rational expectations and noisy signals on a subset of the states.
+#' delta <- 0.611
+#' kappa <- 0.064
+#' rho <- 0.723
+#' beta <- 1.525
+#' gamma <- 0.001
+#' phi_yn <- 0.958
+#' phi_1 <- 0.500
+#' phi_2 <- 0.492
+#' phi_3 <- 0.0004
+#'
+#' sigma_AS <- 1.249
+#' sigma_IS <- 0.671
+#' sigma_MP <- 2.177
+#' sigma_rstar <- 1.380
+#' sigma_pistar <- 0.730
+#' sigma_nu <- 0.5
+#'
+#' Theta <- matrix(c(
+#'   1, -kappa, 0, kappa, 0,
+#'   0, 1, 0.134, 0, 0,
+#'   0, -(1 - rho) * gamma, 1, (1 - rho) * gamma, (1 - rho) * beta,
+#'   0, 0, 0, 1, 0,
+#'   -phi_3, 0, 0, 0, 1
+#' ), nrow = 5, byrow = TRUE)
+#'
+#' Theta_inv <- solve(Theta)
+#' mu <- matrix(0, nrow = 5, ncol = 1)
+#'
+#' Phi_raw <- matrix(0, 5, 5)
+#' Phi_raw[1, 1] <- 1 - delta
+#' Phi_raw[2, 2] <- 1 - 0.424
+#' Phi_raw[3, 3] <- rho
+#' Phi_raw[4, 4] <- phi_yn
+#' Phi_raw[5, 5] <- phi_2
+#' Phi <- Theta_inv %*% Phi_raw
+#'
+#' Gamma0_raw <- matrix(0, 5, 5)
+#' Gamma0_raw[1, ] <- c(delta, -kappa, 0, kappa, 0)
+#' Gamma0_raw[2, ] <- c(0.134, 0.424, 0, 0, 0)
+#' Gamma0_raw[3, ] <- c((1 - rho) * beta, 0, 0, 0, 0)
+#' Gamma0_raw[5, 5] <- phi_1
+#' Gamma0 <- Theta_inv %*% Gamma0_raw
+#'
+#' Psi0 <- matrix(0, 5, 5)
+#' Lambda0 <- matrix(0, 5, 5)
+#' Lambda1 <- matrix(0, 5, 5)
+#' Psi1 <- matrix(0, 5, 5)
+#' Gamma1 <- matrix(0, 5, 5)
+#'
+#' Sigma_half_raw <- diag(c(
+#'   sigma_AS,
+#'   sigma_IS,
+#'   sigma_MP,
+#'   sigma_rstar,
+#'   sigma_pistar
+#' ))
+#' Sigma12 <- Theta_inv %*% Sigma_half_raw
+#'
+#' A <- matrix(c(
+#'   1, 0, 0, 0, 0,
+#'   0, 1, 0, 0, 0,
+#'   0, 0, 1, 0, 0
+#' ), nrow = 3, byrow = TRUE)
+#' B <- matrix(0, nrow = 3, ncol = 1)
+#' Omega12 <- matrix(c(0, sigma_nu, 0), nrow = 3, ncol = 1)
+#'
+#' model <- list(
+#'   mu = mu,
+#'   Phi = Phi,
+#'   Gamma0 = Gamma0,
+#'   Psi0 = Psi0,
+#'   Sigma12 = Sigma12,
+#'   Lambda0 = Lambda0,
+#'   Lambda1 = Lambda1,
+#'   Psi1 = Psi1,
+#'   Gamma1 = Gamma1,
+#'   Omega12 = Omega12,
+#'   A = A,
+#'   B = B
+#' )
+#'
+#' model_sol <- solve_Learning_RE(model)
+#' model_sol$K
+#' model_sol$Phi_ww
 #'
 #' @importFrom MASS ginv
 #' @export
