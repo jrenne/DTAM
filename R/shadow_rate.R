@@ -1,4 +1,40 @@
-
+#' Gaussian shadow-rate pricing recursion
+#'
+#' Computes the truncated-shadow-rate pricing objects used in the Gaussian
+#' version of the shadow-rate model.
+#'
+#' @param W Matrix of state vectors, with one row per date.
+#' @param psi.parameterization List containing `mu`, `Phi`, and `Sigma` for the
+#'   Gaussian state dynamics.
+#' @param ell_bar Shadow-rate lower bound.
+#' @param b,a,c Parameters entering the affine/lognormal approximation.
+#' @param H Maximum horizon.
+#' @param indic_WuXia Logical. If `TRUE`, use the Wu-Xia approximation.
+#'
+#' @return A list containing the pricing terms `F_c_equal_0`, `F`, and the
+#'   maturity-by-maturity coefficient sequences `all_b_bar_n`, `all_b_n`, and
+#'   `all_sigma_n`.
+#'
+#' @examples
+#' model <- list(
+#'   mu = matrix(0, 2, 1),
+#'   Phi = diag(c(0.9, 0.8)),
+#'   Sigma = diag(c(0.1, 0.2))
+#' )
+#' W <- matrix(c(0, 0,
+#'               0.1, -0.1), 2, 2, byrow = TRUE)
+#' res <- compute_F_Shadow_Gaussian(
+#'   W = W,
+#'   psi.parameterization = model,
+#'   ell_bar = 0,
+#'   b = 0,
+#'   a = matrix(c(1, 0), 2, 1),
+#'   c = matrix(c(0, 1), 2, 1),
+#'   H = 3
+#' )
+#' dim(res$F)
+#'
+#' @export
 compute_F_Shadow_Gaussian <-
   function(W,psi.parameterization,ell_bar,b,a,c,H,
            indic_WuXia=TRUE){
@@ -125,6 +161,24 @@ compute_F_Shadow_Gaussian <-
     ))
   }
 
+#' Laplace transforms for non-Gaussian auxiliary models
+#'
+#' These functions return affine or log-Laplace-transform coefficients for a
+#' set of non-Gaussian state dynamics used in the book: quadratic-Gaussian
+#' Poisson counts, VARG-Poisson models, and autoregressive gamma-volatility
+#' models.
+#'
+#' @param u Matrix of transform arguments, one column per evaluation point.
+#' @param psi.parameterization List of model parameters.
+#'
+#' @return A list with affine-transform coefficients `a` and `b`.
+#'
+#' @examples
+#' model_ar_ch <- list(mu = 0, phi = 0.9, nu = 1, mu_z = 0.2, beta = 0.8)
+#' res <- psi.AR_CH(matrix(c(0.1, 0.05), 2, 1), model_ar_ch)
+#' dim(res$a)
+#'
+#' @name psi_non_gaussian
 #' @export
 psi.QPoisson <- function(u,psi.parameterization){
   # Laplace transform of a process defined as follows:
@@ -168,6 +222,7 @@ psi.QPoisson <- function(u,psi.parameterization){
   return(list(a = a, b = b))
 }
 
+#' @rdname psi_non_gaussian
 #' @export
 psi.VARG_Poisson <- function(u,psi.parameterization){
   # Laplace transform of a process defined as follows:
@@ -197,6 +252,7 @@ psi.VARG_Poisson <- function(u,psi.parameterization){
   return(list(a = a, b = b))
 }
 
+#' @rdname psi_non_gaussian
 #' @export
 psi.AR_CH <- function(u,psi.parameterization){
   # Laplace transform of a process defined as follows:

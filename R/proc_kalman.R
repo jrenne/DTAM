@@ -599,7 +599,37 @@ reconciliationf_QKF <- function(rho_ini,opt){
   return(rho_tt)
 }
 
-
+#' Stationary Kalman filter initialization
+#'
+#' Computes the stationary covariance and gain matrices associated with a linear
+#' state-space model, then rewrites the joint law of the true state and its
+#' filtered estimate as a Gaussian VAR.
+#'
+#' @param mu State intercept.
+#' @param Phi State transition matrix.
+#' @param Sigma12 Square-root state innovation matrix.
+#' @param A Measurement loading matrix.
+#' @param B Measurement intercept or deterministic term matrix.
+#' @param Omega12 Square-root measurement innovation matrix.
+#' @param nb_iter Number of Riccati iterations used to approximate the
+#'   stationary covariance.
+#'
+#' @return A list containing the stationary prediction covariance `Pstar`, the
+#'   filtered covariance `P`, the Kalman gain `K`, and the Gaussian VAR
+#'   representation `mu_ww`, `Phi_ww`, and `Sigma12_ww` for the stacked true and
+#'   filtered states.
+#'
+#' @examples
+#' mu <- matrix(0, 1, 1)
+#' Phi <- matrix(0.9, 1, 1)
+#' Sigma12 <- matrix(0.1, 1, 1)
+#' A <- matrix(1, 1, 1)
+#' B <- matrix(0, 1, 1)
+#' Omega12 <- matrix(0.2, 1, 1)
+#' res <- make_stationary_filter(mu, Phi, Sigma12, A, B, Omega12)
+#' names(res)
+#'
+#' @export
 make_stationary_filter <- function(mu,Phi,Sigma12,A,B,Omega12,
                                    nb_iter = 100){
   # This function determines the stationary Kalman filter.

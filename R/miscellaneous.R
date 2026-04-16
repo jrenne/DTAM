@@ -1,4 +1,21 @@
-
+#' Add recession shading to a time-series plot
+#'
+#' Draws shaded polygons corresponding to U.S. or euro-area recession dates on
+#' the current base-R plot.
+#'
+#' @param col Fill color used for the shaded areas.
+#' @param indic_US Logical. If `TRUE`, use U.S. recession dates from `tseries`;
+#'   otherwise use the hard-coded euro-area dates included in the package.
+#' @param MIN,MAX Vertical bounds used for the polygon.
+#'
+#' @return Invisibly returns `NULL`.
+#'
+#' @examples
+#' plot(as.Date(c("2007-01-01", "2012-01-01")),
+#'      c(0, 1), type = "n", xlab = "", ylab = "")
+#' make_recessions(col = "#CCCCCC66", MIN = 0, MAX = 1)
+#'
+#' @export
 make_recessions <- function(col="#AA55AA44",indic_US=TRUE,
                             MIN=-10000,MAX=+10000){
   if(indic_US){
@@ -40,8 +57,33 @@ NW.LongRunVariance <- function(X,q){
   }
   return(LRV)
 }
-
-
+#' Fast Gaussian multi-horizon aggregation
+#'
+#' Computes the mean, autoregressive loading, and covariance associated with the
+#' cumulated Gaussian VAR state `x_{t+1} + ... + x_{t+h}` for a collection of
+#' horizons.
+#'
+#' @param model List containing `mu`, `Phi`, and `Sigma` for the Gaussian
+#'   VAR(1).
+#' @param Maturities_decompo Integer decomposition matrix describing the target
+#'   maturities.
+#'
+#' @return A list with arrays `MU`, `PHI`, and `SIGMA`, plus a vector `H` of
+#'   maturities.
+#'
+#' @examples
+#' model <- list(
+#'   mu = matrix(c(0, 0.1), 2, 1),
+#'   Phi = matrix(c(0.8, 0.1,
+#'                  0.0, 0.7), 2, 2, byrow = TRUE),
+#'   Sigma = diag(c(0.2, 0.1))
+#' )
+#' decomp <- matrix(c(2, 0,
+#'                    1, 2), 2, 2, byrow = TRUE)
+#' res <- compute_Gaussian_fast(model, decomp)
+#' res$H
+#'
+#' @export
 compute_Gaussian_fast <- function(model,Maturities_decompo){
   # This function computes mu_h, Phi_h, and Sigma_h that are s.t.
   # x_{t+h}+...+x_{t+1}|N(mu_h + Phi_h·x_t, Sigma_h),
@@ -262,7 +304,29 @@ simul.GVAR <- function(model,nb.sim,x0=NaN,nb.replic=1){
   }
   return(X)
 }
-
+#' Plot Gaussian iso-density contours
+#'
+#' Draws contour lines associated with a bivariate Gaussian distribution.
+#'
+#' @param Ew Mean vector of length two.
+#' @param Vw `2 x 2` covariance matrix.
+#' @param n Grid size used for contour evaluation.
+#' @param min_w,max_w Optional plotting bounds. If omitted, the routine uses a
+#'   multiple of the marginal standard deviations.
+#' @param prob_levels Probability-content levels used to determine contour
+#'   radii.
+#' @param n_std Number of standard deviations used when bounds are not supplied.
+#' @param maintitle Plot title.
+#'
+#' @return Invisibly returns a list containing the plotting grid and contour
+#'   levels.
+#'
+#' @examples
+#' plot_isodensity_gaussian(Ew = c(0, 0),
+#'                          Vw = matrix(c(1, 0.5, 0.5, 2), 2, 2),
+#'                          maintitle = "")
+#'
+#' @export
 plot_isodensity_gaussian <- function(Ew, Vw, n = 200,
                                      min_w = NA_real_, max_w = NA_real_,
                                      prob_levels = c(0.50, 0.80, 0.95, 0.99),

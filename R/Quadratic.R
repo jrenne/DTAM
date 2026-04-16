@@ -543,6 +543,26 @@ make_matrices_cond_mean_variance_Quadratic <- function(model, indic_compute_V){
 }
 
 
+#' Log-Laplace transform for Gaussian quadratic VAR models
+#'
+#' Evaluates the affine recursion associated with the augmented quadratic-Gaussian
+#' state vector containing both `x_t` and `vech(x_t x_t')`.
+#'
+#' @param u Matrix of transform arguments.
+#' @param psi.parameterization List containing `mu`, `Phi`, and `Sigma`.
+#'
+#' @return A list with affine-transform coefficients `a` and `b`.
+#'
+#' @examples
+#' model <- list(
+#'   mu = matrix(c(0, 0), 2, 1),
+#'   Phi = diag(c(0.9, 0.8)),
+#'   Sigma = diag(c(0.1, 0.2))
+#' )
+#' u <- matrix(c(0.1, 0.2, 0.05, 0.01, 0.02), 5, 1)
+#' res <- psi.GaussianQVAR(u, model)
+#' dim(res$a)
+#'
 #' @export
 psi.GaussianQVAR <- function(u,psi.parameterization){
   # The model is:
@@ -708,5 +728,4 @@ make_Mnx <- function(n) {
 # V <- aux + t(aux)
 # Sigma12 %*% solve(diag(2) - 2*t(Sigma12) %*% V %*% Sigma12) %*% t(Sigma12)
 # solve(solve(Sigma12%*%t(Sigma12)) - 2*V)
-
 

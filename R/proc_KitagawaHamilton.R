@@ -1,3 +1,42 @@
+#' Filter and smooth finite-state regime probabilities
+#'
+#' These functions implement the Kitagawa-Hamilton filter and smoother for a
+#' hidden Markov chain. `KH_filter()` recursively updates filtered regime
+#' probabilities and accumulates the log-likelihood contribution associated with
+#' regime-specific conditional densities. `KH_smoother()` applies the backward
+#' recursion that turns filtered probabilities into smoothed probabilities.
+#'
+#' @param Omega Regime transition matrix with rows summing to one. It can also
+#'   be a `J x J x T` array for deterministic time-varying transition
+#'   probabilities.
+#' @param Eta Matrix of dimension `T x J`. Entry `(t, j)` is the log conditional
+#'   density (or log likelihood contribution) of observation `t` under regime
+#'   `j`.
+#'
+#' @return `KH_filter()` returns a list with:
+#' \describe{
+#'   \item{`ksi_matrix`}{Filtered regime probabilities, one row per date.}
+#'   \item{`loglik_vec`}{Date-by-date log-likelihood contributions.}
+#'   \item{`loglik`}{Total log-likelihood.}
+#' }
+#' `KH_smoother()` returns a `T x J` matrix of smoothed regime probabilities.
+#'
+#' @details
+#' The implementation expects `Eta` on the log scale. Internally, it recenters
+#' each row before exponentiating in order to reduce numerical underflow.
+#'
+#' @examples
+#' Omega <- matrix(c(0.95, 0.05,
+#'                   0.10, 0.90), 2, 2, byrow = TRUE)
+#' Eta <- cbind(log(c(0.8, 0.2, 0.7)),
+#'              log(c(0.2, 0.8, 0.3)))
+#'
+#' filt <- KH_filter(Omega, Eta)
+#' smth <- KH_smoother(Omega, Eta)
+#' dim(filt$ksi_matrix)
+#' dim(smth)
+#'
+#' @export
 KH_filter <- function(Omega, Eta){
   # Model: ---------------------------------------------------------------------
   # F_{t}|z_{t},I_{t-1} ~ f(z_{t},F_{t-1}),
@@ -73,6 +112,8 @@ KH_filter <- function(Omega, Eta){
 
 
 
+#' @rdname KH_filter
+#' @export
 KH_smoother <- function(Omega, Eta){
   res_filter <- KH_filter(Omega, Eta)
 
@@ -121,6 +162,49 @@ f_Eta <- function(F,M,N){
 
 
 
+#' Regime-switching simulation and transition-matrix utilities
+#'
+#' `simul_RS()` simulates a finite-state Markov chain. `make_Pi_z_kron_z()`
+#' builds the transition matrix associated with the augmented chain
+#' `z_t \%x\% z_{t-1}`. `compute_LT_RS()` computes multi-horizon Laplace
+#' transforms for payoffs driven by a Markov-switching state.
+#'
+#' @param Omega,Pi Transition matrix with rows summing to one. `Pi` can also be
+#'   a three-dimensional array when the transition matrix varies
+#'   deterministically over time.
+#' @param TT Number of simulated dates.
+#' @param ini_state Optional initial regime. If omitted, the simulation starts
+#'   from the most likely state under the stationary distribution.
+#' @param alpha Loading vector entering the Markov-switching Laplace transform.
+#' @param Maturities_decompo Integer decomposition matrix describing how target
+#'   maturities are assembled from previously computed shorter maturities.
+#' @param indic_add_current Logical indicating whether the current state
+#'   contribution should be included in the Laplace transform coefficients.
+#'
+#' @return
+#' `simul_RS()` returns a `TT x J` indicator matrix of simulated regimes.
+#' `make_Pi_z_kron_z()` returns the transition matrix (or array) for the
+#' augmented chain. `compute_LT_RS()` returns a list with `A` (the transform
+#' coefficients) and `H` (the associated maturities).
+#'
+#' @examples
+#' Pi <- matrix(c(0.9, 0.1,
+#'                0.2, 0.8), 2, 2, byrow = TRUE)
+#'
+#' z <- simul_RS(Pi, TT = 10)
+#' dim(z)
+#'
+#' PI_aug <- make_Pi_z_kron_z(Pi)
+#' dim(PI_aug)
+#'
+#' decomp <- matrix(c(2, 0,
+#'                    1, 2), 2, 2, byrow = TRUE)
+#' res <- compute_LT_RS(alpha = matrix(c(-0.1, 0.2), 2, 1),
+#'                      Pi = Pi,
+#'                      Maturities_decompo = decomp)
+#' res$H
+#'
+#' @export
 simul_RS <- function(Omega,TT,ini_state = NaN){
   # Omega is the matrix of transition probabilities, its rows sum to 1.
 
@@ -156,6 +240,8 @@ simul_RS <- function(Omega,TT,ini_state = NaN){
 }
 
 
+#' @rdname simul_RS
+#' @export
 make_Pi_z_kron_z <- function(Pi){
   # Pi is the matrix of transition probabilities (with rows that sum to one)
   # This procedure constructs the matrix  of transition probabilities of
@@ -188,6 +274,8 @@ make_Pi_z_kron_z <- function(Pi){
 
 
 
+#' @rdname simul_RS
+#' @export
 compute_LT_RS <- function(alpha,Pi,Maturities_decompo,
                           indic_add_current=FALSE){
   # This function computes A_h s.t.

@@ -198,6 +198,32 @@ simul.ARG_OLD <- function(nb.sim,mu,nu,rho,alpha=0,w0=NaN){
   return(W)
 }
 
+#' Simulate scalar affine count and intensity processes
+#'
+#' `simul.ARG()` simulates a scalar ARG/ARG0 process. `simul.compound.poisson()`
+#' simulates the compound-Poisson process used in the affine-process chapter.
+#'
+#' @param nb.sim Number of simulated dates.
+#' @param mu,nu,rho,alpha Scalar ARG parameters.
+#' @param w0 Optional initial value.
+#' @param nb.replic Number of independent ARG paths simulated in parallel.
+#' @param Gamma,Pi,lambda Parameters of the compound-Poisson process.
+#'
+#' @return `simul.ARG()` returns a `nb.sim x nb.replic` matrix. When
+#'   `nb.replic = 1`, this is a single-column matrix. `simul.compound.poisson()`
+#'   returns a numeric vector of length `nb.sim`.
+#'
+#' @examples
+#' set.seed(123)
+#' sim_arg <- simul.ARG(nb.sim = 20, mu = 0.05, nu = 1, rho = 0.95, alpha = 0)
+#' dim(sim_arg)
+#'
+#' sim_cp <- simul.compound.poisson(nb.sim = 20, Gamma = 1, Pi = 0.95,
+#'                                  lambda = 0.1)
+#' length(sim_cp)
+#'
+#' @name simul_ARG
+#' @export
 simul.ARG <- function(nb.sim,mu,nu,rho,alpha=0,w0=NaN,nb.replic=1){
   # This function simulates an ARG or an ARG0 process
   # If nb.replic>1, then we simulate several paths in parallel
@@ -222,6 +248,8 @@ simul.ARG <- function(nb.sim,mu,nu,rho,alpha=0,w0=NaN,nb.replic=1){
 }
 
 
+#' @rdname simul_ARG
+#' @export
 simul.compound.poisson <- function(nb.sim,Gamma,Pi,lambda,w0=NaN){
   # This function simulates a compound Poisson process
 
@@ -296,6 +324,29 @@ simul.MS.AR <- function(nb.sim,mu.1,mu.2,rho.1,rho.2,sigma.1,sigma.2,P,w0=NaN){
   return(list(S=S,W=W,Pk=Pk))
 }
 
+#' Recover a density from a Laplace transform
+#'
+#' Uses Fourier inversion to approximate a univariate density on a user-supplied
+#' grid of values.
+#'
+#' @param model List of model parameters passed to `psi`.
+#' @param values.of.variable Grid at which the density is approximated.
+#' @param psi Function returning the Laplace transform at the requested points.
+#' @param max_x,min_x,nb_x Numerical integration settings for the inversion.
+#'
+#' @return Numeric vector of approximate density values on
+#'   `values.of.variable`.
+#'
+#' @examples
+#' psi_exp <- function(u, model) {
+#'   -log(1 - model$mu * u)
+#' }
+#' grid <- seq(0.01, 2, length.out = 50)
+#' dens <- make.pdf(list(mu = 1), values.of.variable = grid, psi = psi_exp,
+#'                  max_x = 100, nb_x = 500)
+#' length(dens)
+#'
+#' @export
 make.pdf <- function(model,values.of.variable,
                      psi,
                      max_x = 10000,
@@ -584,6 +635,45 @@ compute_expect_variance_H <- function(VAR_representation,
 # res <- compute_expect_variance_H(VAR_representation,
 #                                  theta1=theta1,H=H)
 
+#' VARG transforms, moments, and simulation helpers
+#'
+#' These functions cover the vector autoregressive gamma (VARG) model used in
+#' the credit chapters. They provide the one-step Laplace transform under the
+#' physical or transformed measure, unconditional moments, simulation, default
+#' probabilities, and CDS pricing quantities.
+#'
+#' @param u Matrix of transform arguments.
+#' @param psi.parameterization,model Lists of model parameters.
+#' @param H Maximum horizon.
+#' @param indic_delta1 Optional index locating the first default-intensity
+#'   component within the state vector.
+#' @param X Matrix of state-vector values where the pricing objects are
+#'   evaluated.
+#' @param nb_periods Number of simulated dates.
+#' @param w0 Optional initial state.
+#'
+#' @return Depending on the function: affine-transform coefficients (`a`, `b`),
+#'   unconditional moments, simulated paths, transformed-measure parameters, or
+#'   pricing objects such as default probabilities and CDS spreads.
+#'
+#' @examples
+#' model <- list(
+#'   alpha = c(0.5, 0.3),
+#'   nu = c(1, 1.2),
+#'   mu = c(0.2, 0.15),
+#'   beta = matrix(c(0.4, 0.1,
+#'                   0.0, 0.3), 2, 2, byrow = TRUE),
+#'   alpha_w = c(0.1, 0.05),
+#'   mu_R0 = 0,
+#'   mu_R1 = matrix(0, 2, 1),
+#'   xi0 = 0,
+#'   xi1 = matrix(0, 2, 1)
+#' )
+#' res_psi <- psi.VARG(matrix(c(0.05, 0.02), 2, 1), model)
+#' dim(res_psi$a)
+#' compute_uncondmean_VARG(model)
+#'
+#' @name VARG_tools
 #' @export
 psi.VARG <- function(u,psi.parameterization){
   # Laplace transform of a VARG with conditionally independent components.
@@ -656,6 +746,8 @@ compute_P_bar_VARG <- function(model,gamma,H=10,indic_delta1 = NaN){
 }
 
 
+#' @rdname VARG_tools
+#' @export
 compute_proba_def_VARG <- function(model,H=10,indic_delta1 = NaN,
                                    X=NaN){
   # model contains, in particular, the parameterization of the VARG model.
@@ -698,6 +790,8 @@ compute_proba_def_VARG <- function(model,H=10,indic_delta1 = NaN,
 }
 
 
+#' @rdname VARG_tools
+#' @export
 compute_uncondmean_VARG <- function(model){
   alpha <- model$alpha
   nu    <- model$nu
@@ -713,6 +807,8 @@ compute_uncondmean_VARG <- function(model){
   return(E)
 }
 
+#' @rdname VARG_tools
+#' @export
 compute_uncondvar_VARG <- function(model){
   alpha <- model$alpha
   nu    <- model$nu
@@ -730,6 +826,8 @@ compute_uncondvar_VARG <- function(model){
   return(V)
 }
 
+#' @rdname VARG_tools
+#' @export
 simul_VARG <- function(model,nb_periods,w0=NaN){
   alpha <- model$alpha
   nu    <- model$nu
@@ -751,6 +849,8 @@ simul_VARG <- function(model,nb_periods,w0=NaN){
   return(all_w)
 }
 
+#' @rdname VARG_tools
+#' @export
 make_VARG_Q <- function(model){
   modelQ <- model
   modelQ$mu    <- model$mu / (1 - model$alpha_w * model$mu)
@@ -759,6 +859,8 @@ make_VARG_Q <- function(model){
   return(modelQ)
 }
 
+#' @rdname VARG_tools
+#' @export
 prices_CDS_RFV_VARG <- function(model,H=10,indic_delta1 = NaN,
                                 X=NaN){
   # X is a matrix of dimension T x n.w of state vector values.
@@ -840,6 +942,40 @@ prices_CDS_RFV_VARG <- function(model,H=10,indic_delta1 = NaN,
 
 
 # Top-down approach ============================================================
+#' Top-down credit-model transforms and simulation
+#'
+#' The `psi.*TopDown` functions evaluate the one-step Laplace transform of the
+#' latent loss/intensity state used in the top-down credit model. `simul.TopDown`
+#' simulates the state vector under the physical measure.
+#'
+#' @param u,u.y Matrix of transform arguments.
+#' @param model List of top-down model parameters.
+#' @param psi.y Optional function used to evaluate the transform of the `y`
+#'   block.
+#' @param nb_periods Number of simulated dates.
+#' @param W0 Optional initial state.
+#'
+#' @return The `psi.*` functions return affine-transform coefficients. The
+#'   simulator returns a list with unconditional moments (`EV`) and simulated
+#'   paths for `y`, `n`, and the stacked state `w`.
+#'
+#' @examples
+#' model <- list(
+#'   alpha.n = c(0.2),
+#'   beta.ny = matrix(0.1, 1, 1),
+#'   beta.nn = matrix(0.3, 1, 1),
+#'   beta.yy = matrix(0.2, 1, 1),
+#'   beta.yn = matrix(0.05, 1, 1),
+#'   alpha.y = c(0.1),
+#'   nu.y = c(1),
+#'   mu.y = c(0.4),
+#'   alpha.m = matrix(0, 2, 1)
+#' )
+#' psi.y.TopDown(matrix(0.05, 1, 1), model)$b
+#' sim <- simul.TopDown(model, nb_periods = 10)
+#' dim(sim$all_w)
+#'
+#' @name TopDown_tools
 #' @export
 psi.w.TopDown <- function(u,model,psi.y=psi.y.TopDown){
   # This function evaluates the LT of the state vector w_t in the context of the
@@ -869,6 +1005,7 @@ psi.w.TopDown <- function(u,model,psi.y=psi.y.TopDown){
               a.wn = a.wn,
               a    = rbind(a.wy,a.wn)))
 }
+#' @rdname TopDown_tools
 #' @export
 psiQ.w.TopDown <- function(u,model,psi.y=psi.y.TopDown){
   # Same as psiQ.w.TopDown, but under the risk-neutral (Q) measure
@@ -890,6 +1027,7 @@ psiQ.w.TopDown <- function(u,model,psi.y=psi.y.TopDown){
               a.wn = a.wn,
               a    = rbind(a.wy,a.wn)))
 }
+#' @rdname TopDown_tools
 #' @export
 psi.y.TopDown <- function(u.y,model){
   # This function returns the LT of y_{t+1}|w_t.
@@ -915,6 +1053,8 @@ psi.y.TopDown <- function(u.y,model){
               b    = b.y))
 }
 
+#' @rdname TopDown_tools
+#' @export
 simul.TopDown <- function(model,nb_periods,W0=NaN){
   # This function simulates the Top Down model. The conditional distribuion of
   # y_t is compound Poisson-Gamma (as in the ARG).
@@ -1047,6 +1187,53 @@ compute_H_bar_TopDown <- function(model,gamma,H=10,W=NaN,
 }
 
 
+#' Top-down credit pricing objects
+#'
+#' `compute_CDS_TopDown()` prices index-segment CDS contracts in the top-down
+#' model. `compute_G()` evaluates the truncated-payoff building block used for
+#' loss-function transforms. `compute_tranche()` combines these ingredients into
+#' tranche prices.
+#'
+#' @param model List of top-down model parameters.
+#' @param H Maximum horizon.
+#' @param W Matrix of state-vector values.
+#' @param RR Recovery rate.
+#' @param indic_Q Logical. If `TRUE`, work under the risk-neutral transform.
+#' @param gamma,v Inputs defining the truncated payoff.
+#' @param b.matrix Threshold matrix, one row per maturity.
+#' @param indic_upper Logical determining whether the upper or lower transform is
+#'   computed.
+#' @param max_x,dx_statio,min_dx,nb_x1 Numerical integration settings.
+#' @param j Segment index for tranche pricing.
+#' @param vector.of.a Attachment/detachment points.
+#'
+#' @return `compute_CDS_TopDown()` returns a `T x J x H` array of CDS spreads.
+#'   `compute_G()` returns the array of truncated-payoff values. 
+#'   `compute_tranche()` returns a list with `tranche_prices`, `numerator`, and
+#'   `denominat`.
+#'
+#' @examples
+#' model <- list(
+#'   alpha.n = c(0.2),
+#'   beta.ny = matrix(0.1, 1, 1),
+#'   beta.nn = matrix(0.3, 1, 1),
+#'   beta.yy = matrix(0.2, 1, 1),
+#'   beta.yn = matrix(0.05, 1, 1),
+#'   alpha.y = c(0.1),
+#'   nu.y = c(1),
+#'   mu.y = c(0.4),
+#'   alpha.m = matrix(0, 2, 1),
+#'   xi0 = 0,
+#'   xi1 = matrix(0, 2, 1),
+#'   I = 1,
+#'   n_w = 2
+#' )
+#' W <- matrix(c(0.3, 0), 1, 2)
+#' cds <- compute_CDS_TopDown(model, H = 2, W = W)
+#' dim(cds)
+#'
+#' @name TopDown_pricing
+#' @export
 compute_CDS_TopDown <- function(model,
                                 H=10,
                                 W,
@@ -1216,6 +1403,8 @@ truncated.payoff <- function(W, # values of w_t
 }
 
 
+#' @rdname TopDown_pricing
+#' @export
 compute_G <- function(model,W,
                       gamma,v,
                       b.matrix, # attachment/detachment points
@@ -1255,6 +1444,8 @@ compute_G <- function(model,W,
   return(P)
 }
 
+#' @rdname TopDown_pricing
+#' @export
 compute_tranche <- function(model,W,
                             j,H,
                             vector.of.a, # attachment/detachment points
@@ -1429,6 +1620,39 @@ compute_affine_payoff_TopDown <- function(model,gamma,H,
               r = r))
 }
 
+#' Rating-migration bond pricing and simulation
+#'
+#' `compute_bond_price_Ratings()` prices risky and risk-free bonds in a model
+#' with stochastic rating migration. `simul.rating.migration()` simulates a
+#' rating path conditional on an exogenous state trajectory.
+#'
+#' @param model List of model parameters.
+#' @param Y Matrix of factor realizations.
+#' @param H Maximum maturity.
+#' @param psi One-step Laplace transform of the factor process.
+#' @param tau_ini Initial rating for the simulated migration path.
+#'
+#' @return `compute_bond_price_Ratings()` returns a list containing risk-free and
+#'   risky bond prices, yields, and spreads. `simul.rating.migration()` returns
+#'   a vector of simulated ratings.
+#'
+#' @examples
+#' model <- list(
+#'   kappa0 = c(0.01, 0),
+#'   kappa1 = matrix(c(0.1, 0), 1, 2),
+#'   xi0 = 0.01,
+#'   xi1 = matrix(0.1, 1, 1),
+#'   V = diag(2),
+#'   psi.parameterization = list(mu = matrix(0, 1, 1),
+#'                               Phi = matrix(0.8, 1, 1),
+#'                               Sigma12 = matrix(0.1, 1, 1))
+#' )
+#' Y <- matrix(c(0, 0.1, -0.1), 3, 1)
+#' res <- compute_bond_price_Ratings(model, Y, H = 2, psi = psi.GaussianVAR)
+#' dim(res$RF_bond_price)
+#'
+#' @name Ratings_tools
+#' @export
 compute_bond_price_Ratings <- function(model,Y,H,psi){
   # This function computes bond prices in a context featuring
   #     credit ratings migration.
@@ -1505,6 +1729,8 @@ compute_bond_price_Ratings <- function(model,Y,H,psi){
 }
 
 
+#' @rdname Ratings_tools
+#' @export
 simul.rating.migration <- function(model,Y,tau_ini=1){
   # This function simulates a trajectory of ratings for a given model and
   # a trajectory of the exogenous variable Y (of dimension T x n_y).
@@ -2090,6 +2316,37 @@ price_IR_caps_floors <- function(W, # Values of state vector (T x n)
 }
 
 
+#' Price stock options from affine state dynamics
+#'
+#' Prices European stock calls and puts when log returns are affine in the state
+#' vector and the payoff is computed through truncated Fourier inversion.
+#'
+#' @param W Matrix of state-vector values.
+#' @param S Vector of ex-dividend stock prices.
+#' @param H Maximum maturity in model periods.
+#' @param a,b Stock-return loadings.
+#' @param K_over_S Vector of strikes expressed as fractions of the spot price.
+#' @param psi One-step Laplace transform of the state vector.
+#' @param parameterization List containing at least the pricing model and the
+#'   short-rate specification.
+#' @param max_x,dx_statio,min_dx,nb_x1 Numerical integration settings.
+#'
+#' @return A list with arrays `Calls` and `Puts`.
+#'
+#' @examples
+#' model <- list(n_w = 1, mu = matrix(0, 1, 1), Phi = matrix(0.9, 1, 1),
+#'               Sigma12 = matrix(0.1, 1, 1))
+#' W <- matrix(c(0, 0.1), 2, 1)
+#' S <- c(100, 102)
+#' res <- price_Stock_calls_puts(
+#'   W = W, S = S, H = 2, a = 0.1, b = 0,
+#'   K_over_S = c(0.95, 1.05),
+#'   psi = psi.GaussianVAR,
+#'   parameterization = list(model = model, xi0 = 0, xi1 = 0)
+#' )
+#' dim(res$Calls)
+#'
+#' @export
 price_Stock_calls_puts <- function(W, # Values of state vector (T x n)
                                    S, # ex-dividend stock price (T x 1)
                                    H, # maximum maturity, in model periods
@@ -2213,6 +2470,39 @@ price_Stock_calls_puts <- function(W, # Values of state vector (T x n)
 
 
 
+#' Price inflation caps and floors
+#'
+#' Prices inflation caplets/floorlets and the cumulative caps/floors built from
+#' them.
+#'
+#' @param W Matrix of state-vector values.
+#' @param H Maximum maturity in model periods.
+#' @param ell Indexation lag.
+#' @param all_K Vector of strikes expressed at the model frequency.
+#' @param Pi_t_minus_ell Optional lagged price index level.
+#' @param psi One-step Laplace transform of the state vector.
+#' @param parameterization List containing the model, short-rate parameters, and
+#'   inflation loadings.
+#' @param max_x,dx_statio,min_dx,nb_x1 Numerical integration settings.
+#'
+#' @return A list containing `Caplet`, `Floorlet`, `Caps`, `Floors`, and the
+#'   maturity grid used in the accumulation.
+#'
+#' @examples
+#' model <- list(n_w = 1, mu = matrix(0, 1, 1), Phi = matrix(0.9, 1, 1),
+#'               Sigma12 = matrix(0.1, 1, 1))
+#' W <- matrix(c(0, 0.1), 2, 1)
+#' res <- price_Inflation_caps_floors(
+#'   W = W, H = 2, all_K = c(0.01, 0.02),
+#'   psi = psi.GaussianVAR,
+#'   parameterization = list(
+#'     model = model, xi0 = 0, xi1 = 0,
+#'     mu_pi0 = 0.005, mu_pi1 = 0.1
+#'   )
+#' )
+#' dim(res$Caps)
+#'
+#' @export
 price_Inflation_caps_floors <- function(W, # Values of state vector (T x n)
                                         H, # maximum maturity, in model periods
                                         ell = 0, # Indexation lag

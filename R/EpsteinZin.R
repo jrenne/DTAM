@@ -579,6 +579,28 @@ solve_EZ_stock_return <- function(model,psi,Ew=NaN,z_s_bar_ini=5,
 
   return(model_solved)
 }
+#' Log-Laplace transform for the Bansal-Shaliastovich model
+#'
+#' Evaluates the conditional log-Laplace transform used in the long-run-risk
+#' specification of Bansal and Shaliastovich.
+#'
+#' @param u Matrix of transform arguments.
+#' @param psi.parameterization List containing the model matrices and loadings.
+#'
+#' @return A list with affine-transform coefficients `a` and `b`.
+#'
+#' @examples
+#' model <- list(
+#'   Pi = diag(c(0.9, 0.8)),
+#'   nu = matrix(c(0.7), 1, 1),
+#'   chi.0 = c(0.2, 0.3),
+#'   chi.1 = matrix(c(0.5, 0.2), 1, 2),
+#'   sigma.w = 0.2
+#' )
+#' u <- matrix(c(0.1, 0.05, 0.02), 3, 1)
+#' res <- psi.BansalShaliastovich(u, model)
+#' dim(res$a)
+#'
 #' @export
 psi.BansalShaliastovich <- function (u,psi.parameterization){
   # This function computes the log Laplace transform associated with
