@@ -250,17 +250,26 @@ simul.GVAR <- function(model,nb.sim,x0=NaN,nb.replic=1){
 #' @return `psi.RSVAR()` returns a list with affine-transform coefficients `a`
 #'   and `b`. `simul.RSVAR()` returns a list with `y`, `z`, `w`, and `regime`.
 #'
+#' @references
+#' Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
+#' *Asset Pricing with Discrete-Time Affine Processes*.
+#'
 #' @examples
 #' model <- list(
-#'   Phi = matrix(0.95, 1, 1),
+#'   Phi = matrix(c(0.95, 0.05,
+#'                  0.00, 0.90), 2, 2, byrow = TRUE),
 #'   Pi = matrix(c(0.95, 0.05,
 #'                 0.30, 0.70), 2, 2, byrow = TRUE),
-#'   M = matrix(c(0.001, 0), 1, 2),
-#'   Sigma = array(c(0.01^2, 0.02^2), c(1, 1, 2))
+#'   M = matrix(c(0.001, 0.000,
+#'                0.000, 0.002), 2, 2, byrow = TRUE),
+#'   Sigma = array(c(0.01^2, 0.00,
+#'                   0.00,   0.02^2,
+#'                   0.02^2, 0.00,
+#'                   0.00,   0.04^2), c(2, 2, 2))
 #' )
-#' u <- matrix(c(1, 0, 0), 3, 1)
+#' u <- matrix(c(1, 0, 0, 0), 4, 1)
 #' psi.RSVAR(u, model)
-#' sim <- simul.RSVAR(model, nb.sim = 20, y0 = 0, z0 = 1)
+#' sim <- simul.RSVAR(model, nb.sim = 20, y0 = c(0, 0), z0 = 1)
 #' dim(sim$w)
 #'
 #' @export
