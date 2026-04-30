@@ -223,6 +223,181 @@ simul.GVAR <- function(model,nb.sim,x0=NaN,nb.replic=1){
   }
   return(X)
 }
+
+#' Regime-switching Gaussian VAR transform and simulation
+#'
+#' Computes the one-period conditional Laplace transform associated with a
+#' regime-switching Gaussian VAR. The state vector is ordered as
+#' `w_t = (y_t', z_t')'`, where `z_t` is a finite-state Markov chain represented
+#' by a selection vector. The continuous component follows
+#' \deqn{
+#' y_{t+1} = \mu z_{t+1} + M z_t + \Phi y_t
+#'   + \Sigma(z_{t+1})^{1/2}\varepsilon_{t+1}.
+#' }{
+#' y_{t+1} = mu z_{t+1} + M z_t + Phi y_t
+#'   + Sigma(z_{t+1})^{1/2} eps_{t+1}.
+#' }
+#'
+#' @param u Matrix of Laplace-transform loadings. It must have `n + J` rows,
+#'   where `n` is the dimension of `y_t` and `J` is the number of regimes.
+#' @param psi.parameterization,model List containing `Phi`, `Pi`, and either
+#'   `Sigma` or `Sigma12`. Optional entries are `mu` and `M`, both `n x J`
+#'   matrices. If omitted, they are set to zero.
+#' @param nb.sim Number of simulated dates.
+#' @param y0 Optional initial continuous state.
+#' @param z0 Optional initial regime index.
+#'
+#' @return `psi.RSVAR()` returns a list with affine-transform coefficients `a`
+#'   and `b`. `simul.RSVAR()` returns a list with `y`, `z`, `w`, and `regime`.
+#'
+#' @examples
+#' model <- list(
+#'   Phi = matrix(0.95, 1, 1),
+#'   Pi = matrix(c(0.95, 0.05,
+#'                 0.30, 0.70), 2, 2, byrow = TRUE),
+#'   M = matrix(c(0.001, 0), 1, 2),
+#'   Sigma = array(c(0.01^2, 0.02^2), c(1, 1, 2))
+#' )
+#' u <- matrix(c(1, 0, 0), 3, 1)
+#' psi.RSVAR(u, model)
+#' sim <- simul.RSVAR(model, nb.sim = 20, y0 = 0, z0 = 1)
+#' dim(sim$w)
+#'
+#' @export
+psi.RSVAR <- function(u, psi.parameterization) {
+  u <- as.matrix(u)
+
+  Phi <- psi.parameterization$Phi
+  Pi <- psi.parameterization$Pi
+  n <- dim(Phi)[1]
+  J <- dim(Pi)[1]
+
+  if (dim(u)[1] != n + J) {
+    stop("u must have n + J rows, with state ordered as (y_t', z_t')'.")
+  }
+  if (dim(Pi)[2] != J) {
+    stop("Pi must be a square transition matrix.")
+  }
+
+  mu <- psi.parameterization$mu
+  if (is.null(mu)) {
+    mu <- matrix(0, n, J)
+  } else {
+    mu <- matrix(mu, n, J)
+  }
+
+  M <- psi.parameterization$M
+  if (is.null(M)) {
+    M <- matrix(0, n, J)
+  } else {
+    M <- matrix(M, n, J)
+  }
+
+  Sigma <- psi.parameterization$Sigma
+  if (is.null(Sigma)) {
+    Sigma12 <- psi.parameterization$Sigma12
+    if (is.null(Sigma12)) {
+      stop("psi.parameterization must contain either Sigma or Sigma12.")
+    }
+    if (length(dim(Sigma12)) == 2) {
+      Sigma <- array(Sigma12 %*% t(Sigma12), c(n, n, J))
+    } else {
+      Sigma <- array(0, c(n, n, J))
+      for (j in 1:J) {
+        Sigma[, , j] <- Sigma12[, , j] %*% t(Sigma12[, , j])
+      }
+    }
+  } else if (length(dim(Sigma)) == 2) {
+    Sigma <- array(Sigma, c(n, n, J))
+  }
+
+  K <- dim(u)[2]
+  a <- matrix(0, n + J, K)
+  b <- matrix(0, 1, K)
+
+  for (k in 1:K) {
+    u_y <- matrix(u[1:n, k], n, 1)
+    u_z <- matrix(u[n + 1:J, k], J, 1)
+
+    a[1:n, k] <- t(Phi) %*% u_y
+    for (i in 1:J) {
+      log_terms <- matrix(0, J, 1)
+      for (j in 1:J) {
+        log_terms[j] <- t(u_y) %*% mu[, j] +
+          0.5 * t(u_y) %*% Sigma[, , j] %*% u_y +
+          u_z[j]
+      }
+      a[n + i, k] <- t(u_y) %*% M[, i] +
+        log(sum(Pi[i, ] * exp(log_terms)))
+    }
+  }
+
+  return(list(a = a, b = b))
+}
+
+#' @rdname psi.RSVAR
+#' @export
+simul.RSVAR <- function(model, nb.sim, y0 = NaN, z0 = NaN) {
+  Phi <- model$Phi
+  Pi <- model$Pi
+  n <- dim(Phi)[1]
+  J <- dim(Pi)[1]
+
+  mu <- model$mu
+  if (is.null(mu)) {
+    mu <- matrix(0, n, J)
+  } else {
+    mu <- matrix(mu, n, J)
+  }
+
+  M <- model$M
+  if (is.null(M)) {
+    M <- matrix(0, n, J)
+  } else {
+    M <- matrix(M, n, J)
+  }
+
+  Sigma12 <- model$Sigma12
+  if (is.null(Sigma12)) {
+    Sigma <- model$Sigma
+    if (is.null(Sigma)) {
+      stop("model must contain either Sigma or Sigma12.")
+    }
+    if (length(dim(Sigma)) == 2) {
+      Sigma12 <- array(t(chol(Sigma)), c(n, n, J))
+    } else {
+      Sigma12 <- array(0, c(n, n, J))
+      for (j in 1:J) {
+        Sigma12[, , j] <- t(chol(Sigma[, , j]))
+      }
+    }
+  } else if (length(dim(Sigma12)) == 2) {
+    Sigma12 <- array(Sigma12, c(n, n, J))
+  }
+
+  if (is.na(z0[1])) {
+    z <- simul_RS(Pi, TT = nb.sim)
+  } else {
+    z <- simul_RS(Pi, TT = nb.sim, ini_state = z0)
+  }
+  regime <- max.col(z)
+
+  if (is.na(y0[1])) {
+    y <- matrix(0, nb.sim, n)
+  } else {
+    y <- matrix(0, nb.sim, n)
+    y[1, ] <- c(y0)
+  }
+
+  for (t in 1:(nb.sim - 1)) {
+    i <- regime[t]
+    j <- regime[t + 1]
+    y[t + 1, ] <- mu[, j] + M[, i] + Phi %*% matrix(y[t, ], n, 1) +
+      Sigma12[, , j] %*% matrix(rnorm(n), n, 1)
+  }
+
+  return(list(y = y, z = z, w = cbind(y, z), regime = regime))
+}
 #' Plot Gaussian iso-density contours
 #'
 #' Draws contour lines associated with a bivariate Gaussian distribution.
