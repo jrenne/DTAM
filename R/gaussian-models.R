@@ -231,21 +231,36 @@ simul.GVAR <- function(model,nb.sim,x0=NaN,nb.replic=1){
 #' `w_t = (y_t', z_t')'`, where `z_t` is a finite-state Markov chain represented
 #' by a selection vector. The continuous component follows
 #' \deqn{
-#' y_{t+1} = \mu z_{t+1} + M z_t + \Phi y_t
+#' y_{t+1} = \mu z_{t+1} + \Phi y_t
 #'   + \Sigma(z_{t+1})^{1/2}\varepsilon_{t+1}.
 #' }{
-#' y_{t+1} = mu z_{t+1} + M z_t + Phi y_t
+#' y_{t+1} = mu z_{t+1} + Phi y_t
 #'   + Sigma(z_{t+1})^{1/2} eps_{t+1}.
 #' }
 #'
 #' @param u Matrix of Laplace-transform loadings. It must have `n + J` rows,
 #'   where `n` is the dimension of `y_t` and `J` is the number of regimes.
 #' @param psi.parameterization,model List containing `Phi`, `Pi`, and either
-#'   `Sigma` or `Sigma12`. Optional entries are `mu` and `M`, both `n x J`
-#'   matrices. If omitted, they are set to zero.
+#'   `Sigma` or `Sigma12`. The optional entry `mu` is an `n x J` matrix. If
+#'   omitted, it is set to zero. For `simul.RSVAR()` only, `model` may also
+#'   contain an optional current-regime intercept `M`.
 #' @param nb.sim Number of simulated dates.
 #' @param y0 Optional initial continuous state.
 #' @param z0 Optional initial regime index.
+#'
+#' @details
+#' `psi.RSVAR()` implements the conditional log-Laplace transform for the
+#' canonical specification used in the book: both the drift and the volatility
+#' of `y_{t+1}` are selected by the next regime `z_{t+1}`. If an `M` entry is
+#' supplied in `psi.parameterization`, it is deliberately ignored by
+#' `psi.RSVAR()`.
+#'
+#' `simul.RSVAR()` simulates the same canonical model when `M` is omitted. It
+#' also accepts an optional current-regime intercept `M`; in that case it
+#' simulates the more general dynamics
+#' `y_{t+1} = mu z_{t+1} + M z_t + Phi y_t + Sigma(z_{t+1})^{1/2} eps_{t+1}`.
+#' This extension is kept for backward compatibility with other numerical
+#' examples.
 #'
 #' @return `psi.RSVAR()` returns a list with affine-transform coefficients `a`
 #'   and `b`. `simul.RSVAR()` returns a list with `y`, `z`, `w`, and `regime`.
@@ -260,8 +275,8 @@ simul.GVAR <- function(model,nb.sim,x0=NaN,nb.replic=1){
 #'                  0.00, 0.90), 2, 2, byrow = TRUE),
 #'   Pi = matrix(c(0.95, 0.05,
 #'                 0.30, 0.70), 2, 2, byrow = TRUE),
-#'   M = matrix(c(0.001, 0.000,
-#'                0.000, 0.002), 2, 2, byrow = TRUE),
+#'   mu = matrix(c(0.001, 0.000,
+#'                 0.000, 0.002), 2, 2, byrow = TRUE),
 #'   Sigma = array(c(0.01^2, 0.00,
 #'                   0.00,   0.02^2,
 #'                   0.02^2, 0.00,
@@ -293,13 +308,6 @@ psi.RSVAR <- function(u, psi.parameterization) {
     mu <- matrix(0, n, J)
   } else {
     mu <- matrix(mu, n, J)
-  }
-
-  M <- psi.parameterization$M
-  if (is.null(M)) {
-    M <- matrix(0, n, J)
-  } else {
-    M <- matrix(M, n, J)
   }
 
   Sigma <- psi.parameterization$Sigma
@@ -336,8 +344,7 @@ psi.RSVAR <- function(u, psi.parameterization) {
           0.5 * t(u_y) %*% Sigma[, , j] %*% u_y +
           u_z[j]
       }
-      a[n + i, k] <- t(u_y) %*% M[, i] +
-        log(sum(Pi[i, ] * exp(log_terms)))
+      a[n + i, k] <- log(sum(Pi[i, ] * exp(log_terms)))
     }
   }
 

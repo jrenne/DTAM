@@ -12,8 +12,10 @@ simul.RSVAR(model, nb.sim, y0 = NaN, z0 = NaN)
 where \code{n} is the dimension of \code{y_t} and \code{J} is the number of regimes.}
 
 \item{psi.parameterization, model}{List containing \code{Phi}, \code{Pi}, and
-either \code{Sigma} or \code{Sigma12}. Optional entries are \code{mu} and
-\code{M}, both \code{n x J} matrices. If omitted, they are set to zero.}
+either \code{Sigma} or \code{Sigma12}. The optional entry \code{mu} is an
+\code{n x J} matrix. If omitted, it is set to zero. For \code{simul.RSVAR()}
+only, \code{model} may also contain an optional current-regime intercept
+\code{M}.}
 
 \item{nb.sim}{Number of simulated dates.}
 
@@ -35,11 +37,17 @@ represented by a selection vector.
 \details{
 The continuous component follows
 \deqn{
+y_{t+1} = \mu z_{t+1} + \Phi y_t
+  + \Sigma(z_{t+1})^{1/2} eps_{t+1}.
+}
+The function \code{psi.RSVAR()} implements the conditional log-Laplace transform for the canonical specification used in the book: both the drift and the volatility of \eqn{y_{t+1}} are selected by the next regime \eqn{z_{t+1}}. If an entry \code{M} is supplied in \code{psi.parameterization}, it is deliberately ignored by \code{psi.RSVAR()}.
+
+The simulation helper \code{simul.RSVAR()} simulates the same canonical model when \code{M} is omitted. It also accepts an optional current-regime intercept \code{M}; in that case it simulates the more general dynamics
+\deqn{
 y_{t+1} = \mu z_{t+1} + M z_t + \Phi y_t
   + \Sigma(z_{t+1})^{1/2} eps_{t+1}.
 }
-The term \code{mu} captures next-regime intercepts, while \code{M} captures
-current-regime intercepts.
+This extension is kept for backward compatibility with other numerical examples.
 }
 \references{
 Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
@@ -51,8 +59,8 @@ model <- list(
                  0.00, 0.90), 2, 2, byrow = TRUE),
   Pi = matrix(c(0.95, 0.05,
                 0.30, 0.70), 2, 2, byrow = TRUE),
-  M = matrix(c(0.001, 0.000,
-               0.000, 0.002), 2, 2, byrow = TRUE),
+  mu = matrix(c(0.001, 0.000,
+                0.000, 0.002), 2, 2, byrow = TRUE),
   Sigma = array(c(0.01^2, 0.00,
                   0.00,   0.02^2,
                   0.02^2, 0.00,
