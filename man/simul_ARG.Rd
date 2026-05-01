@@ -2,13 +2,13 @@
 % Please edit documentation in R/affine-simulation-density.R
 \name{simul_ARG}
 \alias{simul_ARG}
-\alias{simul.ARG}
-\alias{simul.compound.poisson}
+\alias{simul_ARG}
+\alias{simul_compound_poisson}
 \title{Simulate scalar affine count and intensity processes}
 \usage{
-simul.ARG(nb.sim, mu, nu, rho, alpha = 0, w0 = NaN, nb.replic = 1)
+simul_ARG(nb.sim, mu, nu, rho, alpha = 0, w0 = NaN, nb.replic = 1)
 
-simul.compound.poisson(nb.sim, Gamma, Pi, lambda, w0 = NaN)
+simul_compound_poisson(nb.sim, Gamma, Pi, lambda, w0 = NaN)
 }
 \arguments{
 \item{nb.sim}{Number of simulated dates.}
@@ -22,20 +22,20 @@ simul.compound.poisson(nb.sim, Gamma, Pi, lambda, w0 = NaN)
 \item{Gamma, Pi, lambda}{Parameters of the compound-Poisson process.}
 }
 \value{
-\code{simul.ARG()} returns a \verb{nb.sim x nb.replic} matrix. When
-\code{nb.replic = 1}, this is a single-column matrix. \code{simul.compound.poisson()}
+\code{simul_ARG()} returns a \verb{nb.sim x nb.replic} matrix. When
+\code{nb.replic = 1}, this is a single-column matrix. \code{simul_compound_poisson()}
 returns a numeric vector of length \code{nb.sim}.
 }
 \description{
-\code{simul.ARG()} simulates a scalar ARG/ARG0 process. \code{simul.compound.poisson()}
+\code{simul_ARG()} simulates a scalar ARG/ARG0 process. \code{simul_compound_poisson()}
 simulates the compound-Poisson process used in the affine-process chapter.
 }
 \examples{
 set.seed(123)
-sim_arg <- simul.ARG(nb.sim = 20, mu = 0.05, nu = 1, rho = 0.95, alpha = 0)
+sim_arg <- simul_ARG(nb.sim = 20, mu = 0.05, nu = 1, rho = 0.95, alpha = 0)
 dim(sim_arg)
 
-sim_cp <- simul.compound.poisson(nb.sim = 20, Gamma = 1, Pi = 0.95,
+sim_cp <- simul_compound_poisson(nb.sim = 20, Gamma = 1, Pi = 0.95,
                                  lambda = 0.1)
 length(sim_cp)
 

@@ -175,12 +175,12 @@ compute_F_Shadow_Gaussian <-
 #'
 #' @examples
 #' model_ar_ch <- list(mu = 0, phi = 0.9, nu = 1, mu_z = 0.2, beta = 0.8)
-#' res <- psi.AR_CH(matrix(c(0.1, 0.05), 2, 1), model_ar_ch)
+#' res <- psi_AR_CH(matrix(c(0.1, 0.05), 2, 1), model_ar_ch)
 #' dim(res$a)
 #'
 #' @name psi_non_gaussian
 #' @export
-psi.QPoisson <- function(u,psi.parameterization){
+psi_QPoisson <- function(u,psi.parameterization){
   # Laplace transform of a process defined as follows:
   # N_t^+ ~ Poisson(x_t'·Omega^+·x_t) and N_t^- ~ Poisson(x_t'·Omega^-·x_t)
   # where Omega^+ and Omega^- are positive matrices and where
@@ -213,7 +213,7 @@ psi.QPoisson <- function(u,psi.parameterization){
     u_aux[(n + 1):(n + n * (n + 1)/2), i] <- Kx %*% matrix(V_aux,ncol=1)
   }
 
-  res.QVAR <- psi.GaussianQVAR(u_aux, psi.parameterization)
+  res.QVAR <- psi_GaussianQVAR(u_aux, psi.parameterization)
 
   b <- res.QVAR$b
   a <- rbind(res.QVAR$a,
@@ -224,7 +224,7 @@ psi.QPoisson <- function(u,psi.parameterization){
 
 #' @rdname psi_non_gaussian
 #' @export
-psi.VARG_Poisson <- function(u,psi.parameterization){
+psi_VARG_Poisson <- function(u,psi.parameterization){
   # Laplace transform of a process defined as follows:
   # N_t^+ ~ Poisson(z_t^+) and N_t^- ~ Poisson(z_t^-),
   # where z_t = (z_t^+,z_t^-)' follows a bivariate VARG process.
@@ -243,7 +243,7 @@ psi.VARG_Poisson <- function(u,psi.parameterization){
   v_star[1,] <- v[1,] + exp(u_plus)  - 1
   v_star[2,] <- v[2,] + exp(u_minus) - 1
 
-  res.VARG <- psi.VARG(v_star, psi.parameterization)
+  res.VARG <- psi_VARG(v_star, psi.parameterization)
 
   b <- res.VARG$b
   a <- rbind(res.VARG$a,
@@ -254,7 +254,7 @@ psi.VARG_Poisson <- function(u,psi.parameterization){
 
 #' @rdname psi_non_gaussian
 #' @export
-psi.AR_CH <- function(u,psi.parameterization){
+psi_AR_CH <- function(u,psi.parameterization){
   # Laplace transform of a process defined as follows:
   # s_t = mu + phi·s_{t+1} + sqrt(z_t)·eps_t, with eps_t ~ N(0,1) and
   # z_t ARG(nu,beta,mu_z)
@@ -296,7 +296,7 @@ varphi4G_SR_Gaussian <- function(x,parameterization,H){
   u2 <- matrix(0, nw, q)
   u1 <- matrix(u, nw, q) + i.v.x
 
-  res_reverse <- reverse.MHLT(psi.GaussianVAR,
+  res_reverse <- reverse_MHLT(psi_GaussianVAR,
                               u1 = u1,
                               u2 = u2,
                               H = H,
@@ -320,7 +320,7 @@ varphi4G_SR_QPoisson <- function(x,parameterization,H){
   u2 <- matrix(0, nw, q)
   u1 <- matrix(u, nw, q) + i.v.x
 
-  res_reverse <- reverse.MHLT(psi.PoissonSR,
+  res_reverse <- reverse_MHLT(psi.PoissonSR,
                               u1 = u1,
                               u2 = u2,
                               H = H,
@@ -359,7 +359,7 @@ varphi4G_SR_QPoisson <- function(x,parameterization,H){
 #'
 #' @details
 #' The function combines:
-#' `truncated.payoff()` to evaluate the truncated exponential component,
+#' `truncated_payoff()` to evaluate the truncated exponential component,
 #' `compute_expect_variance()` and `compute_expect_variance_H()` to recover the
 #' conditional mean and variance terms entering the affine approximation.
 #'
@@ -378,11 +378,11 @@ varphi4G_SR_QPoisson <- function(x,parameterization,H){
 #' model <- list(mu = mu, Phi = Phi, Sigma = Sigma, n_w = 1)
 #'
 #' set.seed(123)
-#' W <- simul.GVAR(model, nb.sim = 40)
+#' W <- simul_GaussianVAR(model, nb.sim = 40)
 #'
 #' res <- compute_F_Shadow_affine(
 #'   W = W,
-#'   psi = psi.GaussianVAR,
+#'   psi = psi_GaussianVAR,
 #'   psi.parameterization = model,
 #'   ell_bar = 0,
 #'   b = 0,
@@ -437,7 +437,7 @@ compute_F_Shadow_affine <- function(W,psi,psi.parameterization,
     u2 <- matrix(0, nw, q)
     u1 <- matrix(u, nw, q) + i.v.x
 
-    res_reverse <- reverse.MHLT(psi,
+    res_reverse <- reverse_MHLT(psi,
                                 u1 = u1,
                                 u2 = u2,
                                 H = H,
@@ -454,7 +454,7 @@ compute_F_Shadow_affine <- function(W,psi,psi.parameterization,
     u = matrix(0*a,ncol=1),
     v = matrix(1*a,ncol=1)
   )
-  res_truncated0 <- truncated.payoff(W,b.matrix = matrix(ell_bar-b,H,1),
+  res_truncated0 <- truncated_payoff(W,b.matrix = matrix(ell_bar-b,H,1),
                                      varphi = varphi,
                                      parameterization = parameterization,
                                      max_x = max_x,
@@ -462,7 +462,7 @@ compute_F_Shadow_affine <- function(W,psi,psi.parameterization,
                                      min_dx = min_dx,
                                      nb_x1 = nb_x1)
   parameterization$u <- matrix(eps*a,ncol=1)
-  res_truncatedeps <- truncated.payoff(W,b.matrix = matrix(ell_bar-b,H,1),
+  res_truncatedeps <- truncated_payoff(W,b.matrix = matrix(ell_bar-b,H,1),
                                        varphi = varphi,
                                        parameterization = parameterization,
                                        max_x = max_x,

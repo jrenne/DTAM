@@ -2,7 +2,7 @@
 % Please edit documentation in R/credit-varg.R
 \name{VARG_tools}
 \alias{VARG_tools}
-\alias{psi.VARG}
+\alias{psi_VARG}
 \alias{compute_proba_def_VARG}
 \alias{compute_uncondmean_VARG}
 \alias{compute_uncondvar_VARG}
@@ -11,7 +11,7 @@
 \alias{prices_CDS_RFV_VARG}
 \title{VARG transforms, moments, and simulation helpers}
 \usage{
-psi.VARG(u, psi.parameterization)
+psi_VARG(u, psi.parameterization)
 
 compute_proba_def_VARG(model, H = 10, indic_delta1 = NaN, X = NaN)
 
@@ -66,7 +66,7 @@ model <- list(
   xi0 = 0,
   xi1 = matrix(0, 2, 1)
 )
-res_psi <- psi.VARG(matrix(c(0.05, 0.02), 2, 1), model)
+res_psi <- psi_VARG(matrix(c(0.05, 0.02), 2, 1), model)
 dim(res_psi$a)
 compute_uncondmean_VARG(model)
 

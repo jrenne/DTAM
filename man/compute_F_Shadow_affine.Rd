@@ -66,7 +66,7 @@ terms that arise in shadow-rate models.
 }
 \details{
 The function combines:
-\code{truncated.payoff()} to evaluate the truncated exponential component,
+\code{truncated_payoff()} to evaluate the truncated exponential component,
 \code{compute_expect_variance()} and \code{compute_expect_variance_H()} to recover the
 conditional mean and variance terms entering the affine approximation.
 
@@ -81,11 +81,11 @@ Sigma <- (1 - rho^2) * 0.02^2 * matrix(1)
 model <- list(mu = mu, Phi = Phi, Sigma = Sigma, n_w = 1)
 
 set.seed(123)
-W <- simul.GVAR(model, nb.sim = 40)
+W <- simul_GaussianVAR(model, nb.sim = 40)
 
 res <- compute_F_Shadow_affine(
   W = W,
-  psi = psi.GaussianVAR,
+  psi = psi_GaussianVAR,
   psi.parameterization = model,
   ell_bar = 0,
   b = 0,

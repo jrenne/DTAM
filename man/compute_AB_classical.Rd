@@ -63,7 +63,7 @@ res <- compute_AB_classical(
   xi0 = 0.01,
   xi1 = matrix(c(0.1, 0.2), ncol = 1),
   H = 4,
-  psi = psi.GaussianVAR,
+  psi = psi_GaussianVAR,
   psi.parameterization = model
 )
 dim(res$A)

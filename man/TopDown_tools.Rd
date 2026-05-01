@@ -2,19 +2,19 @@
 % Please edit documentation in R/credit-topdown.R
 \name{TopDown_tools}
 \alias{TopDown_tools}
-\alias{psi.w.TopDown}
-\alias{psiQ.w.TopDown}
-\alias{psi.y.TopDown}
-\alias{simul.TopDown}
+\alias{psi_w_TopDown}
+\alias{psiQ_w_TopDown}
+\alias{psi_y_TopDown}
+\alias{simul_TopDown}
 \title{Top-down credit-model transforms and simulation}
 \usage{
-psi.w.TopDown(u, model, psi.y = psi.y.TopDown)
+psi_w_TopDown(u, model, psi.y = psi_y_TopDown)
 
-psiQ.w.TopDown(u, model, psi.y = psi.y.TopDown)
+psiQ_w_TopDown(u, model, psi.y = psi_y_TopDown)
 
-psi.y.TopDown(u.y, model)
+psi_y_TopDown(u.y, model)
 
-simul.TopDown(model, nb_periods, W0 = NaN)
+simul_TopDown(model, nb_periods, W0 = NaN)
 }
 \arguments{
 \item{u, u.y}{Matrix of transform arguments.}
@@ -36,7 +36,7 @@ paths for \code{y}, \code{n}, and the stacked state \code{w}.
 \description{
 The \code{psi.*TopDown} functions evaluate the one-step Laplace transform of the
 latent loss/intensity state used in the top-down credit model.
-\code{simul.TopDown()} simulates the state vector under the physical measure.
+\code{simul_TopDown()} simulates the state vector under the physical measure.
 }
 \examples{
 model <- list(
@@ -51,8 +51,8 @@ model <- list(
   alpha.m = matrix(0, 2, 1),
   n_w = 2
 )
-psi.y.TopDown(matrix(0.05, 1, 1), model)$b
-sim <- simul.TopDown(model, nb_periods = 10)
+psi_y_TopDown(matrix(0.05, 1, 1), model)$b
+sim <- simul_TopDown(model, nb_periods = 10)
 dim(sim$all_w)
 
 }

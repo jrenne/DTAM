@@ -48,7 +48,7 @@ autocov <- function(X,n){
   return(1/T * t(X.1) %*% X.2)
 }
 
-NW.LongRunVariance <- function(X,q){
+NW_LongRunVariance <- function(X,q){
   gamma0 <- autocov(X,0)
   LRV <- gamma0
   weights <- 1 - (1:q)/(q+1)

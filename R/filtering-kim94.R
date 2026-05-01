@@ -129,7 +129,7 @@ Kim94 <- function(SSmodel, Y.matrix, Z.matrix, beta0, P0, xi0 = NaN) {
   #---------------------------------------------------------------------------
   # 1. Helper: Multivariate normal density function (for regime pair likelihoods)
   #---------------------------------------------------------------------------
-  N.multi.pdf <- function(eta, Omega) {
+  N_multi_pdf <- function(eta, Omega) {
     # eta: N × k matrix of residuals
     # Omega: N × N × k array of covariance matrices
     k <- dim(eta)[2]
@@ -254,7 +254,7 @@ Kim94 <- function(SSmodel, Y.matrix, Z.matrix, beta0, P0, xi0 = NaN) {
       })
 
       # Conditional densities f(y_t | s_{t−1}=i, s_t=j)
-      f.ij[i, ] <- N.multi.pdf(matrix(eta_ij.tt_1[,, i],N, M), R)
+      f.ij[i, ] <- N_multi_pdf(matrix(eta_ij.tt_1[,, i],N, M), R)
 
       # Eqs. (5.14)–(5.15): updating
       beta_ij.tt[,, i] <- beta_ij.tt_1[,, i] +
@@ -342,7 +342,7 @@ Kim94 <- function(SSmodel, Y.matrix, Z.matrix, beta0, P0, xi0 = NaN) {
 #
 # # eta <- matrix(rnorm(8),4,2)
 # # Omega <- array(diag(4),c(4,4,2))
-# # N.multi.pdf(eta,Omega)
+# # N_multi_pdf(eta,Omega)
 #
 # res.filter <- Kim94(SSmodel,Y.matrix=res.simul$y.simul,Z,beta0,P0=diag(J))
 #

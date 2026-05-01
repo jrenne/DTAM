@@ -125,7 +125,7 @@ compute_Gaussian_fast <- function(model,Maturities_decompo){
 # maxH <- RES$H[length(RES$H)]
 #
 # u <- matrix(1,2,1)
-# res <- reverse.MHLT(psi.GaussianVAR,u1 = u,H = maxH,psi.parameterization = model)
+# res <- reverse_MHLT(psi_GaussianVAR,u1 = u,H = maxH,psi.parameterization = model)
 #
 # m <- dim(Maturities_decompo)[1]
 # mu_h <- matrix(RES$MU[,,m],ncol=1)
@@ -181,14 +181,14 @@ compute_Gaussian_fast <- function(model,Maturities_decompo){
 #'   Sigma12 = diag(c(0.1, 0.2))
 #' )
 #'
-#' sim <- simul.GVAR(model, nb.sim = 50)
+#' sim <- simul_GaussianVAR(model, nb.sim = 50)
 #' dim(sim)
 #'
-#' sim_multi <- simul.GVAR(model, nb.sim = 20, nb.replic = 3)
+#' sim_multi <- simul_GaussianVAR(model, nb.sim = 20, nb.replic = 3)
 #' dim(sim_multi)
 #'
 #' @export
-simul.GVAR <- function(model,nb.sim,x0=NaN,nb.replic=1){
+simul_GaussianVAR <- function(model,nb.sim,x0=NaN,nb.replic=1){
   # Simulate a Gaussian VAR model.
   # If nb.replic > 1, simulate several processes of length nb.sim in parallel;
   # the output then is an array (three dimensions).
@@ -242,28 +242,28 @@ simul.GVAR <- function(model,nb.sim,x0=NaN,nb.replic=1){
 #'   where `n` is the dimension of `y_t` and `J` is the number of regimes.
 #' @param psi.parameterization,model List containing `Phi`, `Pi`, and either
 #'   `Sigma` or `Sigma12`. The optional entry `mu` is an `n x J` matrix. If
-#'   omitted, it is set to zero. For `simul.RSVAR()` only, `model` may also
+#'   omitted, it is set to zero. For `simul_RSVAR()` only, `model` may also
 #'   contain an optional current-regime intercept `M`.
 #' @param nb.sim Number of simulated dates.
 #' @param y0 Optional initial continuous state.
 #' @param z0 Optional initial regime index.
 #'
 #' @details
-#' `psi.RSVAR()` implements the conditional log-Laplace transform for the
+#' `psi_RSVAR()` implements the conditional log-Laplace transform for the
 #' canonical specification used in the book: both the drift and the volatility
 #' of `y_{t+1}` are selected by the next regime `z_{t+1}`. If an `M` entry is
 #' supplied in `psi.parameterization`, it is deliberately ignored by
-#' `psi.RSVAR()`.
+#' `psi_RSVAR()`.
 #'
-#' `simul.RSVAR()` simulates the same canonical model when `M` is omitted. It
+#' `simul_RSVAR()` simulates the same canonical model when `M` is omitted. It
 #' also accepts an optional current-regime intercept `M`; in that case it
 #' simulates the more general dynamics
 #' `y_{t+1} = mu z_{t+1} + M z_t + Phi y_t + Sigma(z_{t+1})^{1/2} eps_{t+1}`.
 #' This extension is kept for backward compatibility with other numerical
 #' examples.
 #'
-#' @return `psi.RSVAR()` returns a list with affine-transform coefficients `a`
-#'   and `b`. `simul.RSVAR()` returns a list with `y`, `z`, `w`, and `regime`.
+#' @return `psi_RSVAR()` returns a list with affine-transform coefficients `a`
+#'   and `b`. `simul_RSVAR()` returns a list with `y`, `z`, `w`, and `regime`.
 #'
 #' @references
 #' Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
@@ -283,12 +283,12 @@ simul.GVAR <- function(model,nb.sim,x0=NaN,nb.replic=1){
 #'                   0.00,   0.04^2), c(2, 2, 2))
 #' )
 #' u <- matrix(c(1, 0, 0, 0), 4, 1)
-#' psi.RSVAR(u, model)
-#' sim <- simul.RSVAR(model, nb.sim = 20, y0 = c(0, 0), z0 = 1)
+#' psi_RSVAR(u, model)
+#' sim <- simul_RSVAR(model, nb.sim = 20, y0 = c(0, 0), z0 = 1)
 #' dim(sim$w)
 #'
 #' @export
-psi.RSVAR <- function(u, psi.parameterization) {
+psi_RSVAR <- function(u, psi.parameterization) {
   u <- as.matrix(u)
 
   Phi <- psi.parameterization$Phi
@@ -351,9 +351,9 @@ psi.RSVAR <- function(u, psi.parameterization) {
   return(list(a = a, b = b))
 }
 
-#' @rdname psi.RSVAR
+#' @rdname psi_RSVAR
 #' @export
-simul.RSVAR <- function(model, nb.sim, y0 = NaN, z0 = NaN) {
+simul_RSVAR <- function(model, nb.sim, y0 = NaN, z0 = NaN) {
   Phi <- model$Phi
   Pi <- model$Pi
   n <- dim(Phi)[1]

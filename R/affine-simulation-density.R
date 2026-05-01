@@ -1,6 +1,6 @@
 #' Simulate scalar affine count and intensity processes
 #'
-#' `simul.ARG()` simulates a scalar ARG/ARG0 process. `simul.compound.poisson()`
+#' `simul_ARG()` simulates a scalar ARG/ARG0 process. `simul_compound_poisson()`
 #' simulates the compound-Poisson process used in the affine-process chapter.
 #'
 #' @param nb.sim Number of simulated dates.
@@ -9,22 +9,22 @@
 #' @param nb.replic Number of independent ARG paths simulated in parallel.
 #' @param Gamma,Pi,lambda Parameters of the compound-Poisson process.
 #'
-#' @return `simul.ARG()` returns a `nb.sim x nb.replic` matrix. When
-#'   `nb.replic = 1`, this is a single-column matrix. `simul.compound.poisson()`
+#' @return `simul_ARG()` returns a `nb.sim x nb.replic` matrix. When
+#'   `nb.replic = 1`, this is a single-column matrix. `simul_compound_poisson()`
 #'   returns a numeric vector of length `nb.sim`.
 #'
 #' @examples
 #' set.seed(123)
-#' sim_arg <- simul.ARG(nb.sim = 20, mu = 0.05, nu = 1, rho = 0.95, alpha = 0)
+#' sim_arg <- simul_ARG(nb.sim = 20, mu = 0.05, nu = 1, rho = 0.95, alpha = 0)
 #' dim(sim_arg)
 #'
-#' sim_cp <- simul.compound.poisson(nb.sim = 20, Gamma = 1, Pi = 0.95,
+#' sim_cp <- simul_compound_poisson(nb.sim = 20, Gamma = 1, Pi = 0.95,
 #'                                  lambda = 0.1)
 #' length(sim_cp)
 #'
 #' @name simul_ARG
 #' @export
-simul.ARG <- function(nb.sim,mu,nu,rho,alpha=0,w0=NaN,nb.replic=1){
+simul_ARG <- function(nb.sim,mu,nu,rho,alpha=0,w0=NaN,nb.replic=1){
   # This function simulates an ARG or an ARG0 process
   # If nb.replic>1, then we simulate several paths in parallel
 
@@ -50,7 +50,7 @@ simul.ARG <- function(nb.sim,mu,nu,rho,alpha=0,w0=NaN,nb.replic=1){
 
 #' @rdname simul_ARG
 #' @export
-simul.compound.poisson <- function(nb.sim,Gamma,Pi,lambda,w0=NaN){
+simul_compound_poisson <- function(nb.sim,Gamma,Pi,lambda,w0=NaN){
   # This function simulates a compound Poisson process
 
   if(is.na(w0)){
@@ -74,7 +74,7 @@ rbernoulli <- function(n,p){
   return(1*(runif(n)<p))
 }
 
-simul.MS.AR <- function(nb.sim,mu.1,mu.2,rho.1,rho.2,sigma.1,sigma.2,P,w0=NaN){
+simul_MS_AR <- function(nb.sim,mu.1,mu.2,rho.1,rho.2,sigma.1,sigma.2,P,w0=NaN){
   # This function simulates a Markov-Switching AR process
   # s is valued in {1,2}
   # p(1,2) = P( s_{t}=2 | s_{t-1}=1 )
@@ -142,12 +142,12 @@ simul.MS.AR <- function(nb.sim,mu.1,mu.2,rho.1,rho.2,sigma.1,sigma.2,P,w0=NaN){
 #'   -log(1 - model$mu * u)
 #' }
 #' grid <- seq(0.01, 2, length.out = 50)
-#' dens <- make.pdf(list(mu = 1), values.of.variable = grid, psi = psi_exp,
+#' dens <- make_pdf(list(mu = 1), values.of.variable = grid, psi = psi_exp,
 #'                  max_x = 100, nb_x = 500)
 #' length(dens)
 #'
 #' @export
-make.pdf <- function(model,values.of.variable,
+make_pdf <- function(model,values.of.variable,
                      psi,
                      max_x = 10000,
                      min_x = 10^(-8),nb_x=5000){
@@ -159,7 +159,7 @@ make.pdf <- function(model,values.of.variable,
   x <- matrix(exp(seq(log(min_x),log(max_x),length.out=nb_x)),ncol=1)
   gamma <- matrix(values.of.variable,nrow=1)
 
-  cdf.values <- Fourier.psi(model,gamma,x,psi)
+  cdf.values <- Fourier_psi(model,gamma,x,psi)
 
   nb.values.variable <- length(values.of.variable)
 
@@ -182,7 +182,7 @@ make.pdf <- function(model,values.of.variable,
   return(fitted.pdf.values)
 }
 
-Fourier.psi <- function(model,gamma,x,
+Fourier_psi <- function(model,gamma,x,
                         psi){
   # Impose appropriate format (column vector for x, row vector for gamma):
   x     <- matrix(x,ncol=1)
@@ -265,7 +265,7 @@ Fourier.psi <- function(model,gamma,x,
 #'   n_w = 2
 #' )
 #'
-#' res <- compute_expect_variance(psi.GaussianVAR, model)
+#' res <- compute_expect_variance(psi_GaussianVAR, model)
 #'
 #' res$mu
 #' res$Phi

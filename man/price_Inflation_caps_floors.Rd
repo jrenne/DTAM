@@ -50,7 +50,7 @@ model <- list(n_w = 1, mu = matrix(0, 1, 1), Phi = matrix(0.9, 1, 1),
 W <- matrix(c(0, 0.1), 2, 1)
 res <- price_Inflation_caps_floors(
   W = W, H = 2, all_K = c(0.01, 0.02),
-  psi = psi.GaussianVAR,
+  psi = psi_GaussianVAR,
   parameterization = list(
     model = model, xi0 = 0, xi1 = 0,
     mu_pi0 = 0.005, mu_pi1 = 0.1

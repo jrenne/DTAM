@@ -26,7 +26,7 @@
 #' W <- matrix(c(0, 0.1), 2, 1)
 #' res <- price_IR_caps_floors(
 #'   W = W, H = 4, tau = 1, freq = 4, all_K = c(0.01, 0.02),
-#'   psi = psi.GaussianVAR,
+#'   psi = psi_GaussianVAR,
 #'   parameterization = list(model = model, xi0 = 0, xi1 = 0)
 #' )
 #' dim(res$Caps)
@@ -52,7 +52,7 @@ price_IR_caps_floors <- function(W, # Values of state vector (T x n)
   alpha_tau <- tau/freq # year fraction corresponding to tau
 
   varphi <- function(x,parameterization,H){
-    # This function is an argument of truncated.payoff
+    # This function is an argument of truncated_payoff
 
     u <- parameterization$u
     v <- parameterization$v # determine thresholds (dimension nw x 1)
@@ -96,10 +96,10 @@ price_IR_caps_floors <- function(W, # Values of state vector (T x n)
   parameterization$tau <- tau
   parameterization$u   <- NaN
 
-  # Use of "truncated.payoff" for caplets:
+  # Use of "truncated_payoff" for caplets:
   parameterization$v <- matrix(+ A_tau,ncol=1)
   parameterization$u <- matrix(- A_tau,ncol=1)
-  res_truncated1 <- truncated.payoff(W,
+  res_truncated1 <- truncated_payoff(W,
                                      b.matrix = b.matrix,
                                      varphi = varphi,
                                      parameterization = parameterization,
@@ -108,7 +108,7 @@ price_IR_caps_floors <- function(W, # Values of state vector (T x n)
                                      min_dx = min_dx,
                                      nb_x1 = nb_x1)
   parameterization$u <- matrix(0*A_tau, ncol = 1)
-  res_truncated2 <- truncated.payoff(W,
+  res_truncated2 <- truncated_payoff(W,
                                      b.matrix = b.matrix,
                                      varphi = varphi,
                                      parameterization = parameterization,
@@ -117,11 +117,11 @@ price_IR_caps_floors <- function(W, # Values of state vector (T x n)
                                      min_dx = min_dx,
                                      nb_x1 = nb_x1)
 
-  # Use of "truncated.payoff" for floorlets:
+  # Use of "truncated_payoff" for floorlets:
   b.matrix <- - t(matrix(thresholds,length(thresholds),H))
   parameterization$v <- matrix(- A_tau,ncol=1)
   parameterization$u <- matrix(0*A_tau,ncol=1)
-  res_truncated3 <- truncated.payoff(W,
+  res_truncated3 <- truncated_payoff(W,
                                      b.matrix = b.matrix,
                                      varphi = varphi,
                                      parameterization = parameterization,
@@ -130,7 +130,7 @@ price_IR_caps_floors <- function(W, # Values of state vector (T x n)
                                      min_dx = min_dx,
                                      nb_x1 = nb_x1)
   parameterization$u <- matrix(- A_tau, ncol = 1)
-  res_truncated4 <- truncated.payoff(W,
+  res_truncated4 <- truncated_payoff(W,
                                      b.matrix = b.matrix,
                                      varphi = varphi,
                                      parameterization = parameterization,
@@ -208,7 +208,7 @@ price_IR_caps_floors <- function(W, # Values of state vector (T x n)
 #' res <- price_Stock_calls_puts(
 #'   W = W, S = S, H = 2, a = 0.1, b = 0,
 #'   K_over_S = c(0.95, 1.05),
-#'   psi = psi.GaussianVAR,
+#'   psi = psi_GaussianVAR,
 #'   parameterization = list(model = model, xi0 = 0, xi1 = 0)
 #' )
 #' dim(res$Calls)
@@ -243,7 +243,7 @@ price_Stock_calls_puts <- function(W, # Values of state vector (T x n)
   nw <- length(xi1)
 
   varphi <- function(x,parameterization,H){
-    # This function is an argument of truncated.payoff
+    # This function is an argument of truncated_payoff
 
     u <- parameterization$u
     v <- parameterization$v # determine thresholds (dimension nw x 1)
@@ -255,7 +255,7 @@ price_Stock_calls_puts <- function(W, # Values of state vector (T x n)
     q  <- dim(i.v.x)[2]
     U <- matrix(u, nw, q) + i.v.x
 
-    res <- reverse.MHLT(psi = psi,
+    res <- reverse_MHLT(psi = psi,
                         u1 = U,
                         u2 = U,
                         H  = H,
@@ -271,10 +271,10 @@ price_Stock_calls_puts <- function(W, # Values of state vector (T x n)
   TT <- dim(W)[1] # number of dates.
   vec1TT <- matrix(1,TT,1)
 
-  # Use of "truncated.payoff" for payoff involving S:
+  # Use of "truncated_payoff" for payoff involving S:
   parameterization$v <- a
   parameterization$u <- a
-  G_0a0a <- truncated.payoff(W,
+  G_0a0a <- truncated_payoff(W,
                              b.matrix = b.matrix,
                              varphi = varphi,
                              parameterization = parameterization,
@@ -282,10 +282,10 @@ price_Stock_calls_puts <- function(W, # Values of state vector (T x n)
                              dx_statio = dx_statio,
                              min_dx = min_dx,
                              nb_x1 = nb_x1)
-  # Use of "truncated.payoff" for payoff involving K:
+  # Use of "truncated_payoff" for payoff involving K:
   parameterization$v <- a
   parameterization$u <- 0*a
-  G_000a <- truncated.payoff(W,
+  G_000a <- truncated_payoff(W,
                              b.matrix = b.matrix,
                              varphi = varphi,
                              parameterization = parameterization,
@@ -295,7 +295,7 @@ price_Stock_calls_puts <- function(W, # Values of state vector (T x n)
                              nb_x1 = nb_x1)
 
   # Computation of swap:
-  res_aa <- reverse.MHLT(psi = psi,
+  res_aa <- reverse_MHLT(psi = psi,
                          u1 = a,
                          u2 = a,
                          H  = H,
@@ -303,7 +303,7 @@ price_Stock_calls_puts <- function(W, # Values of state vector (T x n)
   A_aa <- matrix(res_aa$A,nw,H)
   B_aa <- matrix(res_aa$B,H,1)
 
-  res_00 <- reverse.MHLT(psi = psi,
+  res_00 <- reverse_MHLT(psi = psi,
                          u1 = 0*a,
                          u2 = 0*a,
                          H  = H,
@@ -361,7 +361,7 @@ price_Stock_calls_puts <- function(W, # Values of state vector (T x n)
 #' W <- matrix(c(0, 0.1), 2, 1)
 #' res <- price_Inflation_caps_floors(
 #'   W = W, H = 2, all_K = c(0.01, 0.02),
-#'   psi = psi.GaussianVAR,
+#'   psi = psi_GaussianVAR,
 #'   parameterization = list(
 #'     model = model, xi0 = 0, xi1 = 0,
 #'     mu_pi0 = 0.005, mu_pi1 = 0.1
@@ -412,7 +412,7 @@ price_Inflation_caps_floors <- function(W, # Values of state vector (T x n)
   }
 
   varphi <- function(x,parameterization,H){
-    # This function is an argument of truncated.payoff
+    # This function is an argument of truncated_payoff
 
     u <- parameterization$u
     v <- parameterization$v # determine thresholds (dimension nw x 1)
@@ -443,10 +443,10 @@ price_Inflation_caps_floors <- function(W, # Values of state vector (T x n)
   parameterization$ell <- ell
   parameterization$u   <- NaN
 
-  # Use of "truncated.payoff" for caps:
+  # Use of "truncated_payoff" for caps:
   parameterization$v <- matrix(mu_pi1,ncol=1)
   parameterization$u <- matrix(mu_pi1,ncol=1)
-  res_truncated1 <- truncated.payoff(W,
+  res_truncated1 <- truncated_payoff(W,
                                      b.matrix = b.matrix,
                                      varphi = varphi,
                                      parameterization = parameterization,
@@ -455,7 +455,7 @@ price_Inflation_caps_floors <- function(W, # Values of state vector (T x n)
                                      min_dx = min_dx,
                                      nb_x1 = nb_x1)
   parameterization$u <- matrix(0*mu_pi1, ncol = 1)
-  res_truncated2 <- truncated.payoff(W,
+  res_truncated2 <- truncated_payoff(W,
                                      b.matrix = b.matrix,
                                      varphi = varphi,
                                      parameterization = parameterization,

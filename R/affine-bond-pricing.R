@@ -39,7 +39,7 @@
 #'   xi0 = 0.01,
 #'   xi1 = matrix(c(0.1, 0.2), ncol = 1),
 #'   H = 4,
-#'   psi = psi.GaussianVAR,
+#'   psi = psi_GaussianVAR,
 #'   psi.parameterization = model
 #' )
 #' dim(res$A)
@@ -77,7 +77,7 @@ compute_AB_classical <- function(xi0,xi1,
     xi0_kappa0 <- xi0
   }
 
-  res_reverse <- reverse.MHLT(psi = psi,
+  res_reverse <- reverse_MHLT(psi = psi,
                               u1 = u1,
                               u2 = u2,
                               H = H,
@@ -160,7 +160,7 @@ compute_AB_classical <- function(xi0,xi1,
 #'   u = u,
 #'   H = 6,
 #'   k = 2,
-#'   psi = psi.GaussianVAR,
+#'   psi = psi_GaussianVAR,
 #'   psi.parameterization = model
 #' )
 #'
@@ -276,7 +276,7 @@ log_mvdnorm <- function(X, Sigma){
 #               mu = matrix(c(1,1),ncol=1),
 #               beta = matrix(c(.9,0,.2,.8),2,2),
 #               n_w=2)
-# VAR_representation <- compute_expect_variance(psi.VARG,model)
+# VAR_representation <- compute_expect_variance(psi_VARG,model)
 #
 # theta1 <- matrix(rnorm(8),4,2)
 # theta2 <- matrix(rnorm(8),4,2)
@@ -336,7 +336,7 @@ log_mvdnorm <- function(X, Sigma){
 #' @details
 #' The function first computes the affine representation of the reference rate,
 #' then prices caplets and floorlets through repeated calls to
-#' `truncated.payoff()`, and finally aggregates them into caps and floors across
+#' `truncated_payoff()`, and finally aggregates them into caps and floors across
 #' maturities.
 #'
 #' The entries of `all_K` are annualized strikes, whereas the underlying model
@@ -372,7 +372,7 @@ log_mvdnorm <- function(X, Sigma){
 #'   tau = 3,
 #'   freq = 12,
 #'   all_K = c(0.01, 0.02),
-#'   psi = psi.VARG,
+#'   psi = psi_VARG,
 #'   parameterization = parameterization,
 #'   max_x = 500,
 #'   dx_statio = 2,

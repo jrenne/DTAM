@@ -32,13 +32,13 @@
 #'   xi0 = 0,
 #'   xi1 = matrix(0, 2, 1)
 #' )
-#' res_psi <- psi.VARG(matrix(c(0.05, 0.02), 2, 1), model)
+#' res_psi <- psi_VARG(matrix(c(0.05, 0.02), 2, 1), model)
 #' dim(res_psi$a)
 #' compute_uncondmean_VARG(model)
 #'
 #' @name VARG_tools
 #' @export
-psi.VARG <- function(u,psi.parameterization){
+psi_VARG <- function(u,psi.parameterization){
   # Laplace transform of a VARG with conditionally independent components.
   # Conditionally on w_t,w_{t-1},..., the distribution of the jth component is:
   #  w_{j,t} ~ gamma_{nu_j}(alpha_j + beta_j'w_{t-1},mu_j),
@@ -90,9 +90,9 @@ compute_P_bar_VARG <- function(model,gamma,H=10,indic_delta1 = NaN){
 
   u1 <- gamma_matrix + u*e_tilde
   u2 <- - xi1_matrix + u*e_tilde
-  res4P_ubar <- reverse.MHLT(psi.VARG,u1,u2,H,psi.parameterization=model)
+  res4P_ubar <- reverse_MHLT(psi_VARG,u1,u2,H,psi.parameterization=model)
   u1 <- gamma_matrix
-  res4P_lbar <- reverse.MHLT(psi.VARG,u1,u2,H,psi.parameterization=model)
+  res4P_lbar <- reverse_MHLT(psi_VARG,u1,u2,H,psi.parameterization=model)
 
   xi1_3Dmatrix <- array(xi1,c(n.w,n.e,H))
   A_P_ubar <- - xi1_3Dmatrix + res4P_ubar$A
@@ -132,7 +132,7 @@ compute_proba_def_VARG <- function(model,H=10,indic_delta1 = NaN,
 
   u1 <- u*e_tilde
   u2 <- u*e_tilde
-  res <- reverse.MHLT(psi.VARG,u1,u2,H,psi.parameterization=model)
+  res <- reverse_MHLT(psi_VARG,u1,u2,H,psi.parameterization=model)
 
   A <- res$A
   B <- res$B
@@ -308,7 +308,7 @@ prices_CDS_RFV_VARG <- function(model,H=10,indic_delta1 = NaN,
 #' Top-down credit-model transforms and simulation
 #'
 #' The `psi.*TopDown` functions evaluate the one-step Laplace transform of the
-#' latent loss/intensity state used in the top-down credit model. `simul.TopDown`
+#' latent loss/intensity state used in the top-down credit model. `simul_TopDown`
 #' simulates the state vector under the physical measure.
 #'
 #' @param u,u.y Matrix of transform arguments.
@@ -335,8 +335,8 @@ prices_CDS_RFV_VARG <- function(model,H=10,indic_delta1 = NaN,
 #'   alpha.m = matrix(0, 2, 1),
 #'   n_w = 2
 #' )
-#' psi.y.TopDown(matrix(0.05, 1, 1), model)$b
-#' sim <- simul.TopDown(model, nb_periods = 10)
+#' psi_y_TopDown(matrix(0.05, 1, 1), model)$b
+#' sim <- simul_TopDown(model, nb_periods = 10)
 #' dim(sim$all_w)
 #'
 #' @name TopDown_tools

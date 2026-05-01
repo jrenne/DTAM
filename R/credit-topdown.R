@@ -2,7 +2,7 @@
 #'
 #' The `psi.*TopDown` functions evaluate the one-step Laplace transform of the
 #' latent loss/intensity state used in the top-down credit model.
-#' `simul.TopDown()` simulates the state vector under the physical measure.
+#' `simul_TopDown()` simulates the state vector under the physical measure.
 #'
 #' @param u,u.y Matrix of transform arguments.
 #' @param model List of top-down model parameters.
@@ -28,13 +28,13 @@
 #'   alpha.m = matrix(0, 2, 1),
 #'   n_w = 2
 #' )
-#' psi.y.TopDown(matrix(0.05, 1, 1), model)$b
-#' sim <- simul.TopDown(model, nb_periods = 10)
+#' psi_y_TopDown(matrix(0.05, 1, 1), model)$b
+#' sim <- simul_TopDown(model, nb_periods = 10)
 #' dim(sim$all_w)
 #'
 #' @name TopDown_tools
 #' @export
-psi.w.TopDown <- function(u,model,psi.y=psi.y.TopDown){
+psi_w_TopDown <- function(u,model,psi.y=psi_y_TopDown){
   # This function evaluates the LT of the state vector w_t in the context of the
   # top-down approach of Gourieroux, Monfort, Mouabbi, and Renne.
   # "model" is a list containing the model parameters.
@@ -51,7 +51,7 @@ psi.w.TopDown <- function(u,model,psi.y=psi.y.TopDown){
   u.y <- u[1:n.y,]
   u.n <- u[(n.y+1):(n.y+J),]
 
-  ab_y <- psi.y.TopDown(u.y + t(beta.ny) %*% (exp(u.n) - 1),model)
+  ab_y <- psi_y_TopDown(u.y + t(beta.ny) %*% (exp(u.n) - 1),model)
 
   a.wy <- ab_y$a.yy
   a.wn <- ab_y$a.yn + t(beta.nn) %*% (exp(u.n) - 1)
@@ -64,13 +64,13 @@ psi.w.TopDown <- function(u,model,psi.y=psi.y.TopDown){
 }
 #' @rdname TopDown_tools
 #' @export
-psiQ.w.TopDown <- function(u,model,psi.y=psi.y.TopDown){
-  # Same as psiQ.w.TopDown, but under the risk-neutral (Q) measure
+psiQ_w_TopDown <- function(u,model,psi.y=psi_y_TopDown){
+  # Same as psiQ_w_TopDown, but under the risk-neutral (Q) measure
 
   k <- dim(u)[2]
   u_adjusted <- cbind(u + model$alpha.m %*% matrix(1,1,k),model$alpha.m)
 
-  res <- psi.w.TopDown(u_adjusted,model,psi.y)
+  res <- psi_w_TopDown(u_adjusted,model,psi.y)
   b.w  <- res$b
   a.wy <- res$a.wy
   a.wn <- res$a.wn
@@ -86,7 +86,7 @@ psiQ.w.TopDown <- function(u,model,psi.y=psi.y.TopDown){
 }
 #' @rdname TopDown_tools
 #' @export
-psi.y.TopDown <- function(u.y,model){
+psi_y_TopDown <- function(u.y,model){
   # This function returns the LT of y_{t+1}|w_t.
   # It can be evaluated for different u.y's, i.e., u.y can be a matrix.
   # In this example, the conditional distribution of y_t is a compound
@@ -112,7 +112,7 @@ psi.y.TopDown <- function(u.y,model){
 
 #' @rdname TopDown_tools
 #' @export
-simul.TopDown <- function(model,nb_periods,W0=NaN){
+simul_TopDown <- function(model,nb_periods,W0=NaN){
   # This function simulates the Top Down model. The conditional distribuion of
   # y_t is compound Poisson-Gamma (as in the ARG).
   beta.yy <- as.matrix(model$beta.yy)
@@ -132,7 +132,7 @@ simul.TopDown <- function(model,nb_periods,W0=NaN){
 
   EV <- NULL
   if(is.na(W0)[1]){
-    EV <- compute_expect_variance(psi.w.TopDown,model)
+    EV <- compute_expect_variance(psi_w_TopDown,model)
     Ew <- EV$Ew
     W0 <- matrix(Ew,ncol=1)
   }
@@ -187,11 +187,11 @@ compute_H_bar_TopDown <- function(model,gamma,H=10,W=NaN,
               gamma*0       - xi1)
 
   if(indic_Q){
-    psi <- psiQ.w.TopDown
+    psi <- psiQ_w_TopDown
   }else{
-    psi <- psi.w.TopDown
+    psi <- psi_w_TopDown
   }
-  varphi <- reverse.MHLT(psi,
+  varphi <- reverse_MHLT(psi,
                          u1 = u1,
                          u2 = u2,
                          H = H,model)
@@ -349,12 +349,12 @@ varphi4G_TopDown <- function(x,parameterization,H){
   }
 
   if(indic_Q){
-    psi <- psiQ.w.TopDown
+    psi <- psiQ_w_TopDown
   }else{
-    psi <- psi.w.TopDown
+    psi <- psi_w_TopDown
   }
 
-  res_reverse <- reverse.MHLT(psi,
+  res_reverse <- reverse_MHLT(psi,
                               u1 = u1,
                               u2 = u2,
                               H = H,
@@ -370,7 +370,7 @@ varphi4G_TopDown <- function(x,parameterization,H){
 }
 
 
-truncated.payoff <- function(W, # values of w_t
+truncated_payoff <- function(W, # values of w_t
                              b.matrix, # thresholds (H x k, 1 row per maturity)
                              varphi,
                              parameterization,
@@ -480,7 +480,7 @@ compute_G <- function(model,W,
                            gamma = gamma,
                            v = v)
 
-  # P <- truncated.payoff(W,
+  # P <- truncated_payoff(W,
   #                       v,vector.of.b,
   #                       H,
   #                       varphi = varphi4G_TopDown,
@@ -489,7 +489,7 @@ compute_G <- function(model,W,
   #                       dx_statio = dx_statio,
   #                       min_dx = min_dx,
   #                       nb_x1=nb_x1)
-  P <- truncated.payoff(W,
+  P <- truncated_payoff(W,
                         b.matrix,
                         varphi = varphi4G_TopDown,
                         parameterization,
@@ -636,12 +636,12 @@ compute_affine_payoff_TopDown <- function(model,gamma,H,
   u1 <- matrix(gamma,n_w,1)
 
   if(indic_Q){
-    psi <- psiQ.w.TopDown
+    psi <- psiQ_w_TopDown
   }else{
-    psi <- psi.w.TopDown
+    psi <- psi_w_TopDown
   }
 
-  res_reverse <- reverse.MHLT(psi,
+  res_reverse <- reverse_MHLT(psi,
                               u1 = u1,
                               u2 = u2,
                               H = H,
@@ -680,7 +680,7 @@ compute_affine_payoff_TopDown <- function(model,gamma,H,
 #' Rating-migration bond pricing and simulation
 #'
 #' `compute_bond_price_Ratings()` prices risky and risk-free bonds in a model
-#' with stochastic rating migration. `simul.rating.migration()` simulates a
+#' with stochastic rating migration. `simul_rating_migration()` simulates a
 #' rating path conditional on an exogenous state trajectory.
 #'
 #' @param model List of model parameters.
@@ -690,7 +690,7 @@ compute_affine_payoff_TopDown <- function(model,gamma,H,
 #' @param tau_ini Initial rating for the simulated migration path.
 #'
 #' @return `compute_bond_price_Ratings()` returns a list containing risk-free and
-#'   risky bond prices, yields, and spreads. `simul.rating.migration()` returns
+#'   risky bond prices, yields, and spreads. `simul_rating_migration()` returns
 #'   a vector of simulated ratings.
 #'
 #' @examples
@@ -705,9 +705,9 @@ compute_affine_payoff_TopDown <- function(model,gamma,H,
 #'                               Sigma12 = matrix(0.1, 1, 1))
 #' )
 #' Y <- matrix(c(0, 0.1, -0.1), 3, 1)
-#' res <- compute_bond_price_Ratings(model, Y, H = 2, psi = psi.GaussianVAR)
+#' res <- compute_bond_price_Ratings(model, Y, H = 2, psi = psi_GaussianVAR)
 #' dim(res$RF_bond_price)
-#' simul.rating.migration(model, Y, tau_ini = 1)
+#' simul_rating_migration(model, Y, tau_ini = 1)
 #'
 #' @name Ratings_tools
 #' @export

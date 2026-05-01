@@ -1,7 +1,7 @@
 #' Rating-migration bond pricing and simulation
 #'
 #' `compute_bond_price_Ratings()` prices risky and risk-free bonds in a model
-#' with stochastic rating migration. `simul.rating.migration()` simulates a
+#' with stochastic rating migration. `simul_rating_migration()` simulates a
 #' rating path conditional on an exogenous state trajectory.
 #'
 #' @param model List of model parameters.
@@ -11,7 +11,7 @@
 #' @param tau_ini Initial rating for the simulated migration path.
 #'
 #' @return `compute_bond_price_Ratings()` returns a list containing risk-free and
-#'   risky bond prices, yields, and spreads. `simul.rating.migration()` returns
+#'   risky bond prices, yields, and spreads. `simul_rating_migration()` returns
 #'   a vector of simulated ratings.
 #'
 #' @examples
@@ -26,9 +26,9 @@
 #'                               Sigma12 = matrix(0.1, 1, 1))
 #' )
 #' Y <- matrix(c(0, 0.1, -0.1), 3, 1)
-#' res <- compute_bond_price_Ratings(model, Y, H = 2, psi = psi.GaussianVAR)
+#' res <- compute_bond_price_Ratings(model, Y, H = 2, psi = psi_GaussianVAR)
 #' dim(res$RF_bond_price)
-#' simul.rating.migration(model, Y, tau_ini = 1)
+#' simul_rating_migration(model, Y, tau_ini = 1)
 #'
 #' @name Ratings_tools
 #' @export
@@ -56,7 +56,7 @@ compute_bond_price_Ratings <- function(model,Y,H,psi){
 
   u1 <- - kappa1
   u2 <- - kappa1 - xi1 %*% matrix(1,1,K)
-  res_k <- reverse.MHLT(psi,u1=u1,u2=u2,H,model$psi.parameterization)
+  res_k <- reverse_MHLT(psi,u1=u1,u2=u2,H,model$psi.parameterization)
 
   # Adjust for xi0, kappa0, and the first xi1:
   B <- matrix(res_k$B,1,K*H) -
@@ -110,7 +110,7 @@ compute_bond_price_Ratings <- function(model,Y,H,psi){
 
 #' @rdname Ratings_tools
 #' @export
-simul.rating.migration <- function(model,Y,tau_ini=1){
+simul_rating_migration <- function(model,Y,tau_ini=1){
   # This function simulates a trajectory of ratings for a given model and
   # a trajectory of the exogenous variable Y (of dimension T x n_y).
 
@@ -171,7 +171,7 @@ simul.rating.migration <- function(model,Y,tau_ini=1){
 #' and defaultable bond coefficients. Otherwise it returns only the risk-free
 #' coefficients.
 #'
-#' Internally, the recursion relies on `reverse.MHLT()`.
+#' Internally, the recursion relies on `reverse_MHLT()`.
 #'
 #' @references
 #' Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
@@ -193,7 +193,7 @@ simul.rating.migration <- function(model,Y,tau_ini=1){
 #'   xi0 = xi0,
 #'   xi1 = xi1,
 #'   H = 12,
-#'   psi = psi.GaussianVAR,
+#'   psi = psi_GaussianVAR,
 #'   psi.parameterization = model
 #' )
 #'

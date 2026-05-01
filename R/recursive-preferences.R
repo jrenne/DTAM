@@ -58,7 +58,7 @@
 #'   n_w = 3
 #' )
 #'
-#' res <- solve_EZ_UnitEIS(model, psi = psi.GaussianVAR, Phi = model$Phi)
+#' res <- solve_EZ_UnitEIS(model, psi = psi_GaussianVAR, Phi = model$Phi)
 #'
 #' res$eta0
 #' res$alpha
@@ -201,7 +201,7 @@ solve_EZ_UnitEIS <- function(model,psi,Phi=NaN,du = 1e-06,
 #'   n_w = 3
 #' )
 #'
-#' res <- solve_CRRA(model, psi.GaussianVAR)
+#' res <- solve_CRRA(model, psi_GaussianVAR)
 #'
 #' res$eta0
 #' res$alpha
@@ -327,7 +327,7 @@ solve_CRRA <- function(model,psi,Phi=NaN,du = 1e-06){
 #'
 #' model_solved <- solve_EZ_SDF(
 #'   model,
-#'   psi.GaussianVAR,
+#'   psi_GaussianVAR,
 #'   z_bar_ini = 5,
 #'   nb_loop_z_bar = 20,
 #'   nb_loop_mu_z1 = 20
@@ -479,7 +479,7 @@ solve_EZ_SDF <- function(model,psi,z_bar_ini=5,
 #'
 #' model_solved <- solve_EZ_SDF(
 #'   model,
-#'   psi.GaussianVAR,
+#'   psi_GaussianVAR,
 #'   z_bar_ini = 5,
 #'   nb_loop_z_bar = 20,
 #'   nb_loop_mu_z1 = 20
@@ -487,7 +487,7 @@ solve_EZ_SDF <- function(model,psi,z_bar_ini=5,
 #'
 #' stock_solved <- solve_EZ_stock_return(
 #'   model_solved,
-#'   psi.GaussianVAR,
+#'   psi_GaussianVAR,
 #'   z_s_bar_ini = 5,
 #'   nb_loop_z_bar = 20,
 #'   nb_loop_mu_z1 = 20
@@ -598,11 +598,11 @@ solve_EZ_stock_return <- function(model,psi,Ew=NaN,z_s_bar_ini=5,
 #'   sigma.w = 0.2
 #' )
 #' u <- matrix(c(0.1, 0.05, 0.02), 3, 1)
-#' res <- psi.BansalShaliastovich(u, model)
+#' res <- psi_BansalShaliastovich(u, model)
 #' dim(res$a)
 #'
 #' @export
-psi.BansalShaliastovich <- function (u,psi.parameterization){
+psi_BansalShaliastovich <- function (u,psi.parameterization){
   # This function computes the log Laplace transform associated with
   # the model by Bansal and Shaliastovich (2012, RFS)
   n <- dim(psi.parameterization$Pi)[1]

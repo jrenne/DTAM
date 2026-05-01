@@ -377,11 +377,11 @@ make_matrices_cond_mean_variance_Quadratic <- function(model, indic_compute_V){
 #'   Sigma = diag(c(0.1, 0.2))
 #' )
 #' u <- matrix(c(0.1, 0.2, 0.05, 0.01, 0.02), 5, 1)
-#' res <- psi.GaussianQVAR(u, model)
+#' res <- psi_GaussianQVAR(u, model)
 #' dim(res$a)
 #'
 #' @export
-psi.GaussianQVAR <- function(u,psi.parameterization){
+psi_GaussianQVAR <- function(u,psi.parameterization){
   # The model is:
   # x_t = mu + Phi·x_{t-1} + Sigma^(1/2)·eps_t,
   #     with eps_t ~ N(0,Id).

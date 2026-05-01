@@ -2,16 +2,16 @@
 % Please edit documentation in R/shadow-rate.R
 \name{psi_non_gaussian}
 \alias{psi_non_gaussian}
-\alias{psi.QPoisson}
-\alias{psi.VARG_Poisson}
-\alias{psi.AR_CH}
+\alias{psi_QPoisson}
+\alias{psi_VARG_Poisson}
+\alias{psi_AR_CH}
 \title{Laplace transforms for non-Gaussian auxiliary models}
 \usage{
-psi.QPoisson(u, psi.parameterization)
+psi_QPoisson(u, psi.parameterization)
 
-psi.VARG_Poisson(u, psi.parameterization)
+psi_VARG_Poisson(u, psi.parameterization)
 
-psi.AR_CH(u, psi.parameterization)
+psi_AR_CH(u, psi.parameterization)
 }
 \arguments{
 \item{u}{Matrix of transform arguments, one column per evaluation point.}
@@ -29,7 +29,7 @@ models.
 }
 \examples{
 model_ar_ch <- list(mu = 0, phi = 0.9, nu = 1, mu_z = 0.2, beta = 0.8)
-res <- psi.AR_CH(matrix(c(0.1, 0.05), 2, 1), model_ar_ch)
+res <- psi_AR_CH(matrix(c(0.1, 0.05), 2, 1), model_ar_ch)
 dim(res$a)
 
 }

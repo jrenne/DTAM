@@ -1,11 +1,11 @@
-\name{psi.RSVAR}
-\alias{psi.RSVAR}
-\alias{simul.RSVAR}
+\name{psi_RSVAR}
+\alias{psi_RSVAR}
+\alias{simul_RSVAR}
 \title{Regime-switching Gaussian VAR transform and simulation}
 \usage{
-psi.RSVAR(u, psi.parameterization)
+psi_RSVAR(u, psi.parameterization)
 
-simul.RSVAR(model, nb.sim, y0 = NaN, z0 = NaN)
+simul_RSVAR(model, nb.sim, y0 = NaN, z0 = NaN)
 }
 \arguments{
 \item{u}{Matrix of Laplace-transform loadings. It must have \code{n + J} rows,
@@ -13,7 +13,7 @@ where \code{n} is the dimension of \code{y_t} and \code{J} is the number of regi
 
 \item{psi.parameterization, model}{List containing \code{Phi}, \code{Pi}, and
 either \code{Sigma} or \code{Sigma12}. The optional entry \code{mu} is an
-\code{n x J} matrix. If omitted, it is set to zero. For \code{simul.RSVAR()}
+\code{n x J} matrix. If omitted, it is set to zero. For \code{simul_RSVAR()}
 only, \code{model} may also contain an optional current-regime intercept
 \code{M}.}
 
@@ -24,8 +24,8 @@ only, \code{model} may also contain an optional current-regime intercept
 \item{z0}{Optional initial regime index.}
 }
 \value{
-\code{psi.RSVAR()} returns a list with affine-transform coefficients \code{a}
-and \code{b}. \code{simul.RSVAR()} returns a list with \code{y}, \code{z},
+\code{psi_RSVAR()} returns a list with affine-transform coefficients \code{a}
+and \code{b}. \code{simul_RSVAR()} returns a list with \code{y}, \code{z},
 \code{w}, and \code{regime}.
 }
 \description{
@@ -40,9 +40,9 @@ The continuous component follows
 y_{t+1} = \mu z_{t+1} + \Phi y_t
   + \Sigma(z_{t+1})^{1/2} eps_{t+1}.
 }
-The function \code{psi.RSVAR()} implements the conditional log-Laplace transform for the canonical specification used in the book: both the drift and the volatility of \eqn{y_{t+1}} are selected by the next regime \eqn{z_{t+1}}. If an entry \code{M} is supplied in \code{psi.parameterization}, it is deliberately ignored by \code{psi.RSVAR()}.
+The function \code{psi_RSVAR()} implements the conditional log-Laplace transform for the canonical specification used in the book: both the drift and the volatility of \eqn{y_{t+1}} are selected by the next regime \eqn{z_{t+1}}. If an entry \code{M} is supplied in \code{psi.parameterization}, it is deliberately ignored by \code{psi_RSVAR()}.
 
-The simulation helper \code{simul.RSVAR()} simulates the same canonical model when \code{M} is omitted. It also accepts an optional current-regime intercept \code{M}; in that case it simulates the more general dynamics
+The simulation helper \code{simul_RSVAR()} simulates the same canonical model when \code{M} is omitted. It also accepts an optional current-regime intercept \code{M}; in that case it simulates the more general dynamics
 \deqn{
 y_{t+1} = \mu z_{t+1} + M z_t + \Phi y_t
   + \Sigma(z_{t+1})^{1/2} eps_{t+1}.
@@ -67,7 +67,7 @@ model <- list(
                   0.00,   0.04^2), c(2, 2, 2))
 )
 u <- matrix(c(1, 0, 0, 0), 4, 1)
-psi.RSVAR(u, model)
-sim <- simul.RSVAR(model, nb.sim = 20, y0 = c(0, 0), z0 = 1)
+psi_RSVAR(u, model)
+sim <- simul_RSVAR(model, nb.sim = 20, y0 = c(0, 0), z0 = 1)
 dim(sim$w)
 }

@@ -24,7 +24,7 @@
 #'   n_w = 2
 #' )
 #'
-#' res <- compute_expect_variance(psi.GaussianVAR, model)
+#' res <- compute_expect_variance(psi_GaussianVAR, model)
 #' res$mu
 #' res$Phi
 #' res$Ew
@@ -170,7 +170,7 @@ compute_expect_variance_H <- function(VAR_representation,
 #                  Sigma = diag(2),
 #                  n_w=2)
 #
-# VAR_representation <- compute_expect_variance(psi.GaussianVAR,modelVAR)
+# VAR_representation <- compute_expect_variance(psi_GaussianVAR,modelVAR)
 # solve(diag(4) - modelVAR$Phi %x% modelVAR$Phi) %*% c(modelVAR$Sigma)
 #
 # theta1 <- matrix(rnorm(8),4,2)
@@ -212,7 +212,7 @@ compute_expect_variance_H <- function(VAR_representation,
 #'   xi0 = 0,
 #'   xi1 = matrix(0, 2, 1)
 #' )
-#' res_psi <- psi.VARG(matrix(c(0.05, 0.02), 2, 1), model)
+#' res_psi <- psi_VARG(matrix(c(0.05, 0.02), 2, 1), model)
 #' dim(res_psi$a)
 #' compute_uncondmean_VARG(model)
 #'

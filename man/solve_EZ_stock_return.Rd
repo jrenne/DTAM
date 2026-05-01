@@ -81,7 +81,7 @@ model <- list(
 
 model_solved <- solve_EZ_SDF(
   model,
-  psi.GaussianVAR,
+  psi_GaussianVAR,
   z_bar_ini = 5,
   nb_loop_z_bar = 20,
   nb_loop_mu_z1 = 20
@@ -89,7 +89,7 @@ model_solved <- solve_EZ_SDF(
 
 stock_solved <- solve_EZ_stock_return(
   model_solved,
-  psi.GaussianVAR,
+  psi_GaussianVAR,
   z_s_bar_ini = 5,
   nb_loop_z_bar = 20,
   nb_loop_mu_z1 = 20

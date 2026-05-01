@@ -70,7 +70,7 @@ res <- compute_AB_thk(
   u = u,
   H = 6,
   k = 2,
-  psi = psi.GaussianVAR,
+  psi = psi_GaussianVAR,
   psi.parameterization = model
 )
 

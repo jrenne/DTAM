@@ -66,7 +66,7 @@ model <- list(
   n_w = 3
 )
 
-res <- solve_EZ_UnitEIS(model, psi = psi.GaussianVAR, Phi = model$Phi)
+res <- solve_EZ_UnitEIS(model, psi = psi_GaussianVAR, Phi = model$Phi)
 
 res$eta0
 res$alpha

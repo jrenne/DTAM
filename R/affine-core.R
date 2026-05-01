@@ -49,8 +49,8 @@
 #' U <- matrix(c(0, 1,
 #'               -1, 1), nrow = 2)
 #'
-#' AB <- reverse.MHLT(
-#'   psi = psi.GaussianVAR,
+#' AB <- reverse_MHLT(
+#'   psi = psi_GaussianVAR,
 #'   u1 = U,
 #'   H = 5,
 #'   psi.parameterization = model
@@ -60,7 +60,7 @@
 #' dim(AB$B)
 #'
 #' @export
-reverse.MHLT <- function(psi,u1,u2=NaN,H,psi.parameterization){
+reverse_MHLT <- function(psi,u1,u2=NaN,H,psi.parameterization){
   # compute the multi-horizon Laplace transform in the reverse-order case
   # That is, we consider:
   # E_t(exp(u_2'w_{t+1}+...+u_2'w_{t+h-1}+u_1'w_{t+h}))
@@ -119,7 +119,7 @@ reverse.MHLT <- function(psi,u1,u2=NaN,H,psi.parameterization){
 #' @details
 #' If `u` has `k` columns, the function computes the `k` transforms in parallel.
 #'
-#' This function is often used as the `psi` argument of `reverse.MHLT()`,
+#' This function is often used as the `psi` argument of `reverse_MHLT()`,
 #' `compute_AB_classical()`, and `compute_AB_thk()` in Gaussian affine models.
 #'
 #' @references
@@ -136,10 +136,10 @@ reverse.MHLT <- function(psi,u1,u2=NaN,H,psi.parameterization){
 #'
 #' u <- matrix(c(1, 0,
 #'               0, 1), nrow = 2)
-#' psi.GaussianVAR(u, model)
+#' psi_GaussianVAR(u, model)
 #'
 #' @export
-psi.GaussianVAR <- function(u,psi.parameterization){
+psi_GaussianVAR <- function(u,psi.parameterization){
   # Laplace transform of a Gaussian VAR:
   # w_t = mu + Phi w_{t-1} + epsilon_{t}, where epsilon_{t}~N(0,Sigma)
   # If w_t is n-dimensional (of dimension n, say), u is of dimension n x k
@@ -169,11 +169,11 @@ psi.GaussianVAR <- function(u,psi.parameterization){
 #   Sigma = Sigma
 # )
 # u <- matrix(1:12,nrow=3)
-# psi.GaussianVAR(u,psi.parameterization)
+# psi_GaussianVAR(u,psi.parameterization)
 # # Check reverse-order multi-horizon LT:
 # u1 <- matrix(1,3,2)
 # u2 <- u1/2
-# reverse.MHLT(psi.GaussianVAR,u1,u2,H,psi.parameterization)
+# reverse_MHLT(psi_GaussianVAR,u1,u2,H,psi.parameterization)
 
 
 

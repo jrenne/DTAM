@@ -3,12 +3,12 @@
 \name{Ratings_tools}
 \alias{Ratings_tools}
 \alias{compute_bond_price_Ratings}
-\alias{simul.rating.migration}
+\alias{simul_rating_migration}
 \title{Rating-migration bond pricing and simulation}
 \usage{
 compute_bond_price_Ratings(model, Y, H, psi)
 
-simul.rating.migration(model, Y, tau_ini = 1)
+simul_rating_migration(model, Y, tau_ini = 1)
 }
 \arguments{
 \item{model}{List of model parameters.}
@@ -23,12 +23,12 @@ simul.rating.migration(model, Y, tau_ini = 1)
 }
 \value{
 \code{compute_bond_price_Ratings()} returns a list containing risk-free and
-risky bond prices, yields, and spreads. \code{simul.rating.migration()} returns
+risky bond prices, yields, and spreads. \code{simul_rating_migration()} returns
 a vector of simulated ratings.
 }
 \description{
 \code{compute_bond_price_Ratings()} prices risky and risk-free bonds in a model
-with stochastic rating migration. \code{simul.rating.migration()} simulates a
+with stochastic rating migration. \code{simul_rating_migration()} simulates a
 rating path conditional on an exogenous state trajectory.
 }
 \examples{
@@ -43,8 +43,8 @@ model <- list(
                               Sigma12 = matrix(0.1, 1, 1))
 )
 Y <- matrix(c(0, 0.1, -0.1), 3, 1)
-res <- compute_bond_price_Ratings(model, Y, H = 2, psi = psi.GaussianVAR)
+res <- compute_bond_price_Ratings(model, Y, H = 2, psi = psi_GaussianVAR)
 dim(res$RF_bond_price)
-simul.rating.migration(model, Y, tau_ini = 1)
+simul_rating_migration(model, Y, tau_ini = 1)
 
 }

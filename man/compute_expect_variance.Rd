@@ -31,7 +31,7 @@ model <- list(
   n_w = 2
 )
 
-res <- compute_expect_variance(psi.GaussianVAR, model)
+res <- compute_expect_variance(psi_GaussianVAR, model)
 res$mu
 res$Phi
 res$Ew

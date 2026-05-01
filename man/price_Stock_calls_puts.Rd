@@ -52,7 +52,7 @@ S <- c(100, 102)
 res <- price_Stock_calls_puts(
   W = W, S = S, H = 2, a = 0.1, b = 0,
   K_over_S = c(0.95, 1.05),
-  psi = psi.GaussianVAR,
+  psi = psi_GaussianVAR,
   parameterization = list(model = model, xi0 = 0, xi1 = 0)
 )
 dim(res$Calls)

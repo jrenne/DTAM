@@ -62,7 +62,7 @@ model <- list(
   n_w = 3
 )
 
-res <- solve_CRRA(model, psi.GaussianVAR)
+res <- solve_CRRA(model, psi_GaussianVAR)
 
 res$eta0
 res$alpha
