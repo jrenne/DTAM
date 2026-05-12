@@ -61,7 +61,7 @@ The datasets are data frames or tibbles. Main contents are:
   \item{\code{Data_Macro_US_quarterly}}{Quarterly U.S. macroeconomic variables
   and yield data.}
   \item{\code{Futures}}{Natural gas futures settlement prices.}
-  \item{\code{JSTdataset}}{Jordà-Schularick-Taylor Macrohistory Database.}
+  \item{\code{JSTdataset}}{Jorda-Schularick-Taylor Macrohistory Database.}
   \item{\code{Shiller}}{Monthly Shiller stock-market, valuation, price, and
   consumption data.}
   \item{\code{SPF}}{Philadelphia Fed Survey of Professional Forecasters data
