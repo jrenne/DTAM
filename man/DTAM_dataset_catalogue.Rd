@@ -23,7 +23,9 @@ DTAM includes empirical datasets used in the examples and bookdown code for
 discrete-time affine asset-pricing models. The helper function
 \code{\link[=dtam_datasets]{dtam_datasets()}} returns a compact catalogue of
 these datasets, and \code{\link[=dtam_dataset]{dtam_dataset()}} returns a
-dataset by object name.
+dataset by object name. Use
+\code{\link[=dtam_dataset_info]{dtam_dataset_info()}} for dimensions, sample
+coverage, and variable-level information.
 }
 \usage{
 data(ACMTermPremium)
@@ -76,6 +78,7 @@ source summary.
 }
 \examples{
 dtam_datasets()
+dtam_datasets(details = TRUE)
 YC_US <- dtam_dataset("YC_US")
 YC_LW <- dtam_dataset("YC_LW")
 }

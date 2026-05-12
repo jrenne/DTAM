@@ -2,15 +2,22 @@
 \alias{dtam_datasets}
 \title{List DTAM datasets}
 \usage{
-dtam_datasets()
+dtam_datasets(details = FALSE)
+}
+\arguments{
+\item{details}{Logical. If \code{TRUE}, add dimensions and date/sample
+coverage by loading each dataset.}
 }
 \value{
 A data frame with object names, underlying data names, broad frequency, source,
-and a short description.
+and description. With \code{details = TRUE}, the data frame also includes the
+number of observations, number of variables, and start/end sample markers when a
+date-like column is available.
 }
 \description{
-Returns a compact catalogue of the datasets shipped with DTAM.
+Returns a catalogue of the datasets shipped with DTAM.
 }
 \examples{
 dtam_datasets()
+dtam_datasets(details = TRUE)
 }

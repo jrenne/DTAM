@@ -1,11 +1,4 @@
-#' List DTAM datasets
-#'
-#' Returns a compact catalogue of the datasets shipped with DTAM.
-#'
-#' @return A data frame with object names, underlying data names, broad
-#'   frequency, source, and a short description.
-#' @export
-dtam_datasets <- function() {
+.dtam_dataset_catalogue <- function() {
   data.frame(
     name = c(
       "ACMTermPremium",
@@ -96,12 +89,92 @@ dtam_datasets <- function() {
   )
 }
 
+.dtam_validate_dataset_name <- function(name) {
+  if (!is.character(name) || length(name) != 1L) {
+    stop("`name` must be a character scalar.", call. = FALSE)
+  }
+  catalogue <- .dtam_dataset_catalogue()
+  if (!name %in% catalogue$name) {
+    stop(
+      "`name` must be one of: ",
+      paste(catalogue$name, collapse = ", "),
+      call. = FALSE
+    )
+  }
+  catalogue[catalogue$name == name, , drop = FALSE]
+}
+
+.dtam_date_range <- function(x) {
+  date_candidates <- intersect(c("date", "Date", "DATE", "q", "year", "Year"), names(x))
+  if (length(date_candidates) == 0L) {
+    return(c(start = NA_character_, end = NA_character_))
+  }
+
+  date_col <- x[[date_candidates[1L]]]
+  if (inherits(date_col, "Date") || inherits(date_col, "POSIXt")) {
+    return(format(range(date_col, na.rm = TRUE)))
+  }
+  if (is.numeric(date_col) || is.character(date_col)) {
+    rng <- range(date_col, na.rm = TRUE)
+    return(as.character(rng))
+  }
+  c(start = NA_character_, end = NA_character_)
+}
+
+.dtam_dataset_summary <- function(name) {
+  x <- dtam_dataset(name)
+  dims <- dim(x)
+  if (is.null(dims)) {
+    n_obs <- length(x)
+    n_vars <- NA_integer_
+  } else {
+    n_obs <- dims[1L]
+    n_vars <- dims[2L]
+  }
+  range <- if (is.data.frame(x)) .dtam_date_range(x) else c(NA_character_, NA_character_)
+  data.frame(
+    n_obs = n_obs,
+    n_vars = n_vars,
+    start = range[1L],
+    end = range[2L],
+    stringsAsFactors = FALSE
+  )
+}
+
+#' List DTAM datasets
+#'
+#' Returns a catalogue of the datasets shipped with DTAM.
+#'
+#' @param details Logical. If \code{TRUE}, add dimensions and date/sample
+#'   coverage by loading each dataset.
+#'
+#' @return A data frame with object names, underlying data names, broad
+#'   frequency, source, and description. With \code{details = TRUE}, the data
+#'   frame also includes the number of observations, number of variables, and
+#'   start/end sample markers when a date-like column is available.
+#' @export
+#'
+#' @examples
+#' dtam_datasets()
+#' dtam_datasets(details = TRUE)
+dtam_datasets <- function(details = FALSE) {
+  catalogue <- .dtam_dataset_catalogue()
+  if (!isTRUE(details)) {
+    return(catalogue)
+  }
+  summaries <- do.call(
+    rbind,
+    lapply(catalogue$name, .dtam_dataset_summary)
+  )
+  cbind(catalogue, summaries, row.names = NULL)
+}
+
 #' Return a DTAM dataset
 #'
 #' Loads one of the datasets shipped with DTAM and returns it as an object.
 #'
 #' @param name Character scalar. Name of the dataset to return. See
-#'   [dtam_datasets()].
+#'   \code{\link[=dtam_datasets]{dtam_datasets()}}.
 #'
 #' @return The requested dataset.
 #' @export
@@ -110,28 +183,58 @@ dtam_datasets <- function() {
 #' dtam_datasets()
 #' YC_US <- dtam_dataset("YC_US")
 dtam_dataset <- function(name) {
-  if (!is.character(name) || length(name) != 1L) {
-    stop("`name` must be a character scalar.", call. = FALSE)
-  }
-  datasets <- dtam_datasets()
-  available <- datasets$name
-  if (!name %in% available) {
-    stop(
-      "`name` must be one of: ",
-      paste(available, collapse = ", "),
-      call. = FALSE
+  dataset <- .dtam_validate_dataset_name(name)
+  env <- new.env(parent = emptyenv())
+  utils::data(list = dataset$data_name, package = "DTAM", envir = env)
+  get(name, envir = env, inherits = FALSE)
+}
+
+#' Describe a DTAM dataset
+#'
+#' Returns metadata, dimensions, sample coverage, and variable-level
+#' information for one dataset shipped with DTAM.
+#'
+#' @param name Character scalar. Name of the dataset to describe. See
+#'   \code{\link[=dtam_datasets]{dtam_datasets()}}.
+#'
+#' @return A list with two elements: \code{metadata}, a one-row data frame with
+#'   dataset-level information, and \code{variables}, a data frame with variable
+#'   names, classes, and missing-value counts.
+#' @export
+#'
+#' @examples
+#' info <- dtam_dataset_info("Data_Macro_EA_quarterly")
+#' info$metadata
+#' info$variables
+dtam_dataset_info <- function(name) {
+  .dtam_validate_dataset_name(name)
+  metadata <- dtam_datasets(details = TRUE)
+  metadata <- metadata[metadata$name == name, , drop = FALSE]
+
+  x <- dtam_dataset(name)
+  if (is.data.frame(x)) {
+    variables <- data.frame(
+      variable = names(x),
+      class = vapply(x, function(z) paste(class(z), collapse = "/"), character(1L)),
+      n_missing = vapply(x, function(z) sum(is.na(z)), integer(1L)),
+      stringsAsFactors = FALSE
+    )
+  } else {
+    variables <- data.frame(
+      variable = name,
+      class = paste(class(x), collapse = "/"),
+      n_missing = sum(is.na(x)),
+      stringsAsFactors = FALSE
     )
   }
-  env <- new.env(parent = emptyenv())
-  data_name <- datasets$data_name[datasets$name == name]
-  utils::data(list = data_name, package = "DTAM", envir = env)
-  get(name, envir = env, inherits = FALSE)
+
+  list(metadata = metadata, variables = variables)
 }
 
 #' Load a DTAM dataset into an environment
 #'
-#' Convenience wrapper around [data()] that validates the dataset name against
-#' [dtam_datasets()].
+#' Convenience wrapper around \code{\link[utils:data]{data()}} that validates
+#' the dataset name against \code{\link[=dtam_datasets]{dtam_datasets()}}.
 #'
 #' @param name Character scalar. Name of the dataset to load.
 #' @param envir Environment in which the dataset should be loaded. Defaults to
