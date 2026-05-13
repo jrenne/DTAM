@@ -2,14 +2,12 @@
   data.frame(
     name = c(
       "ACMTermPremium",
-      "Credit_spds",
       "DAT_GSW",
       "YC_LW",
       "YC_LW_FULL",
       "Data_Macro_EA_quarterly",
       "Data_Macro_US_monthly",
       "Data_Macro_US_quarterly",
-      "Futures",
       "JSTdataset",
       "Shiller",
       "SPF",
@@ -19,14 +17,12 @@
     ),
     data_name = c(
       "ACMTermPremium",
-      "Credit_spds",
       "DAT_GSW",
       "DAT_LW",
       "DAT_LW_FULL",
       "Data_Macro_EA_quarterly",
       "Data_Macro_US_monthly",
       "Data_Macro_US_quarterly",
-      "Futures",
       "JSTdataset",
       "Shiller",
       "SPF",
@@ -36,14 +32,12 @@
     ),
     frequency = c(
       "monthly",
-      "annual",
       "monthly",
       "monthly",
       "monthly",
       "quarterly",
       "monthly",
       "quarterly",
-      "daily",
       "annual",
       "monthly",
       "quarterly",
@@ -53,14 +47,12 @@
     ),
     source = c(
       "Federal Reserve Bank of New York",
-      "FRED and S&P default data",
       "Federal Reserve Board",
       "Liu and Wu yield data",
       "Liu and Wu yield data",
       "Area-Wide Model database",
       "FRED",
       "FRED",
-      "Natural gas futures data",
       "Jorda-Schularick-Taylor Macrohistory Database",
       "Robert Shiller data",
       "Philadelphia Fed Survey of Professional Forecasters",
@@ -70,20 +62,63 @@
     ),
     description = c(
       "Adrian-Crump-Moench Treasury yields, term premia, and risk-neutral yields.",
-      "U.S. corporate credit spreads and default-rate data.",
       "Gurkaynak-Sack-Wright nominal and real zero-coupon Treasury yields.",
       "Selected Liu-Wu U.S. zero-coupon Treasury yields.",
       "Full Liu-Wu U.S. zero-coupon Treasury yield panel.",
       "Euro-area quarterly real GDP, HICP, unemployment, inflation, and GDP growth.",
       "Monthly U.S. macroeconomic and yield data.",
       "Quarterly U.S. macroeconomic and yield data.",
-      "Natural gas futures settlement prices.",
       "Long-run macro-financial panel from the Macrohistory Database.",
       "Shiller monthly stock-market, valuation, price, and consumption data.",
       "Survey forecasts for CPI, GDP, and Treasury-bill rates.",
       "Euro-area zero-coupon yields.",
       "Daily U.S. Treasury yields from FRED.",
       "Weekly U.S. rates, policy targets, and Treasury yields from FRED."
+    ),
+    source_url = c(
+      "https://www.newyorkfed.org/research/data_indicators/term-premia-tabs",
+      "https://www.federalreserve.gov/data/nominal-yield-curve.htm",
+      "https://sites.google.com/view/jingcynthiawu/yield-data",
+      "https://sites.google.com/view/jingcynthiawu/yield-data",
+      "https://eabcn.org/data/area-wide-model",
+      "https://fred.stlouisfed.org/",
+      "https://fred.stlouisfed.org/",
+      "https://www.macrohistory.net/database/",
+      "https://www.econ.yale.edu/~shiller/data.htm",
+      "https://www.philadelphiafed.org/surveys-and-data/real-time-data-research/survey-of-professional-forecasters",
+      "https://data.ecb.europa.eu/",
+      "https://fred.stlouisfed.org/",
+      "https://fred.stlouisfed.org/"
+    ),
+    reference = c(
+      "Adrian, Crump, and Moench (2013), Pricing the term structure with linear regressions, Journal of Financial Economics 110(1), 110-138.",
+      "Gurkaynak, Sack, and Wright (2007), The U.S. Treasury yield curve: 1961 to the present, Journal of Monetary Economics 54(8), 2291-2304; Gurkaynak, Sack, and Wright (2010), The TIPS yield curve and inflation compensation, American Economic Journal: Macroeconomics 2(1), 70-92.",
+      "Liu and Wu (2021), Reconstructing the yield curve, Journal of Financial Economics 142(3), 1395-1425.",
+      "Liu and Wu (2021), Reconstructing the yield curve, Journal of Financial Economics 142(3), 1395-1425.",
+      "Fagan, Henry, and Mestre (2001), An area-wide model (AWM) for the euro area, ECB Working Paper No. 42.",
+      "Federal Reserve Bank of St. Louis, FRED, and original source agencies listed in each FRED series.",
+      "Federal Reserve Bank of St. Louis, FRED, and original source agencies listed in each FRED series.",
+      "Jorda, Schularick, and Taylor (2017), Macrofinancial History and the New Business Cycle Facts, NBER Macroeconomics Annual 31; see also Jorda et al. (2019) for return data and Jorda et al. (2021) for bank balance-sheet ratios.",
+      "Shiller (2015), Irrational Exuberance, 3rd ed., Princeton University Press; see also Shiller's online data page.",
+      "Federal Reserve Bank of Philadelphia, Survey of Professional Forecasters.",
+      "European Central Bank, ECB Data Portal.",
+      "Federal Reserve Bank of St. Louis, FRED, and original source agencies listed in each FRED series.",
+      "Federal Reserve Bank of St. Louis, FRED, and original source agencies listed in each FRED series."
+    ),
+    license = c(
+      "Federal Reserve Bank of New York public research data; reuse is subject to the New York Fed website terms and attribution requirements.",
+      "Federal Reserve Board staff research data; subject to Federal Reserve Board website terms and model disclaimer.",
+      "Authors' public research data; cite Liu and Wu (2021) and check the authors' website for current reuse terms.",
+      "Authors' public research data; cite Liu and Wu (2021) and check the authors' website for current reuse terms.",
+      "AWM database made available for research use by ECB/EABCN; cite Fagan, Henry, and Mestre (2001) and check the AWM page for current terms.",
+      "FRED content is free to access subject to FRED terms; some series are owned by third parties and may carry additional restrictions.",
+      "FRED content is free to access subject to FRED terms; some series are owned by third parties and may carry additional restrictions.",
+      "Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0), with required citation and no commercial resale/integration by data providers.",
+      "Robert Shiller online data; cite the source page/book and check Yale/Shiller page terms before redistribution.",
+      "Federal Reserve Bank of Philadelphia public survey data; reuse subject to Philadelphia Fed website terms and attribution.",
+      "Publicly released ESCB/ECB statistics may be reused free of charge if the source is quoted and the statistics/metadata are not modified; third-party data are excluded.",
+      "FRED content is free to access subject to FRED terms; some series are owned by third parties and may carry additional restrictions.",
+      "FRED content is free to access subject to FRED terms; some series are owned by third parties and may carry additional restrictions."
     ),
     stringsAsFactors = FALSE
   )
@@ -149,9 +184,10 @@
 #'   coverage by loading each dataset.
 #'
 #' @return A data frame with object names, underlying data names, broad
-#'   frequency, source, and description. With \code{details = TRUE}, the data
-#'   frame also includes the number of observations, number of variables, and
-#'   start/end sample markers when a date-like column is available.
+#'   frequency, source, description, source URL, reference, and upstream
+#'   licence/terms note. With \code{details = TRUE}, the data frame also
+#'   includes the number of observations, number of variables, and start/end
+#'   sample markers when a date-like column is available.
 #' @export
 #'
 #' @examples

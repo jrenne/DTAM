@@ -3,3 +3,10 @@
 .RData
 .Ruserdata
 .DS_Store
+data/Futures.rda
+data-raw/Futures.csv
+data-raw/Futures_complete.csv
+data-raw/futures.xlsx
+data-raw/~$*.xlsx
+data/Credit_spds.rda
+data-raw/Corporate_defaults.csv

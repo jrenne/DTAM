@@ -10,9 +10,10 @@ coverage by loading each dataset.}
 }
 \value{
 A data frame with object names, underlying data names, broad frequency, source,
-and description. With \code{details = TRUE}, the data frame also includes the
-number of observations, number of variables, and start/end sample markers when a
-date-like column is available.
+description, source URL, reference, and upstream licence/terms note. With
+\code{details = TRUE}, the data frame also includes the number of observations,
+number of variables, and start/end sample markers when a date-like column is
+available.
 }
 \description{
 Returns a catalogue of the datasets shipped with DTAM.
