@@ -1,19 +1,5 @@
 \name{DTAM_datasets}
 \alias{DTAM_datasets}
-\alias{ACMTermPremium}
-\alias{DAT_GSW}
-\alias{DAT_LW}
-\alias{DAT_LW_FULL}
-\alias{YC_LW}
-\alias{YC_LW_FULL}
-\alias{Data_Macro_US_monthly}
-\alias{Data_Macro_US_quarterly}
-\alias{JSTdataset}
-\alias{Shiller}
-\alias{SPF}
-\alias{YC_Euro}
-\alias{YC_US}
-\alias{YC_US_weekly}
 \docType{data}
 \title{Datasets shipped with DTAM}
 \description{
