@@ -28,6 +28,17 @@ simul_ARG <- function(nb.sim,mu,nu,rho,alpha=0,w0=NaN,nb.replic=1){
   # This function simulates an ARG or an ARG0 process
   # If nb.replic>1, then we simulate several paths in parallel
 
+  if (length(nb.sim) != 1L || !is.finite(nb.sim) || nb.sim < 1L ||
+      nb.sim != as.integer(nb.sim)) {
+    stop("nb.sim must be a positive integer.")
+  }
+  if (length(nb.replic) != 1L || !is.finite(nb.replic) || nb.replic < 1L ||
+      nb.replic != as.integer(nb.replic)) {
+    stop("nb.replic must be a positive integer.")
+  }
+  nb.sim <- as.integer(nb.sim)
+  nb.replic <- as.integer(nb.replic)
+
   unc.mean <- (alpha + nu) * mu/(1-rho)
   # set starting point:
   if(is.na(w0)){
@@ -39,10 +50,12 @@ simul_ARG <- function(nb.sim,mu,nu,rho,alpha=0,w0=NaN,nb.replic=1){
   W <- matrix(NaN,nb.sim,nb.replic)
   W[1,] <- w_0
   w <- w_0
-  for(t in 2:nb.sim){
-    z <- rpois(nb.replic,rho*w/mu + alpha)
-    w <- mu * rgamma(nb.replic,shape=nu+z)
-    W[t,] <- w
+  if (nb.sim > 1L) {
+    for(t in seq.int(2L, nb.sim)){
+      z <- rpois(nb.replic,rho*w/mu + alpha)
+      w <- mu * rgamma(nb.replic,shape=nu+z)
+      W[t,] <- w
+    }
   }
   return(W)
 }
@@ -53,6 +66,12 @@ simul_ARG <- function(nb.sim,mu,nu,rho,alpha=0,w0=NaN,nb.replic=1){
 simul_compound_poisson <- function(nb.sim,Gamma,Pi,lambda,w0=NaN){
   # This function simulates a compound Poisson process
 
+  if (length(nb.sim) != 1L || !is.finite(nb.sim) || nb.sim < 1L ||
+      nb.sim != as.integer(nb.sim)) {
+    stop("nb.sim must be a positive integer.")
+  }
+  nb.sim <- as.integer(nb.sim)
+
   if(is.na(w0)){
     w_0 <- 1 * Gamma
   }else{
@@ -61,11 +80,13 @@ simul_compound_poisson <- function(nb.sim,Gamma,Pi,lambda,w0=NaN){
 
   W <- w_0
   w <- w_0
-  for(t in 2:nb.sim){
-    z <- sum(rbernoulli(n = w/Gamma, p = Pi))
-    eps <- rpois(1,lambda)
-    w <- Gamma * (z + eps)
-    W <- c(W,w)
+  if (nb.sim > 1L) {
+    for(t in seq.int(2L, nb.sim)){
+      z <- sum(rbernoulli(n = w/Gamma, p = Pi))
+      eps <- rpois(1,lambda)
+      w <- Gamma * (z + eps)
+      W <- c(W,w)
+    }
   }
   return(W)
 }

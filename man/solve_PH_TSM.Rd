@@ -4,7 +4,7 @@
 \alias{solve_PH_TSM}
 \title{Solve a preferred-habitat term-structure model}
 \usage{
-solve_PH_TSM(model, max_iter = 100, zeta_bar = 3)
+solve_PH_TSM(model, max_iter = 100, zeta_bar = 3, tol = 1e-10)
 }
 \arguments{
 \item{model}{A list describing the model. For the single-curve case it must
@@ -18,14 +18,23 @@ variants.}
 
 \item{zeta_bar}{Initial guess for the average log price-dividend ratio in the
 stock/perpetuity case.}
+
+\item{tol}{Convergence tolerance for the largest absolute change in the
+iterated pricing coefficients. Set to zero to always run \code{max_iter}
+iterations.}
 }
 \value{
 A list containing the solved affine bond-pricing coefficients and
 related equilibrium objects. Core outputs include:
 \code{A}, \code{B}, \code{a}, \code{b}, \code{alpha}, \code{beta}, \code{lambda0}, \code{lambda1}, \code{muQ}, and
-\code{PhiQ}. Additional objects such as \code{A_star}, \code{a_star}, \code{mu_e0}, \code{mu_e1},
-\code{mu_zeta0}, \code{mu_zeta1}, \code{C_K}, \code{D_K}, and \code{Theta_K} are returned when the
-corresponding model extensions are active.
+\code{PhiQ}, plus the convergence diagnostics \code{converged}, \code{iterations}, and
+\code{max_change}. Additional objects such as \code{A_star}, \code{a_star}, \code{mu_e0}, \code{mu_e1},
+\code{mu_zeta0}, \code{mu_zeta1}, \code{C_K}, \code{C_K_log}, \code{D_K}, and \code{Theta_K} are returned
+when the corresponding model extensions are active. In the stock extension,
+\code{C_K}, \code{D_K}, and \code{Theta_K} are the coefficients of the affine approximation
+to the arithmetic stock return, whereas \code{C_K_log} is the intercept of the
+Campbell--Shiller approximation to the log gross stock return. Thus,
+\code{C_K = C_K_log + 0.5 * Theta_K \%*\% Sigma \%*\% t(Theta_K)}.
 }
 \description{
 Solves the preferred-habitat term-structure model under one of three

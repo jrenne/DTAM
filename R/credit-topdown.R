@@ -29,6 +29,8 @@
 #'   n_w = 2
 #' )
 #' psi_y_TopDown(matrix(0.05, 1, 1), model)$b
+#' psi_w_TopDown(matrix(c(0.05, 0.02), 2, 1), model)$a
+#' psiQ_w_TopDown(matrix(c(0.05, 0.02), 2, 1), model)$a
 #' sim <- simul_TopDown(model, nb_periods = 10)
 #' dim(sim$all_w)
 #'
@@ -48,10 +50,10 @@ psi_w_TopDown <- function(u,model,psi.y=psi_y_TopDown){
   n.w <- dim(u)[1]
   n.y <- n.w - J
 
-  u.y <- u[1:n.y,]
-  u.n <- u[(n.y+1):(n.y+J),]
+  u.y <- u[seq_len(n.y), , drop = FALSE]
+  u.n <- u[n.y + seq_len(J), , drop = FALSE]
 
-  ab_y <- psi_y_TopDown(u.y + t(beta.ny) %*% (exp(u.n) - 1),model)
+  ab_y <- psi.y(u.y + t(beta.ny) %*% (exp(u.n) - 1), model)
 
   a.wy <- ab_y$a.yy
   a.wn <- ab_y$a.yn + t(beta.nn) %*% (exp(u.n) - 1)
@@ -75,9 +77,11 @@ psiQ_w_TopDown <- function(u,model,psi.y=psi_y_TopDown){
   a.wy <- res$a.wy
   a.wn <- res$a.wn
 
-  a.wy <- a.wy[,1:k] - a.wy[,k+1] %*% matrix(1,1,k)
-  a.wn <- a.wn[,1:k] - a.wn[,k+1] %*% matrix(1,1,k)
-  b.w  <- b.w[1:k,]  - b.w[k+1]
+  a.wy <- a.wy[, seq_len(k), drop = FALSE] -
+    a.wy[, k + 1L, drop = FALSE] %*% matrix(1, 1, k)
+  a.wn <- a.wn[, seq_len(k), drop = FALSE] -
+    a.wn[, k + 1L, drop = FALSE] %*% matrix(1, 1, k)
+  b.w <- b.w[seq_len(k), , drop = FALSE] - b.w[k + 1L, 1]
 
   return(list(b    = b.w,
               a.wy = a.wy,
@@ -115,6 +119,12 @@ psi_y_TopDown <- function(u.y,model){
 simul_TopDown <- function(model,nb_periods,W0=NaN){
   # This function simulates the Top Down model. The conditional distribuion of
   # y_t is compound Poisson-Gamma (as in the ARG).
+  if (length(nb_periods) != 1L || !is.finite(nb_periods) || nb_periods < 1L ||
+      nb_periods != as.integer(nb_periods)) {
+    stop("nb_periods must be a positive integer.")
+  }
+  nb_periods <- as.integer(nb_periods)
+
   beta.yy <- as.matrix(model$beta.yy)
   beta.yn <- as.matrix(model$beta.yn)
   beta.nn <- as.matrix(model$beta.nn)
@@ -142,14 +152,16 @@ simul_TopDown <- function(model,nb_periods,W0=NaN){
   all_y <- y
   all_n <- n
 
-  for(t in 2:nb_periods){
+  if (nb_periods > 1L) {
+    for(t in seq.int(2L, nb_periods)){
     # y part:
     param.pois <- rpois(n.y, alpha.y + beta.yy %*% y + beta.yn %*% n)
     y <- rgamma(n.y,shape = param.pois + nu.y, scale = mu.y)
     all_y <- cbind(all_y,y)
     # n part:
     n <- rpois(J, alpha.n + beta.ny %*% y + beta.nn %*% n)
-    all_n <- cbind(all_n,n)
+      all_n <- cbind(all_n,n)
+    }
   }
 
   return(list(
@@ -194,7 +206,8 @@ compute_H_bar_TopDown <- function(model,gamma,H=10,W=NaN,
   varphi <- reverse_MHLT(psi,
                          u1 = u1,
                          u2 = u2,
-                         H = H,model)
+                         H = H,
+                         psi.parameterization = model)
   nw <- dim(varphi$A)[1]
 
   da_du <- (varphi$A[,1:2,] - varphi$A[,3:4,])/epsilon
@@ -291,6 +304,7 @@ compute_H_bar_TopDown <- function(model,gamma,H=10,W=NaN,
 #' dim(cds)
 #'
 #' @name TopDown_pricing
+#' @export
 compute_CDS_TopDown <- function(model,
                                 H=10,
                                 W,
@@ -365,8 +379,8 @@ varphi4G_TopDown <- function(x,parameterization,H){
   B <- res_reverse$B
   B <- B - model$xi0*array(matrix((1:H),ncol=1) %x% matrix(1,q,1),c(1,q,H))
 
-  return(list(A = res_reverse$A,
-              B = matrix(res_reverse$B,nrow=1)))
+  return(list(A = A,
+              B = matrix(B,nrow=1)))
 }
 
 

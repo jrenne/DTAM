@@ -27,7 +27,8 @@
 #' res <- price_IR_caps_floors(
 #'   W = W, H = 4, tau = 1, freq = 4, all_K = c(0.01, 0.02),
 #'   psi = psi_GaussianVAR,
-#'   parameterization = list(model = model, xi0 = 0, xi1 = 0)
+#'   parameterization = list(model = model, xi0 = 0, xi1 = 0),
+#'   max_x = 1000, dx_statio = 5, nb_x1 = 500
 #' )
 #' dim(res$Caps)
 #'
@@ -346,14 +347,13 @@ price_Stock_calls_puts <- function(W, # Values of state vector (T x n)
 #' @param H Maximum maturity in model periods.
 #' @param ell Indexation lag.
 #' @param all_K Vector of strikes expressed at the model frequency.
-#' @param Pi_t_minus_ell Optional lagged price index level.
+#' @param Pi_t_minus_ell Optional scalar lagged price-index factor.
 #' @param psi One-step Laplace transform of the state vector.
 #' @param parameterization List containing the model, short-rate parameters, and
 #'   inflation loadings.
 #' @param max_x,dx_statio,min_dx,nb_x1 Numerical integration settings.
 #'
-#' @return A list containing `Caplet`, `Floorlet`, `Caps`, `Floors`, and the
-#'   maturity grid used in the accumulation.
+#' @return A list containing inflation `Caps`, `Floors`, and `swaps`.
 #'
 #' @examples
 #' model <- list(n_w = 1, mu = matrix(0, 1, 1), Phi = matrix(0.9, 1, 1),
@@ -408,7 +408,11 @@ price_Inflation_caps_floors <- function(W, # Values of state vector (T x n)
   }
 
   if((ell == 0) & is.na(Pi_t_minus_ell[1])){
-    Pi_t_minus_ell <- matrix(1,TT,1)
+    Pi_t_minus_ell <- 1
+  }
+
+  if (length(Pi_t_minus_ell) != 1L) {
+    stop("Pi_t_minus_ell must be a scalar price-index factor.")
   }
 
   varphi <- function(x,parameterization,H){

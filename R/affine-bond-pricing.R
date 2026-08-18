@@ -250,23 +250,25 @@ compute_AB_thk <- function(xi0, xi1,
 #   return(sum(logl))
 # }
 
-log_mvdnorm <- function(X, Sigma){
-  # This function computes the log-likelihood associated with a matrix of observations X.
-  # The rows of X are supposed to be i.i.d., drawn in N(0,Sigma), where
-  # Sigma is a covariance matrix.
-
-  TT <- nrow(X)
-  n <- ncol(X)
-
-  Sigma_inv <- solve(Sigma)
-  det_Sigma <- determinant(Sigma, logarithm = TRUE)$modulus
-
-  term1 <- -0.5 * TT * n * log(2 * pi)
-  term2 <- -0.5 * TT * det_Sigma
-  term3 <- -0.5 * sum(((X %x% matrix(1,1,n))*(matrix(1,1,n) %x% X)) %*% c(Sigma_inv))
-
-  logL <- term1 + term2 + term3
-  return(as.numeric(logL))
+#' Gaussian log-likelihood for centered observations
+#'
+#' Computes the joint log-likelihood of independent rows of `X` under a
+#' centered multivariate Gaussian distribution with covariance `Sigma`.
+#'
+#' @param X Numeric matrix with observations in rows.
+#' @param Sigma Positive-definite covariance matrix.
+#'
+#' @return A scalar log-likelihood.
+#'
+#' @examples
+#' X <- matrix(c(0.1, -0.2, 0.3, 0), 2, 2, byrow = TRUE)
+#' log_mvdnorm(X, diag(2))
+#'
+#' @export
+log_mvdnorm <- function(X, Sigma) {
+  X <- as.matrix(X)
+  sum(mvtnorm::dmvnorm(X, mean = rep(0, ncol(X)),
+                       sigma = Sigma, log = TRUE))
 }
 
 

@@ -216,8 +216,8 @@ psi_QPoisson <- function(u,psi.parameterization){
   res.QVAR <- psi_GaussianQVAR(u_aux, psi.parameterization)
 
   b <- res.QVAR$b
-  a <- rbind(res.QVAR$a,
-             u_plus,u_minus)
+  count_rows <- n + n * (n + 1)/2 + seq_len(2L)
+  a <- rbind(res.QVAR$a, u[count_rows, , drop = FALSE])
 
   return(list(a = a, b = b))
 }
@@ -228,6 +228,8 @@ psi_VARG_Poisson <- function(u,psi.parameterization){
   # Laplace transform of a process defined as follows:
   # N_t^+ ~ Poisson(z_t^+) and N_t^- ~ Poisson(z_t^-),
   # where z_t = (z_t^+,z_t^-)' follows a bivariate VARG process.
+  # The optional psi.parameterization$count_persistence controls the
+  # persistence of the cumulative count components (default: 0.99999).
 
   u <- matrix(u,nrow=4)
   k <- dim(u)[2]
@@ -243,11 +245,19 @@ psi_VARG_Poisson <- function(u,psi.parameterization){
   v_star[1,] <- v[1,] + exp(u_plus)  - 1
   v_star[2,] <- v[2,] + exp(u_minus) - 1
 
+  count_persistence <- psi.parameterization$count_persistence
+  if (is.null(count_persistence)) {
+    count_persistence <- 0.99999
+  }
+  if (length(count_persistence) != 1L || !is.finite(count_persistence)) {
+    stop("count_persistence must be a finite scalar.")
+  }
+
   res.VARG <- psi_VARG(v_star, psi.parameterization)
 
   b <- res.VARG$b
   a <- rbind(res.VARG$a,
-             .99999*u_plus,.99999*u_minus)
+             count_persistence*u_plus,count_persistence*u_minus)
 
   return(list(a = a, b = b))
 }
@@ -320,7 +330,7 @@ varphi4G_SR_QPoisson <- function(x,parameterization,H){
   u2 <- matrix(0, nw, q)
   u1 <- matrix(u, nw, q) + i.v.x
 
-  res_reverse <- reverse_MHLT(psi.PoissonSR,
+  res_reverse <- reverse_MHLT(psi_QPoisson,
                               u1 = u1,
                               u2 = u2,
                               H = H,

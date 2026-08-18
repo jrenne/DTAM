@@ -38,7 +38,8 @@ component within the state vector.}
 \item{X}{Matrix of state-vector values where the pricing objects are
 evaluated.}
 
-\item{nb_periods}{Number of simulated dates.}
+\item{nb_periods}{Number of simulated transitions. The returned path includes
+the initial state and therefore has \code{nb_periods + 1} columns.}
 
 \item{w0}{Optional initial state.}
 }
@@ -69,5 +70,11 @@ model <- list(
 res_psi <- psi_VARG(matrix(c(0.05, 0.02), 2, 1), model)
 dim(res_psi$a)
 compute_uncondmean_VARG(model)
+compute_uncondvar_VARG(model)
+set.seed(123)
+path <- simul_VARG(model, nb_periods = 3)
+dim(path)
+model_Q <- make_VARG_Q(model)
+model_Q$mu
 
 }

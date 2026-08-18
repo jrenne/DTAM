@@ -52,6 +52,8 @@ model <- list(
   n_w = 2
 )
 psi_y_TopDown(matrix(0.05, 1, 1), model)$b
+psi_w_TopDown(matrix(c(0.05, 0.02), 2, 1), model)$a
+psiQ_w_TopDown(matrix(c(0.05, 0.02), 2, 1), model)$a
 sim <- simul_TopDown(model, nb_periods = 10)
 dim(sim$all_w)
 

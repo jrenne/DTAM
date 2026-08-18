@@ -4,7 +4,7 @@
 #' the current base-R plot.
 #'
 #' @param col Fill color used for the shaded areas.
-#' @param indic_US Logical. If `TRUE`, use U.S. recession dates from `tseries`;
+#' @param indic_US Logical. If `TRUE`, use U.S. recession dates from `tis`;
 #'   otherwise use the hard-coded euro-area dates included in the package.
 #' @param MIN,MAX Vertical bounds used for the polygon.
 #'
@@ -19,7 +19,7 @@
 make_recessions <- function(col="#AA55AA44",indic_US=TRUE,
                             MIN=-10000,MAX=+10000){
   if(indic_US){
-    nber_dates <- nberDates()
+    nber_dates <- tis::nberDates()
     start_recession_dates <- as.Date(as.character(nber_dates[,1]),"%Y%m%d")
     end_recession_dates   <- as.Date(as.character(nber_dates[,2]),"%Y%m%d")
   }else{

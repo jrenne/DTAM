@@ -9,7 +9,7 @@ make_recessions(col = "#AA55AA44", indic_US = TRUE, MIN = -10000, MAX = +10000)
 \arguments{
 \item{col}{Fill color used for the shaded areas.}
 
-\item{indic_US}{Logical. If \code{TRUE}, use U.S. recession dates from \code{tseries};
+\item{indic_US}{Logical. If \code{TRUE}, use U.S. recession dates from \code{tis};
 otherwise use the hard-coded euro-area dates included in the package.}
 
 \item{MIN, MAX}{Vertical bounds used for the polygon.}

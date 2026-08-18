@@ -83,8 +83,8 @@ compute_Gaussian_fast <- function(model,Maturities_decompo){
         AAux <- all_PhiPhi_h[,,j-1]
         aux <- H[j-1]
       }
-      Phi_exp_h    <- Phi_exp_h    %*% (Aux %^% Maturities_decompo[i,j])
-      PhiPhi_exp_h <- PhiPhi_exp_h %*% (AAux %^% Maturities_decompo[i,j])
+      Phi_exp_h    <- Phi_exp_h    %*% .matrix_power(Aux, Maturities_decompo[i,j])
+      PhiPhi_exp_h <- PhiPhi_exp_h %*% .matrix_power(AAux, Maturities_decompo[i,j])
       h_i  <- h_i + aux*Maturities_decompo[i,j]
     }
     all_Phi_h[,,i]    <- Phi_exp_h
@@ -193,6 +193,17 @@ simul_GaussianVAR <- function(model,nb.sim,x0=NaN,nb.replic=1){
   # If nb.replic > 1, simulate several processes of length nb.sim in parallel;
   # the output then is an array (three dimensions).
 
+  if (length(nb.sim) != 1L || !is.finite(nb.sim) || nb.sim < 1L ||
+      nb.sim != as.integer(nb.sim)) {
+    stop("nb.sim must be a positive integer.")
+  }
+  if (length(nb.replic) != 1L || !is.finite(nb.replic) || nb.replic < 1L ||
+      nb.replic != as.integer(nb.replic)) {
+    stop("nb.replic must be a positive integer.")
+  }
+  nb.sim <- as.integer(nb.sim)
+  nb.replic <- as.integer(nb.replic)
+
   n <- dim(model$Phi)[1]
   if(is.na(x0[1])){
     x0 <- solve(diag(n) - model$Phi) %*% model$mu
@@ -205,20 +216,24 @@ simul_GaussianVAR <- function(model,nb.sim,x0=NaN,nb.replic=1){
   }
 
   if(nb.replic==1){
-    X <- c(x0)
+    X <- matrix(c(x0), nrow = 1L)
     x <- x0
-    for(t in 2:nb.sim){
-      x <- model$mu + model$Phi %*% x + Sigma12 %*% rnorm(dim(Sigma12)[2])
-      X <- rbind(X,c(x))
+    if (nb.sim > 1L) {
+      for(t in seq.int(2L, nb.sim)){
+        x <- model$mu + model$Phi %*% x + Sigma12 %*% rnorm(dim(Sigma12)[2])
+        X <- rbind(X,c(x))
+      }
     }
   }else{
     # In that case, we simulate nb.replic paths in parallel
     X <- array(NaN,c(nb.sim,n,nb.replic))
     X[1,,] <- x0
     x <- matrix(x0,n,nb.replic)
-    for(t in 2:nb.sim){
-      x <- matrix(model$mu,n,nb.replic) + model$Phi %*% x + Sigma12 %*% matrix(rnorm(dim(Sigma12)[2]*nb.replic),dim(Sigma12)[2],nb.replic)
-      X[t,,] <- x
+    if (nb.sim > 1L) {
+      for(t in seq.int(2L, nb.sim)){
+        x <- matrix(model$mu,n,nb.replic) + model$Phi %*% x + Sigma12 %*% matrix(rnorm(dim(Sigma12)[2]*nb.replic),dim(Sigma12)[2],nb.replic)
+        X[t,,] <- x
+      }
     }
   }
   return(X)
@@ -354,6 +369,11 @@ psi_RSVAR <- function(u, psi.parameterization) {
 #' @rdname psi_RSVAR
 #' @export
 simul_RSVAR <- function(model, nb.sim, y0 = NaN, z0 = NaN) {
+  if (length(nb.sim) != 1L || !is.finite(nb.sim) || nb.sim < 1L ||
+      nb.sim != as.integer(nb.sim)) {
+    stop("nb.sim must be a positive integer.")
+  }
+  nb.sim <- as.integer(nb.sim)
   Phi <- model$Phi
   Pi <- model$Pi
   n <- dim(Phi)[1]
@@ -405,11 +425,13 @@ simul_RSVAR <- function(model, nb.sim, y0 = NaN, z0 = NaN) {
     y[1, ] <- c(y0)
   }
 
-  for (t in 1:(nb.sim - 1)) {
-    i <- regime[t]
-    j <- regime[t + 1]
-    y[t + 1, ] <- mu[, j] + M[, i] + Phi %*% matrix(y[t, ], n, 1) +
-      Sigma12[, , j] %*% matrix(rnorm(n), n, 1)
+  if (nb.sim > 1L) {
+    for (t in seq_len(nb.sim - 1L)) {
+      i <- regime[t]
+      j <- regime[t + 1]
+      y[t + 1, ] <- mu[, j] + M[, i] + Phi %*% matrix(y[t, ], n, 1) +
+        Sigma12[, , j] %*% matrix(rnorm(n), n, 1)
+    }
   }
 
   return(list(y = y, z = z, w = cbind(y, z), regime = regime))

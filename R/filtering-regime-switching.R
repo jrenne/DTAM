@@ -120,7 +120,11 @@ KH_smoother <- function(Omega, Eta){
 
   ksi_tT <- res_filter$ksi_matrix
 
-  for(t in (nb_dates-1):1){
+  if (nb_dates == 1L) {
+    return(ksi_tT)
+  }
+
+  for(t in seq.int(nb_dates - 1L, 1L)){
 
     if(length(dim(Omega))==2){
       Omega_t <- Omega
@@ -152,7 +156,9 @@ f_Eta <- function(F,M,N){
   for (j in 1:J){
     variances4regime <- (N[, j])^2
     Covariance <- diag(variances4regime)
-    eta_matrix[, j] <- log(dmvnorm(F - vec_1_dates %*% t(M[, j]), sigma=Covariance))
+    eta_matrix[, j] <- log(mvtnorm::dmvnorm(
+      F - vec_1_dates %*% t(M[, j]), sigma = Covariance
+    ))
   }
   return(eta_matrix)
 }
@@ -205,6 +211,12 @@ f_Eta <- function(F,M,N){
 simul_RS <- function(Omega,TT,ini_state = NaN){
   # Omega is the matrix of transition probabilities, its rows sum to 1.
 
+  if (length(TT) != 1L || !is.finite(TT) || TT < 1L ||
+      TT != as.integer(TT)) {
+    stop("TT must be a positive integer.")
+  }
+  TT <- as.integer(TT)
+
   # Number of regimes:
   J = dim(Omega)[1]
 
@@ -225,12 +237,14 @@ simul_RS <- function(Omega,TT,ini_state = NaN){
 
   states <- matrix(0,TT,J)
   states[1,state] <- 1
-  for(t in 2:TT){
-    p    <- Omega[state,]
-    cump <- cumsum(p)
-    u    <- runif(1)
-    state <- which(cump > u)[1]
-    states[t,state] <- 1
+  if (TT > 1L) {
+    for(t in seq.int(2L, TT)){
+      p    <- Omega[state,]
+      cump <- cumsum(p)
+      u    <- runif(1)
+      state <- which(cump > u)[1]
+      states[t,state] <- 1
+    }
   }
 
   return(states)
@@ -318,7 +332,7 @@ compute_LT_RS <- function(alpha,Pi,Maturities_decompo,
         Aux <- all_DP[,,j-1]
         aux <- H[j-1]
       }
-      DP_i <- DP_i %*% (Aux %^% Maturities_decompo[i,j])
+      DP_i <- DP_i %*% .matrix_power(Aux, Maturities_decompo[i,j])
       h_i  <- h_i + aux*Maturities_decompo[i,j]
     }
     all_DP[,,i] <- DP_i

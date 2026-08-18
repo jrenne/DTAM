@@ -132,7 +132,7 @@ vcov_matrix_Quadratic <- function(mu, Phi, Sigma, BigMats=make_BigMats(dim(Phi)[
 
   aux3 <- (vecX(Sigma) %x% diag(n2))
   Phi2_tilde <- Phi_tilde[(n + 1):(n + n2), ]
-  mumu <- Kronecker_matmat(mu, mu)
+  mumu <- mu %x% mu
   aux4 <- mumu + Phi2_tilde %*% E
   aux6 <- vecX(Sigma %x% Sigma)
 
@@ -445,11 +445,13 @@ make_Knx <- function(n) {
   }
 
   # Second loop to fill upper triangular part
-  count <- 0
-  for (j in 1:(n-1)) {
-    nb <- n - j + 1
-    S[j, (j + 1):n] <- aux[(count + 2):(count + nb)]
-    count <- count + nb
+  if (n > 1L) {
+    count <- 0
+    for (j in seq_len(n - 1L)) {
+      nb <- n - j + 1
+      S[j, (j + 1):n] <- aux[(count + 2):(count + nb)]
+      count <- count + nb
+    }
   }
 
   # Create K matrix (note: original MATLAB code had M but should be K)
@@ -476,11 +478,13 @@ make_Mnx <- function(n) {
   }
 
   # Second loop to fill upper triangular part
-  count <- 0
-  for (j in 1:(n-1)) {
-    nb <- n - j + 1
-    S[j, (j + 1):n] <- aux[(count + 2):(count + nb)]
-    count <- count + nb
+  if (n > 1L) {
+    count <- 0
+    for (j in seq_len(n - 1L)) {
+      nb <- n - j + 1
+      S[j, (j + 1):n] <- aux[(count + 2):(count + nb)]
+      count <- count + nb
+    }
   }
 
   # Create M matrix
@@ -502,4 +506,3 @@ make_Mnx <- function(n) {
 
   return(M)
 }
-

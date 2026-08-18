@@ -55,7 +55,8 @@ W <- matrix(c(0, 0.1), 2, 1)
 res <- price_IR_caps_floors(
   W = W, H = 4, tau = 1, freq = 4, all_K = c(0.01, 0.02),
   psi = psi_GaussianVAR,
-  parameterization = list(model = model, xi0 = 0, xi1 = 0)
+  parameterization = list(model = model, xi0 = 0, xi1 = 0),
+  max_x = 1000, dx_statio = 5, nb_x1 = 500
 )
 dim(res$Caps)
 

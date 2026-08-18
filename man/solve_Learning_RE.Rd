@@ -4,7 +4,7 @@
 \alias{solve_Learning_RE}
 \title{Solve a learning model with rational-expectations feedback}
 \usage{
-solve_Learning_RE(model, max.iter = 200)
+solve_Learning_RE(model, max.iter = 200, tol = 1e-10)
 }
 \arguments{
 \item{model}{A list describing the model. It must contain:
@@ -16,6 +16,9 @@ under rational expectations.}
 
 \item{max.iter}{Maximum number of iterations used in the successive
 fixed-point loops for the rational-expectations and filtering objects.}
+
+\item{tol}{Convergence tolerance for each fixed-point loop. Set to zero to
+always run \code{max.iter} iterations.}
 }
 \value{
 A list containing the original model inputs together with the solved
@@ -66,88 +69,13 @@ A warning is issued if the eigenvalues of the resulting stacked transition
 matrix indicate non-stationary dynamics.
 }
 \examples{
-# Example adapted from the imperfect-information chapter of the companion
-# Bookdown project. It solves a five-dimensional New Keynesian model with
-# rational expectations and noisy signals on a subset of the states.
-delta <- 0.611
-kappa <- 0.064
-rho <- 0.723
-beta <- 1.525
-gamma <- 0.001
-phi_yn <- 0.958
-phi_1 <- 0.500
-phi_2 <- 0.492
-phi_3 <- 0.0004
-
-sigma_AS <- 1.249
-sigma_IS <- 0.671
-sigma_MP <- 2.177
-sigma_rstar <- 1.380
-sigma_pistar <- 0.730
-sigma_nu <- 0.5
-
-Theta <- matrix(c(
-  1, -kappa, 0, kappa, 0,
-  0, 1, 0.134, 0, 0,
-  0, -(1 - rho) * gamma, 1, (1 - rho) * gamma, (1 - rho) * beta,
-  0, 0, 0, 1, 0,
-  -phi_3, 0, 0, 0, 1
-), nrow = 5, byrow = TRUE)
-
-Theta_inv <- solve(Theta)
-mu <- matrix(0, nrow = 5, ncol = 1)
-
-Phi_raw <- matrix(0, 5, 5)
-Phi_raw[1, 1] <- 1 - delta
-Phi_raw[2, 2] <- 1 - 0.424
-Phi_raw[3, 3] <- rho
-Phi_raw[4, 4] <- phi_yn
-Phi_raw[5, 5] <- phi_2
-Phi <- Theta_inv \%*\% Phi_raw
-
-Gamma0_raw <- matrix(0, 5, 5)
-Gamma0_raw[1, ] <- c(delta, -kappa, 0, kappa, 0)
-Gamma0_raw[2, ] <- c(0.134, 0.424, 0, 0, 0)
-Gamma0_raw[3, ] <- c((1 - rho) * beta, 0, 0, 0, 0)
-Gamma0_raw[5, 5] <- phi_1
-Gamma0 <- Theta_inv \%*\% Gamma0_raw
-
-Psi0 <- matrix(0, 5, 5)
-Lambda0 <- matrix(0, 5, 5)
-Lambda1 <- matrix(0, 5, 5)
-Psi1 <- matrix(0, 5, 5)
-Gamma1 <- matrix(0, 5, 5)
-
-Sigma_half_raw <- diag(c(
-  sigma_AS,
-  sigma_IS,
-  sigma_MP,
-  sigma_rstar,
-  sigma_pistar
-))
-Sigma12 <- Theta_inv \%*\% Sigma_half_raw
-
-A <- matrix(c(
-  1, 0, 0, 0, 0,
-  0, 1, 0, 0, 0,
-  0, 0, 1, 0, 0
-), nrow = 3, byrow = TRUE)
-B <- matrix(0, nrow = 3, ncol = 1)
-Omega12 <- matrix(c(0, sigma_nu, 0), nrow = 3, ncol = 1)
-
 model <- list(
-  mu = mu,
-  Phi = Phi,
-  Gamma0 = Gamma0,
-  Psi0 = Psi0,
-  Sigma12 = Sigma12,
-  Lambda0 = Lambda0,
-  Lambda1 = Lambda1,
-  Psi1 = Psi1,
-  Gamma1 = Gamma1,
-  Omega12 = Omega12,
-  A = A,
-  B = B
+  mu = matrix(0), Phi = matrix(0.7),
+  Sigma12 = matrix(0.1), Omega12 = matrix(0.2),
+  A = matrix(1), B = matrix(0),
+  Lambda0 = matrix(0.02), Lambda1 = matrix(0.01),
+  Psi0 = matrix(0.05), Psi1 = matrix(0.02),
+  Gamma0 = matrix(0.02), Gamma1 = matrix(0.01)
 )
 
 model_sol <- solve_Learning_RE(model)

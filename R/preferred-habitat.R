@@ -11,15 +11,23 @@
 #'   `mu_K1`, `alpha_K`, `beta_K`, and `xi_K` activate the two-curve and stock
 #'   variants.
 #' @param max_iter Number of fixed-point iterations used to solve the model.
+#' @param tol Convergence tolerance for the largest absolute change in the
+#'   iterated pricing coefficients. Set to zero to always run `max_iter`
+#'   iterations.
 #' @param zeta_bar Initial guess for the average log price-dividend ratio in the
 #'   stock/perpetuity case.
 #'
 #' @return A list containing the solved affine bond-pricing coefficients and
 #'   related equilibrium objects. Core outputs include:
 #'   `A`, `B`, `a`, `b`, `alpha`, `beta`, `lambda0`, `lambda1`, `muQ`, and
-#'   `PhiQ`. Additional objects such as `A_star`, `a_star`, `mu_e0`, `mu_e1`,
-#'   `mu_zeta0`, `mu_zeta1`, `C_K`, `D_K`, and `Theta_K` are returned when the
-#'   corresponding model extensions are active.
+#'   `PhiQ`, plus the convergence diagnostics `converged`, `iterations`, and
+#'   `max_change`. Additional objects such as `A_star`, `a_star`, `mu_e0`, `mu_e1`,
+#'   `mu_zeta0`, `mu_zeta1`, `C_K`, `C_K_log`, `D_K`, and `Theta_K` are returned
+#'   when the corresponding model extensions are active. In the stock extension,
+#'   `C_K`, `D_K`, and `Theta_K` are the coefficients of the affine approximation
+#'   to the arithmetic stock return, whereas `C_K_log` is the intercept of the
+#'   Campbell--Shiller approximation to the log gross stock return. Thus,
+#'   `C_K = C_K_log + 0.5 * Theta_K %*% Sigma %*% t(Theta_K)`.
 #'
 #' @details
 #' The model combines an affine short-rate specification with maturity-specific
@@ -80,7 +88,8 @@
 #' @export
 solve_PH_TSM <- function(model,
                          max_iter = 100,
-                         zeta_bar = 3){
+                         zeta_bar = 3,
+                         tol = 1e-10){
   # Solve preferred-habitat-based (PH) term structure model (TSM)
   # It can handle 2 yield curves (_star for the parameters defining the 2nd one)
 
@@ -184,7 +193,24 @@ solve_PH_TSM <- function(model,
     zeta_bar <- c(mu_zeta0 + t(mu_zeta1) %*% Ew)
   }
 
-  for(i in 1:max_iter){
+  if (length(max_iter) != 1L || max_iter < 1L ||
+      max_iter != as.integer(max_iter)) {
+    stop("max_iter must be a positive integer.")
+  }
+  if (length(tol) != 1L || !is.finite(tol) || tol < 0) {
+    stop("tol must be a non-negative finite scalar.")
+  }
+  converged <- FALSE
+  max_change <- Inf
+
+  for(i in seq_len(max_iter)){
+    previous_values <- c(A, B)
+    if (indic_two_curves) {
+      previous_values <- c(previous_values, A_star, B_star, mu_e0, mu_e1)
+    }
+    if (indic_stocks) {
+      previous_values <- c(previous_values, mu_zeta0, mu_zeta1, zeta_bar)
+    }
 
     mathcalB <- beta  + xi_bar * B
     mathcalA <- alpha + (xi_bar %*% t(vec_1n)) * A
@@ -250,6 +276,19 @@ solve_PH_TSM <- function(model,
       zeta_bar <- c(mu_zeta0 + t(mu_zeta1) %*% Ew)
       #print(zeta_bar)
     }
+
+    current_values <- c(A, B)
+    if (indic_two_curves) {
+      current_values <- c(current_values, A_star, B_star, mu_e0, mu_e1)
+    }
+    if (indic_stocks) {
+      current_values <- c(current_values, mu_zeta0, mu_zeta1, zeta_bar)
+    }
+    max_change <- max(abs(current_values - previous_values))
+    if (tol > 0 && max_change <= tol) {
+      converged <- TRUE
+      break
+    }
   }
 
   a <- - A / matrix(1:H,H,n)
@@ -274,9 +313,13 @@ solve_PH_TSM <- function(model,
   }
 
   if(indic_stocks){
-    C_K <- kappa0 + (kappa1-1)*mu_zeta0 + mu_K0
+    # Campbell--Shiller log-gross-return coefficients:
+    C_K_log <- kappa0 + (kappa1-1)*mu_zeta0 + mu_K0
     D_K <- - t(mu_zeta1)
     Theta_K <- t(kappa1*mu_zeta1 + mu_K1)
+    # Intercept of the affine arithmetic-return approximation used in the
+    # preferred-habitat equilibrium conditions and in the book's notation:
+    C_K <- c(C_K_log + 0.5 * Theta_K %*% Sigma %*% t(Theta_K))
   }else{
     mu_zeta0 <- NaN
     mu_zeta1 <- NaN
@@ -284,6 +327,7 @@ solve_PH_TSM <- function(model,
     kappa1 <- NaN
 
     C_K     <- NaN
+    C_K_log <- NaN
     D_K     <- NaN
     Theta_K <- NaN
   }
@@ -308,7 +352,8 @@ solve_PH_TSM <- function(model,
               A_star=A_star, B_star=B_star, a_star=a_star, b_star=b_star,
               muQ=muQ, PhiQ=PhiQ,
               lambda0=lambda0, lambda1=lambda1, zeta_bar=zeta_bar,
-              mu_zeta0=mu_zeta0, mu_zeta1=mu_zeta1, C_K=C_K, D_K=D_K,
-              Theta_K=Theta_K,
-              a1_star=a1_star,b1_star=b1_star,mu_e0=mu_e0,mu_e1=mu_e1))
+              mu_zeta0=mu_zeta0, mu_zeta1=mu_zeta1,
+              C_K=C_K, C_K_log=C_K_log, D_K=D_K, Theta_K=Theta_K,
+              a1_star=a1_star,b1_star=b1_star,mu_e0=mu_e0,mu_e1=mu_e1,
+              converged=converged,iterations=i,max_change=max_change))
 }

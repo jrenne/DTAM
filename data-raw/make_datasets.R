@@ -452,8 +452,8 @@ save(Data_Macro_US_quarterly,file="data/Data_Macro_US_quarterly.rda")
 
 # Load Adrian, Crump and Moench estimates:
 download.file("https://www.newyorkfed.org/medialibrary/media/research/data_indicators/ACMTermPremium.xls",
-              "data/ACMTermPremium.xls")
-ACMTermPremium <- readxl::read_excel("data/ACMTermPremium.xls")
+              "data-raw/ACMTermPremium.xls")
+ACMTermPremium <- readxl::read_excel("data-raw/ACMTermPremium.xls")
 
 ACMTermPremium$DATE <- gsub("Jan","01",ACMTermPremium$DATE)
 ACMTermPremium$DATE <- gsub("Feb","02",ACMTermPremium$DATE)
@@ -516,8 +516,8 @@ save(Shiller,file="data/Shiller.rda")
 #===============================================================================
 
 download.file("https://www.macrohistory.net/app/download/9834512569/JSTdatasetR6.xlsx",
-              "data/JSTdatasetR6.xlsx")
+              "data-raw/JSTdatasetR6.xlsx")
 
-JSTdataset <- readxl::read_excel("data/JSTdatasetR6.xlsx")
+JSTdataset <- readxl::read_excel("data-raw/JSTdatasetR6.xlsx")
 
 save(JSTdataset,file="data/JSTdataset.rda")

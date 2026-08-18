@@ -12,7 +12,8 @@
 #'   component within the state vector.
 #' @param X Matrix of state-vector values where the pricing objects are
 #'   evaluated.
-#' @param nb_periods Number of simulated dates.
+#' @param nb_periods Number of simulated transitions. The returned path includes
+#'   the initial state and therefore has `nb_periods + 1` columns.
 #' @param w0 Optional initial state.
 #'
 #' @return Depending on the function: affine-transform coefficients (`a`, `b`),
@@ -35,6 +36,12 @@
 #' res_psi <- psi_VARG(matrix(c(0.05, 0.02), 2, 1), model)
 #' dim(res_psi$a)
 #' compute_uncondmean_VARG(model)
+#' compute_uncondvar_VARG(model)
+#' set.seed(123)
+#' path <- simul_VARG(model, nb_periods = 3)
+#' dim(path)
+#' model_Q <- make_VARG_Q(model)
+#' model_Q$mu
 #'
 #' @name VARG_tools
 #' @export
@@ -118,6 +125,7 @@ compute_proba_def_VARG <- function(model,H=10,indic_delta1 = NaN,
   #  corresponds to delta_{e=1}. If NaN, delta_{e=1} is supposed to correspond
   #  to the first non-zero entry of vector nu.
 
+  nu <- model$nu
   if(is.na(indic_delta1[1])){
     indic_delta1 <- which(nu==0)[1]
   }
@@ -192,6 +200,11 @@ compute_uncondvar_VARG <- function(model){
 #' @rdname VARG_tools
 #' @export
 simul_VARG <- function(model,nb_periods,w0=NaN){
+  if (length(nb_periods) != 1L || !is.finite(nb_periods) || nb_periods < 0L ||
+      nb_periods != as.integer(nb_periods)) {
+    stop("nb_periods must be a non-negative integer.")
+  }
+  nb_periods <- as.integer(nb_periods)
   alpha <- model$alpha
   nu    <- model$nu
   mu    <- model$mu
@@ -237,6 +250,7 @@ prices_CDS_RFV_VARG <- function(model,H=10,indic_delta1 = NaN,
   #           underyling bond. For that model$mu_s0 and model$mu_s1 have
   #           to be different from 0.
 
+  nu <- model$nu
   if(is.na(indic_delta1[1])){
     indic_delta1 <- which(nu==0)[1]
   }

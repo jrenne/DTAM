@@ -95,6 +95,34 @@ reverse_MHLT <- function(psi,u1,u2=NaN,H,psi.parameterization){
   return(list(A=A,B=B,a=a,b=b))
 }
 
+# Integer matrix power used by the fast horizon-decomposition routines.
+# Defining it locally avoids relying on grDevices::`%^%`, which is a signed
+# scalar power and therefore does not implement matrix exponentiation.
+.matrix_power <- function(x, power) {
+  x <- as.matrix(x)
+  if (nrow(x) != ncol(x)) {
+    stop("`x` must be a square matrix.")
+  }
+  if (length(power) != 1L || !is.finite(power) ||
+      power < 0 || abs(power - round(power)) > sqrt(.Machine$double.eps)) {
+    stop("`power` must be a non-negative integer.")
+  }
+
+  power <- as.integer(round(power))
+  result <- diag(nrow(x))
+  base <- x
+  while (power > 0L) {
+    if (power %% 2L == 1L) {
+      result <- result %*% base
+    }
+    power <- power %/% 2L
+    if (power > 0L) {
+      base <- base %*% base
+    }
+  }
+  result
+}
+
 #' One-step Laplace transform for a Gaussian VAR
 #'
 #' Computes the one-period conditional Laplace transform associated with a
@@ -174,7 +202,6 @@ psi_GaussianVAR <- function(u,psi.parameterization){
 # u1 <- matrix(1,3,2)
 # u2 <- u1/2
 # reverse_MHLT(psi_GaussianVAR,u1,u2,H,psi.parameterization)
-
 
 
 

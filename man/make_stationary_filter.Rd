@@ -4,7 +4,16 @@
 \alias{make_stationary_filter}
 \title{Stationary Kalman filter initialization}
 \usage{
-make_stationary_filter(mu, Phi, Sigma12, A, B, Omega12, nb_iter = 100)
+make_stationary_filter(
+  mu,
+  Phi,
+  Sigma12,
+  A,
+  B,
+  Omega12,
+  nb_iter = 100,
+  tol = 1e-10
+)
 }
 \arguments{
 \item{mu}{State intercept.}
@@ -21,6 +30,9 @@ make_stationary_filter(mu, Phi, Sigma12, A, B, Omega12, nb_iter = 100)
 
 \item{nb_iter}{Number of Riccati iterations used to approximate the
 stationary covariance.}
+
+\item{tol}{Convergence tolerance for the Riccati recursion. Set to zero to
+always run \code{nb_iter} iterations.}
 }
 \value{
 A list containing the stationary prediction covariance \code{Pstar}, the

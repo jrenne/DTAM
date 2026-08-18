@@ -4,7 +4,7 @@
 \alias{solve_learning}
 \title{Solve a learning model with filtering}
 \usage{
-solve_learning(model, max.iter = 200)
+solve_learning(model, max.iter = 200, tol = 1e-10)
 }
 \arguments{
 \item{model}{A list describing the model. It must contain:
@@ -16,6 +16,9 @@ measurement-error covariance matrix), and \code{Lambda0}, \code{Lambda1}
 
 \item{max.iter}{Maximum number of iterations used to compute the
 steady-state filtering covariance matrix.}
+
+\item{tol}{Convergence tolerance for the covariance recursion. Set to zero
+to always run \code{max.iter} iterations.}
 }
 \value{
 A list containing the original model inputs and the solved objects:

@@ -27,6 +27,8 @@
 #'   (feedback matrices from filtered beliefs to the transition equation).
 #' @param max.iter Maximum number of iterations used to compute the
 #'   steady-state filtering covariance matrix.
+#' @param tol Convergence tolerance for the covariance recursion. Set to zero
+#'   to always run `max.iter` iterations.
 #'
 #' @return A list containing the original model inputs and the solved objects:
 #'   `R`, `P`, `K`, and `S` for the steady-state filter, as well as `mu_ww`,
@@ -92,7 +94,7 @@
 #' model_sol$P
 #'
 #' @export
-solve_learning <- function(model, max.iter = 200) {
+solve_learning <- function(model, max.iter = 200, tol = 1e-10) {
 
   mu      <- as.matrix(model$mu, ncol = 1)
   Phi     <- as.matrix(model$Phi)
@@ -113,16 +115,21 @@ solve_learning <- function(model, max.iter = 200) {
 
   P0 <- Id_n
   P  <- P0
-  old_P <- P
+  converged <- FALSE
+  P.change <- Inf
 
-  for (i in 1:max.iter) {
+  for (i in seq_len(max.iter)) {
+    old_P <- P
     Pstar <- Sigma + Phi %*% P %*% t(Phi)
     S   <- A %*% Pstar %*% t(A) + Omega
     S_1 <- solve(S)
     K   <- Pstar %*% t(A) %*% S_1
     P   <- (Id_n - K %*% A) %*% Pstar
     P.change <- P - old_P
-    old_P <- P
+    if (tol > 0 && max(abs(P.change)) <= tol) {
+      converged <- TRUE
+      break
+    }
   }
 
   R <- solve(Id_n - Lambda0)
@@ -132,6 +139,9 @@ solve_learning <- function(model, max.iter = 200) {
   model_sol$P <- P
   model_sol$K <- K
   model_sol$S <- S
+  model_sol$converged <- converged
+  model_sol$iterations <- i
+  model_sol$max_change <- max(abs(P.change))
 
   mu_ww <- rbind(R %*% mu,
                  R %*% mu)
@@ -221,6 +231,8 @@ simul_model <- function(model_sol, H) {
 #'   under rational expectations.
 #' @param max.iter Maximum number of iterations used in the successive
 #'   fixed-point loops for the rational-expectations and filtering objects.
+#' @param tol Convergence tolerance for each fixed-point loop. Set to zero to
+#'   always run `max.iter` iterations.
 #'
 #' @return A list containing the original model inputs together with the solved
 #'   objects `R`, `P`, `K`, `S`, `mu_ww`, `Phi_ww`, `Sigma_ww`, and
@@ -248,88 +260,13 @@ simul_model <- function(model_sol, H) {
 #' *Asset Pricing with Discrete-Time Affine Processes*.
 #'
 #' @examples
-#' # Example adapted from the imperfect-information chapter of the companion
-#' # Bookdown project. It solves a five-dimensional New Keynesian model with
-#' # rational expectations and noisy signals on a subset of the states.
-#' delta <- 0.611
-#' kappa <- 0.064
-#' rho <- 0.723
-#' beta <- 1.525
-#' gamma <- 0.001
-#' phi_yn <- 0.958
-#' phi_1 <- 0.500
-#' phi_2 <- 0.492
-#' phi_3 <- 0.0004
-#'
-#' sigma_AS <- 1.249
-#' sigma_IS <- 0.671
-#' sigma_MP <- 2.177
-#' sigma_rstar <- 1.380
-#' sigma_pistar <- 0.730
-#' sigma_nu <- 0.5
-#'
-#' Theta <- matrix(c(
-#'   1, -kappa, 0, kappa, 0,
-#'   0, 1, 0.134, 0, 0,
-#'   0, -(1 - rho) * gamma, 1, (1 - rho) * gamma, (1 - rho) * beta,
-#'   0, 0, 0, 1, 0,
-#'   -phi_3, 0, 0, 0, 1
-#' ), nrow = 5, byrow = TRUE)
-#'
-#' Theta_inv <- solve(Theta)
-#' mu <- matrix(0, nrow = 5, ncol = 1)
-#'
-#' Phi_raw <- matrix(0, 5, 5)
-#' Phi_raw[1, 1] <- 1 - delta
-#' Phi_raw[2, 2] <- 1 - 0.424
-#' Phi_raw[3, 3] <- rho
-#' Phi_raw[4, 4] <- phi_yn
-#' Phi_raw[5, 5] <- phi_2
-#' Phi <- Theta_inv %*% Phi_raw
-#'
-#' Gamma0_raw <- matrix(0, 5, 5)
-#' Gamma0_raw[1, ] <- c(delta, -kappa, 0, kappa, 0)
-#' Gamma0_raw[2, ] <- c(0.134, 0.424, 0, 0, 0)
-#' Gamma0_raw[3, ] <- c((1 - rho) * beta, 0, 0, 0, 0)
-#' Gamma0_raw[5, 5] <- phi_1
-#' Gamma0 <- Theta_inv %*% Gamma0_raw
-#'
-#' Psi0 <- matrix(0, 5, 5)
-#' Lambda0 <- matrix(0, 5, 5)
-#' Lambda1 <- matrix(0, 5, 5)
-#' Psi1 <- matrix(0, 5, 5)
-#' Gamma1 <- matrix(0, 5, 5)
-#'
-#' Sigma_half_raw <- diag(c(
-#'   sigma_AS,
-#'   sigma_IS,
-#'   sigma_MP,
-#'   sigma_rstar,
-#'   sigma_pistar
-#' ))
-#' Sigma12 <- Theta_inv %*% Sigma_half_raw
-#'
-#' A <- matrix(c(
-#'   1, 0, 0, 0, 0,
-#'   0, 1, 0, 0, 0,
-#'   0, 0, 1, 0, 0
-#' ), nrow = 3, byrow = TRUE)
-#' B <- matrix(0, nrow = 3, ncol = 1)
-#' Omega12 <- matrix(c(0, sigma_nu, 0), nrow = 3, ncol = 1)
-#'
 #' model <- list(
-#'   mu = mu,
-#'   Phi = Phi,
-#'   Gamma0 = Gamma0,
-#'   Psi0 = Psi0,
-#'   Sigma12 = Sigma12,
-#'   Lambda0 = Lambda0,
-#'   Lambda1 = Lambda1,
-#'   Psi1 = Psi1,
-#'   Gamma1 = Gamma1,
-#'   Omega12 = Omega12,
-#'   A = A,
-#'   B = B
+#'   mu = matrix(0), Phi = matrix(0.7),
+#'   Sigma12 = matrix(0.1), Omega12 = matrix(0.2),
+#'   A = matrix(1), B = matrix(0),
+#'   Lambda0 = matrix(0.02), Lambda1 = matrix(0.01),
+#'   Psi0 = matrix(0.05), Psi1 = matrix(0.02),
+#'   Gamma0 = matrix(0.02), Gamma1 = matrix(0.01)
 #' )
 #'
 #' model_sol <- solve_Learning_RE(model)
@@ -338,7 +275,7 @@ simul_model <- function(model_sol, H) {
 #'
 #' @importFrom MASS ginv
 #' @export
-solve_Learning_RE <- function(model, max.iter = 200) {
+solve_Learning_RE <- function(model, max.iter = 200, tol = 1e-10) {
 
   mu      <- as.matrix(model$mu, ncol = 1)
   Phi     <- as.matrix(model$Phi)
@@ -361,16 +298,24 @@ solve_Learning_RE <- function(model, max.iter = 200) {
   Id_n <- diag(n)
 
   Phi_1 <- Phi
-  for (i in 1:max.iter) {
+  converged.Phi1 <- FALSE
+  for (iter.Phi1 in seq_len(max.iter)) {
+    old.Phi_1 <- Phi_1
     Phi_1 <- Phi +
       Psi1 %*% Phi_1 +
       Psi0 %*% Phi_1 %*% Phi_1
+    if (tol > 0 && max(abs(Phi_1 - old.Phi_1)) <= tol) {
+      converged.Phi1 <- TRUE
+      break
+    }
   }
 
   Id_Psi0_Phi1_1 <- solve(Id_n - Psi0 %*% Phi_1)
 
   Phi_2 <- matrix(0, n, n)
-  for (i in 1:max.iter) {
+  converged.Phi2 <- FALSE
+  for (iter.Phi2 in seq_len(max.iter)) {
+    old.Phi_2 <- Phi_2
 
     Lambda0_tilde <- Id_Psi0_Phi1_1 %*%
       (Psi0 %*% Phi_2 + Lambda0 + Gamma0 %*% (Phi_1 + Phi_2))
@@ -380,6 +325,10 @@ solve_Learning_RE <- function(model, max.iter = 200) {
 
     Phi_2 <- (solve(Id_n - Lambda0_tilde) - Id_n) %*% Phi_1 +
       solve(Id_n - Lambda0_tilde) %*% Lambda1_tilde
+    if (tol > 0 && max(abs(Phi_2 - old.Phi_2)) <= tol) {
+      converged.Phi2 <- TRUE
+      break
+    }
   }
 
   R <- solve(Id_n - Lambda0_tilde)
@@ -391,9 +340,11 @@ solve_Learning_RE <- function(model, max.iter = 200) {
 
   P0 <- Id_n
   P  <- P0
-  old_P <- P
+  converged.filter <- FALSE
+  P.change <- Inf
 
-  for (i in 1:max.iter) {
+  for (iter.filter in seq_len(max.iter)) {
+    old_P <- P
 
     Pstar <- Sigma_tilde + Phi_1 %*% P %*% t(Phi_1)
 
@@ -405,7 +356,10 @@ solve_Learning_RE <- function(model, max.iter = 200) {
     P <- (Id_n - K %*% A) %*% Pstar
 
     P.change <- P - old_P
-    old_P <- P
+    if (tol > 0 && max(abs(P.change)) <= tol) {
+      converged.filter <- TRUE
+      break
+    }
   }
 
   Theta_1 <- R %*% K %*% A %*% Phi_1
@@ -421,6 +375,17 @@ solve_Learning_RE <- function(model, max.iter = 200) {
   model_sol$P <- P
   model_sol$K <- K
   model_sol$S <- S
+  model_sol$converged <- c(Phi_1 = converged.Phi1,
+                           Phi_2 = converged.Phi2,
+                           filter = converged.filter)
+  model_sol$iterations <- c(Phi_1 = iter.Phi1,
+                            Phi_2 = iter.Phi2,
+                            filter = iter.filter)
+  model_sol$max_change <- c(
+    Phi_1 = max(abs(Phi_1 - old.Phi_1)),
+    Phi_2 = max(abs(Phi_2 - old.Phi_2)),
+    filter = max(abs(P.change))
+  )
 
   mu_ww <- rbind(mu_tilde, mu_tilde)
 

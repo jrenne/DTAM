@@ -474,8 +474,8 @@ QKF <- function(Y_t,QStateSpace,indic_reconciliation=TRUE){
   M     <- QStateSpace$M
 
   B <- as.matrix(B)
-  if(class(C) != "array"){
-    print("Error: C should be an array")
+  if(length(dim(C)) != 3L){
+    print("Error: C should be a three-dimensional array")
     return(0)
   }
 
@@ -613,6 +613,8 @@ reconciliationf_QKF <- function(rho_ini,opt){
 #' @param Omega12 Square-root measurement innovation matrix.
 #' @param nb_iter Number of Riccati iterations used to approximate the
 #'   stationary covariance.
+#' @param tol Convergence tolerance for the Riccati recursion. Set to zero to
+#'   always run `nb_iter` iterations.
 #'
 #' @return A list containing the stationary prediction covariance `Pstar`, the
 #'   filtered covariance `P`, the Kalman gain `K`, and the Gaussian VAR
@@ -631,7 +633,7 @@ reconciliationf_QKF <- function(rho_ini,opt){
 #'
 #' @export
 make_stationary_filter <- function(mu,Phi,Sigma12,A,B,Omega12,
-                                   nb_iter = 100){
+                                   nb_iter = 100, tol = 1e-10){
   # This function determines the stationary Kalman filter.
   # This can be used in the context of imperfect info models.
   # Sigma12 is such that Sigma = Sigma12·Sigma12'
@@ -653,10 +655,18 @@ make_stationary_filter <- function(mu,Phi,Sigma12,A,B,Omega12,
   Sigma <- Sigma12 %*% t(Sigma12)
   Omega <- Omega12 %*% t(Omega12)
 
-  for(i in 1:nb_iter){
+  converged <- FALSE
+  max_change <- Inf
+  for(i in seq_len(nb_iter)){
+    old_P <- P
     Pstar <- Phi %*% P %*% t(Phi) + Sigma
     K <- Pstar %*% t(A) %*% solve(A %*% Pstar %*% t(A) + Omega)
     P <- Pstar - K %*% A %*% Pstar
+    max_change <- max(abs(P - old_P))
+    if (tol > 0 && max_change <= tol) {
+      converged <- TRUE
+      break
+    }
   }
 
   # Next, we define the specification of the VAR followed
@@ -670,6 +680,9 @@ make_stationary_filter <- function(mu,Phi,Sigma12,A,B,Omega12,
   return(list(Pstar = Pstar,
               P = P,
               K = K,
+              converged = converged,
+              iterations = i,
+              max_change = max_change,
               mu_ww = mu_ww,
               Phi_ww = Phi_ww,
               Sigma12_ww = Sigma12_ww))

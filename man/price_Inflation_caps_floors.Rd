@@ -27,7 +27,7 @@ price_Inflation_caps_floors(
 
 \item{all_K}{Vector of strikes expressed at the model frequency.}
 
-\item{Pi_t_minus_ell}{Optional lagged price index level.}
+\item{Pi_t_minus_ell}{Optional scalar lagged price-index factor.}
 
 \item{psi}{One-step Laplace transform of the state vector.}
 
@@ -37,8 +37,7 @@ inflation loadings.}
 \item{max_x, dx_statio, min_dx, nb_x1}{Numerical integration settings.}
 }
 \value{
-A list containing \code{Caplet}, \code{Floorlet}, \code{Caps}, \code{Floors}, and the
-maturity grid used in the accumulation.
+A list containing inflation \code{Caps}, \code{Floors}, and \code{swaps}.
 }
 \description{
 Prices inflation caplets/floorlets and the cumulative caps/floors built from

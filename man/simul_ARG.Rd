@@ -2,7 +2,6 @@
 % Please edit documentation in R/affine-simulation-density.R
 \name{simul_ARG}
 \alias{simul_ARG}
-\alias{simul_ARG}
 \alias{simul_compound_poisson}
 \title{Simulate scalar affine count and intensity processes}
 \usage{
