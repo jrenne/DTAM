@@ -6,3 +6,6 @@
 ^\.RData$
 ^\.Rhistory$
 ^DTAM_.*\.tar\.gz$
+^DATA_PERMISSIONS\.md$
+^RELEASE_CHECKLIST\.md$
+^SECURITY\.md$

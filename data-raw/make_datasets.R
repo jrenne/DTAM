@@ -72,7 +72,15 @@ save(Data_Macro_EA_quarterly, file = "data/Data_Macro_EA_quarterly.rda")
 # Zero-coupon yields from FRED (daily)
 #===============================================================================
 
-fredr_set_key("df65e14c054697a52b4511e77fcfa1f3")
+fred_api_key <- Sys.getenv("FRED_API_KEY")
+if (!nzchar(fred_api_key)) {
+  stop(
+    "Set the FRED_API_KEY environment variable before rebuilding FRED datasets.",
+    call. = FALSE
+  )
+}
+fredr_set_key(fred_api_key)
+rm(fred_api_key)
 
 f <- function(ticker,freq){
   fredr(series_id = ticker,
@@ -106,8 +114,6 @@ save(YC_US,file="data/YC_US.rda")
 #===============================================================================
 # Zero-coupon yields from FRED (weekly)
 #===============================================================================
-
-fredr_set_key("df65e14c054697a52b4511e77fcfa1f3")
 
 f <- function(ticker,freq){
   fredr(series_id = ticker,

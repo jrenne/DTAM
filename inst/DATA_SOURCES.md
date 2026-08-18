@@ -7,6 +7,12 @@ and reuse terms. The notes below summarize the upstream sources known to DTAM;
 users should check the current terms of the original provider before
 redistributing or using the data commercially.
 
+Inclusion in the package does not place a dataset under the MIT licence and
+does not grant permissions that belong to the original provider. Each dataset
+is a separately licensed component of the package. In particular, the
+`JSTdataset` component is distributed under CC BY-NC-SA 4.0 and may not be used
+for commercial purposes under that licence.
+
 | DTAM object | Source | Reference | Upstream terms |
 | --- | --- | --- | --- |
 | `ACMTermPremium` | Federal Reserve Bank of New York term-premium data: <https://www.newyorkfed.org/research/data_indicators/term-premia-tabs> | Adrian, Crump, and Moench (2013), "Pricing the term structure with linear regressions," Journal of Financial Economics 110(1), 110-138. | Public research data; reuse is subject to New York Fed website terms and attribution requirements. |
