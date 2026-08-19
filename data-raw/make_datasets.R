@@ -35,36 +35,7 @@ save(YC_Euro,file="data/YC_Euro.rda")
 #===============================================================================
 # Euro-area quarterly macroeconomic data from the Area-Wide Model database
 #===============================================================================
-
-AWM_raw <- read.csv("data-raw/awm19up18.csv", skip = 1, check.names = FALSE)
-names(AWM_raw)[1] <- "q"
-
-quarter_to_date <- function(q) {
-  as.Date(paste0(substr(q, 1, 4), "-", 1 + 3 * (as.numeric(substr(q, 6, 6)) - 1), "-01"))
-}
-
-Data_Macro_EA_quarterly <- data.frame(
-  date = quarter_to_date(AWM_raw$q),
-  q = AWM_raw$q,
-  YER = as.numeric(AWM_raw$YER),
-  HICP = as.numeric(AWM_raw$HICP),
-  URX = as.numeric(AWM_raw$URX)
-)
-
-Data_Macro_EA_quarterly$pi <- NaN
-Data_Macro_EA_quarterly$pi[2:nrow(Data_Macro_EA_quarterly)] <-
-  log(Data_Macro_EA_quarterly$HICP[2:nrow(Data_Macro_EA_quarterly)] /
-        Data_Macro_EA_quarterly$HICP[1:(nrow(Data_Macro_EA_quarterly) - 1)])
-
-Data_Macro_EA_quarterly$dy <- NaN
-Data_Macro_EA_quarterly$dy[2:nrow(Data_Macro_EA_quarterly)] <-
-  log(Data_Macro_EA_quarterly$YER[2:nrow(Data_Macro_EA_quarterly)] /
-        Data_Macro_EA_quarterly$YER[1:(nrow(Data_Macro_EA_quarterly) - 1)])
-
-Data_Macro_EA_quarterly <- Data_Macro_EA_quarterly[
-  complete.cases(Data_Macro_EA_quarterly[, c("YER", "HICP", "URX")]), ]
-
-save(Data_Macro_EA_quarterly, file = "data/Data_Macro_EA_quarterly.rda")
+source("data-raw/make_awmd_dataset.R")
 
 
 

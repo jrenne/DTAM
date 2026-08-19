@@ -77,10 +77,13 @@ Main sources and terms:
   curves. Reference: Liu and Wu (2021), Journal of Financial Economics. URL:
   \url{https://sites.google.com/view/jingcynthiawu/yield-data}. Cite the paper
   and check the authors' website for current reuse terms.}
-  \item{\code{Data_Macro_EA_quarterly}}{Area-Wide Model database. Reference:
-  Fagan, Henry, and Mestre (2001), ECB Working Paper No. 42. URL:
-  \url{https://eabcn.org/data/area-wide-model}. Made available for research use;
-  check the AWM page for current terms.}
+  \item{\code{Data_Macro_EA_quarterly}}{Updated Area-Wide Model Database,
+  March 2026 vintage. References: İpek and Kısacıkoğlu (2026), \emph{European
+  Economic Review} 181, 105179; Fagan, Henry, and Mestre (2001), ECB Working
+  Paper No. 42. URL: \url{https://eabcn.org/data/area-wide-model}. Written
+  redistribution permission was received from the database maintainers on
+  2026-08-19; they reported EABCN approval. The data are not covered by DTAM's
+  MIT software licence.}
   \item{\code{Data_Macro_US_monthly}, \code{Data_Macro_US_quarterly},
   \code{YC_US}, \code{YC_US_weekly}}{Federal Reserve Economic Data (FRED), with
   original source agencies as listed in each FRED series. URL:
