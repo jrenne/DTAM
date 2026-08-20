@@ -80,8 +80,8 @@ mu <- matrix(0.03 * (1 - rho), 1, 1)
 Sigma <- (1 - rho^2) * 0.02^2 * matrix(1)
 model <- list(mu = mu, Phi = Phi, Sigma = Sigma, n_w = 1)
 
-set.seed(123)
-W <- simul_GaussianVAR(model, nb.sim = 40)
+# A single state vector is sufficient for point-in-time pricing.
+W <- matrix(0.03, 1, 1)
 
 res <- compute_F_Shadow_affine(
   W = W,

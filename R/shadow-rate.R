@@ -387,8 +387,8 @@ varphi4G_SR_QPoisson <- function(x,parameterization,H){
 #' Sigma <- (1 - rho^2) * 0.02^2 * matrix(1)
 #' model <- list(mu = mu, Phi = Phi, Sigma = Sigma, n_w = 1)
 #'
-#' set.seed(123)
-#' W <- simul_GaussianVAR(model, nb.sim = 40)
+#' # A single state vector is sufficient for point-in-time pricing.
+#' W <- matrix(0.03, 1, 1)
 #'
 #' res <- compute_F_Shadow_affine(
 #'   W = W,
@@ -519,9 +519,21 @@ compute_F_Shadow_affine <- function(W,psi,psi.parameterization,
   sigma2_aa <- vec1TT %*% matrix(res_EV_aa$all_Gamma0,nrow=1) +
     W %*% matrix(res_EV_aa$all_Gamma1,n_w,H)
 
-  delta_sigma2_c_a <- sigma2_c_a - cbind(0,sigma2_c_a[,1:(H-1)])
-  delta_sigma2_cc  <- sigma2_cc  - cbind(0,sigma2_cc[,1:(H-1)])
-  delta_sigma2_aa  <- sigma2_aa  - cbind(0,sigma2_aa[,1:(H-1)])
+  previous_sigma2_c_a <- cbind(
+    0,
+    sigma2_c_a[, seq_len(H - 1L), drop = FALSE]
+  )
+  previous_sigma2_cc <- cbind(
+    0,
+    sigma2_cc[, seq_len(H - 1L), drop = FALSE]
+  )
+  previous_sigma2_aa <- cbind(
+    0,
+    sigma2_aa[, seq_len(H - 1L), drop = FALSE]
+  )
+  delta_sigma2_c_a <- sigma2_c_a - previous_sigma2_c_a
+  delta_sigma2_cc  <- sigma2_cc  - previous_sigma2_cc
+  delta_sigma2_aa  <- sigma2_aa  - previous_sigma2_aa
 
   # Combine all sub-results to compute F:
   F_c <- - chi*b*(1 - G0) - chi*E_aW - E_cW + chi*dG +
