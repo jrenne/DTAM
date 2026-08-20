@@ -4,7 +4,7 @@
 \alias{solve_Learning_RE}
 \title{Solve a learning model with rational-expectations feedback}
 \usage{
-solve_Learning_RE(model, max.iter = 200, tol = 1e-10)
+solve_Learning_RE(model, max.iter = 1000, tol = 1e-10, damping = 0.15)
 }
 \arguments{
 \item{model}{A list describing the model. It must contain:
@@ -14,16 +14,22 @@ capture feedback from filtered beliefs, while \code{Psi0}, \code{Psi1}, \code{Ga
 and \code{Gamma1} govern the effects of forward-looking expectations formed
 under rational expectations.}
 
-\item{max.iter}{Maximum number of iterations used in the successive
-fixed-point loops for the rational-expectations and filtering objects.}
+\item{max.iter}{Maximum number of iterations used in the fixed-point and
+filtering loops.}
 
 \item{tol}{Convergence tolerance for each fixed-point loop. Set to zero to
 always run \code{max.iter} iterations.}
+
+\item{damping}{Number in \verb{(0, 1]} used to damp updates of the coupled
+transition/filter fixed point. Smaller values are slower but can improve
+convergence in models with strong expectational feedback.}
 }
 \value{
 A list containing the original model inputs together with the solved
 objects \code{R}, \code{P}, \code{K}, \code{S}, \code{mu_ww}, \code{Phi_ww}, \code{Sigma_ww}, and
-\code{Sigma12_ww}.
+\code{Sigma12_ww}. The element \code{structural_residuals} reports the maximum
+absolute residual obtained by substituting the solution back into the
+original intercept, transition, and shock equations.
 }
 \description{
 Solves an imperfect-information linear model in which state dynamics depend
@@ -56,17 +62,20 @@ y_t = B + A w_t + Omega^{1/2} eta_t.
 \code{Sigma = Sigma12 \%*\% t(Sigma12)} and
 \code{Omega = Omega12 \%*\% t(Omega12)}.
 
-The function first solves for the forward-looking matrix \code{Phi_1}, then for
-the feedback matrix \code{Phi_2}, next computes the steady-state Kalman filter,
-and finally builds the joint dynamics of the stacked vector
+The two transition blocks and the steady-state Kalman filter are mutually
+dependent when contemporaneous filtered expectations enter the structural
+equations. The function therefore solves them as a coupled damped fixed
+point and then builds the joint dynamics of the stacked vector
 \eqn{(w_t^\prime, w_{t|t}^\prime)^\prime}{(w_t', w_{t|t}')'}.
 
 The returned list contains the original model inputs together with the
 solved objects \code{R}, \code{P}, \code{K}, \code{S}, \code{mu_ww}, \code{Phi_ww}, \code{Sigma_ww}, and
 \code{Sigma12_ww}.
 
-A warning is issued if the eigenvalues of the resulting stacked transition
-matrix indicate non-stationary dynamics.
+Warnings are issued if the coupled iteration or filter does not converge,
+if direct substitution produces non-negligible structural residuals, or if
+the resulting stacked transition matrix is non-stationary. Convergence of
+the numerical iteration alone is not treated as an equilibrium check.
 }
 \examples{
 model <- list(

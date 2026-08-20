@@ -25,6 +25,8 @@ A list containing the original model inputs and the solved objects:
 \code{R}, \code{P}, \code{K}, and \code{S} for the steady-state filter, as well as \code{mu_ww},
 \code{Phi_ww}, \code{Sigma_ww}, and \code{Sigma12_ww} for the stacked process
 \eqn{(w_t^\prime, w_{t|t}^\prime)^\prime}{(w_t', w_{t|t}')'}.
+\code{structural_residuals} reports the direct substitution residuals for the
+intercept, transition, and shock equations.
 }
 \description{
 Solves a linear state-space model with imperfect information, computes the
