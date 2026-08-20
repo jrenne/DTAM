@@ -46,15 +46,16 @@ The objects are data frames or tibbles:
   zero-coupon Treasury yields.}
   \item{\code{DAT_LW}}{Loads the object \code{YC_LW}, selected monthly Liu-Wu
   U.S. zero-coupon Treasury yields.}
-  \item{\code{DAT_LW_FULL}}{Loads the object \code{YC_LW_FULL}, the full monthly
-  Liu-Wu U.S. zero-coupon Treasury yield panel.}
+  \item{\code{DAT_LW_FULL}}{Loads the object \code{YC_LW_FULL}, the dense monthly
+  Liu-Wu U.S. zero-coupon Treasury yield panel from one month through ten years.}
   \item{\code{Data_Macro_EA_quarterly}}{Quarterly euro-area macroeconomic data
   extracted from the Area-Wide Model database.}
   \item{\code{Data_Macro_US_monthly}}{Monthly U.S. macroeconomic variables and
   yield data.}
   \item{\code{Data_Macro_US_quarterly}}{Quarterly U.S. macroeconomic variables
   and yield data.}
-  \item{\code{JSTdataset}}{Jorda-Schularick-Taylor Macrohistory Database.}
+  \item{\code{JSTdataset}}{Six-variable, 16-country extract from the
+  Jorda-Schularick-Taylor Macrohistory Database used in the book.}
   \item{\code{Shiller}}{Monthly Shiller stock-market, valuation, price, and
   consumption data.}
   \item{\code{SPF}}{Philadelphia Fed Survey of Professional Forecasters data

@@ -35,15 +35,16 @@ The datasets are data frames or tibbles. Main contents are:
   zero-coupon Treasury yields.}
   \item{\code{DAT_LW}}{Loads the object \code{YC_LW}, selected monthly Liu-Wu
   U.S. zero-coupon Treasury yields.}
-  \item{\code{DAT_LW_FULL}}{Loads the object \code{YC_LW_FULL}, the full monthly
-  Liu-Wu U.S. zero-coupon Treasury yield panel.}
+  \item{\code{DAT_LW_FULL}}{Loads the object \code{YC_LW_FULL}, the dense monthly
+  Liu-Wu U.S. zero-coupon Treasury yield panel from one month through ten years.}
   \item{\code{Data_Macro_EA_quarterly}}{Quarterly euro-area macroeconomic data
   extracted from the Area-Wide Model database.}
   \item{\code{Data_Macro_US_monthly}}{Monthly U.S. macroeconomic variables and
   yield data.}
   \item{\code{Data_Macro_US_quarterly}}{Quarterly U.S. macroeconomic variables
   and yield data.}
-  \item{\code{JSTdataset}}{Jorda-Schularick-Taylor Macrohistory Database.}
+  \item{\code{JSTdataset}}{Six-variable, 16-country extract from the
+  Jorda-Schularick-Taylor Macrohistory Database used in the book.}
   \item{\code{Shiller}}{Monthly Shiller stock-market, valuation, price, and
   consumption data.}
   \item{\code{SPF}}{Philadelphia Fed Survey of Professional Forecasters data
@@ -75,10 +76,12 @@ Main sources and terms:
   Federal Reserve Board website terms and model disclaimer.}
   \item{\code{DAT_LW}, \code{DAT_LW_FULL}}{Liu-Wu reconstructed Treasury yield
   curves. Reference: Liu and Wu (2021), Journal of Financial Economics. URL:
-  \url{https://sites.google.com/view/jingcynthiawu/yield-data}. Cite the paper
-  and check the authors' website for current reuse terms.}
-  \item{\code{Data_Macro_EA_quarterly}}{Updated Area-Wide Model Database,
-  March 2026 vintage. References: İpek and Kısacıkoğlu (2026), \emph{European
+  \url{https://sites.google.com/view/jingcynthiawu/yield-data}. Cynthia Wu gave
+  written permission on 2026-08-19 to include the requested book extract in
+  correspondence copied to Yan Liu. Cite the paper. The data are outside
+  DTAM's MIT software licence.}
+  \item{\code{Data_Macro_EA_quarterly}}{Updated Area-Wide Model Database.
+  References: İpek and Kısacıkoğlu (2026), \emph{European
   Economic Review} 181, 105179; Fagan, Henry, and Mestre (2001), ECB Working
   Paper No. 42. URL: \url{https://eabcn.org/data/area-wide-model}. Written
   redistribution permission was received from the database maintainers on
@@ -89,15 +92,15 @@ Main sources and terms:
   original source agencies as listed in each FRED series. URL:
   \url{https://fred.stlouisfed.org/}. FRED content is free to access subject to
   FRED terms; third-party series may carry additional restrictions.}
-  \item{\code{JSTdataset}}{Jorda-Schularick-Taylor Macrohistory Database.
+  \item{\code{JSTdataset}}{Six-variable, 16-country extract from the
+  Jorda-Schularick-Taylor Macrohistory Database used in the book.
   Reference: Jorda, Schularick, and Taylor (2017), NBER Macroeconomics Annual.
   Users of return data should also cite Jorda et al. (2019), Quarterly Journal of
   Economics; users of bank-balance-sheet ratios should also cite Jorda et al.
   (2021), Review of Economic Studies. URL:
-  \url{https://www.macrohistory.net/database/}. Licence: Creative Commons
-  Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0), with
-  required citation and restrictions on commercial resale/integration by data
-  providers.}
+  \url{https://www.macrohistory.net/database/}. The upstream database states a
+  Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
+  licence; written clarification about bundling this extract is pending.}
   \item{\code{Shiller}}{Robert Shiller online stock-market data, augmented in
   DTAM with FRED series. Reference: Shiller (2015), Irrational Exuberance, 3rd
   edition. URL: \url{https://www.econ.yale.edu/~shiller/data.htm}. Cite the

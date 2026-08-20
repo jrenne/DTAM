@@ -20,7 +20,7 @@ A data frame with the following variables:
 }
 }
 \source{
-Updated Area-Wide Model Database, March 2026 vintage (EA21),
+Updated Area-Wide Model Database (EA21),
 \url{https://eabcn.org/data/area-wide-model}. Cite İpek and Kısacıkoğlu
 (2026), \emph{European Economic Review} 181, 105179,
 \url{https://doi.org/10.1016/j.euroecorev.2025.105179}.

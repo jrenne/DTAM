@@ -9,6 +9,15 @@
 Simulation, filtering, estimation, and pricing tools for discrete-time
 affine asset-pricing models.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/jrenne/DTAM}
+  \item \url{https://jrenne.github.io/MPRR_codes/}
+  \item Report bugs at \url{https://github.com/jrenne/DTAM/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Jean-Paul Renne \email{jean-paul.renne@unil.ch}
 

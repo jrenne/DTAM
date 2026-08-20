@@ -30,7 +30,9 @@ provides helpers for discovering and inspecting them:
 ```r
 dtam_datasets()
 dtam_datasets(details = TRUE)
-dtam_dataset_info("YC_US")
+info <- dtam_dataset_info("JSTdataset")
+info$metadata[, c("source_url", "reference", "redistribution_status", "license")]
+info$variables
 YC_US <- dtam_dataset("YC_US")
 ```
 
@@ -40,9 +42,9 @@ datasets. See [`inst/DATA_SOURCES.md`](inst/DATA_SOURCES.md) before
 redistributing a dataset or using it commercially. In particular,
 `JSTdataset` is subject to CC BY-NC-SA 4.0 rather than the MIT licence.
 
-Licensed futures prices and Moody's/S&P credit data used for selected book
-figures are not distributed through DTAM. The companion site provides source
-information, reconstruction guidance, and precomputed figures where possible.
+Restricted futures prices used for selected book figures are not distributed
+through DTAM. The companion site identifies the source beside the relevant
+figures.
 
 ## Rebuilding data from FRED
 

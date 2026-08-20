@@ -64,11 +64,11 @@
       "Adrian-Crump-Moench Treasury yields, term premia, and risk-neutral yields.",
       "Gurkaynak-Sack-Wright nominal and real zero-coupon Treasury yields.",
       "Selected Liu-Wu U.S. zero-coupon Treasury yields.",
-      "Full Liu-Wu U.S. zero-coupon Treasury yield panel.",
+      "Dense Liu-Wu U.S. zero-coupon Treasury yields from one month through ten years.",
       "Euro-area quarterly real GDP, HICP, unemployment, inflation, and GDP growth.",
       "Monthly U.S. macroeconomic and yield data.",
       "Quarterly U.S. macroeconomic and yield data.",
-      "Long-run macro-financial panel from the Macrohistory Database.",
+      "Six-variable, 16-country extract from the Macrohistory Database used in the book.",
       "Shiller monthly stock-market, valuation, price, and consumption data.",
       "Survey forecasts for CPI, GDP, and Treasury-bill rates.",
       "Euro-area zero-coupon yields.",
@@ -105,11 +105,26 @@
       "Federal Reserve Bank of St. Louis, FRED, and original source agencies listed in each FRED series.",
       "Federal Reserve Bank of St. Louis, FRED, and original source agencies listed in each FRED series."
     ),
+    redistribution_status = c(
+      "documented upstream terms",
+      "documented upstream terms",
+      "author permission recorded",
+      "author permission recorded",
+      "written permission received",
+      "constituent-series audit pending",
+      "constituent-series audit pending",
+      "written clarification pending",
+      "written clarification pending",
+      "final terms check pending",
+      "documented upstream terms",
+      "constituent-series audit pending",
+      "constituent-series audit pending"
+    ),
     license = c(
       "Federal Reserve Bank of New York public research data; reuse is subject to the New York Fed website terms and attribution requirements.",
       "Federal Reserve Board staff research data; subject to Federal Reserve Board website terms and model disclaimer.",
-      "Authors' public research data; cite Liu and Wu (2021) and check the authors' website for current reuse terms.",
-      "Authors' public research data; cite Liu and Wu (2021) and check the authors' website for current reuse terms.",
+      "Cynthia Wu gave written permission on 2026-08-19 to include the requested book extract in correspondence copied to Yan Liu. Cite Liu and Wu (2021). The data are not covered by DTAM's MIT software licence.",
+      "Cynthia Wu gave written permission on 2026-08-19 to include the requested book extract in correspondence copied to Yan Liu. Cite Liu and Wu (2021). The data are not covered by DTAM's MIT software licence.",
       "Written permission to redistribute the three-series extract was received from the database maintainers on 2026-08-19; they reported EABCN approval. Cite \u0130pek and K\u0131sac\u0131ko\u011flu (2026) and the EABCN page. The data are not covered by DTAM's MIT software licence.",
       "FRED content is free to access subject to FRED terms; some series are owned by third parties and may carry additional restrictions.",
       "FRED content is free to access subject to FRED terms; some series are owned by third parties and may carry additional restrictions.",
@@ -146,6 +161,9 @@
   }
 
   date_col <- x[[date_candidates[1L]]]
+  if (all(is.na(date_col))) {
+    return(c(start = NA_character_, end = NA_character_))
+  }
   if (inherits(date_col, "Date") || inherits(date_col, "POSIXt")) {
     return(format(range(date_col, na.rm = TRUE)))
   }
@@ -154,6 +172,66 @@
     return(as.character(rng))
   }
   c(start = NA_character_, end = NA_character_)
+}
+
+.dtam_variable_description <- function(dataset, variable) {
+  exact <- c(
+    date = "Observation date.",
+    Date = "Observation date.",
+    DATE = "Source observation date.",
+    q = "Quarter identifier.",
+    year = "Calendar year.",
+    iso = "Three-letter country code.",
+    YER = "Euro-area real GDP index.",
+    HICP = "Euro-area Harmonised Index of Consumer Prices.",
+    URX = "Euro-area unemployment rate.",
+    pi = "Log inflation over the dataset frequency.",
+    dy = "Log real-output growth over the dataset frequency.",
+    z = "Log real GDP relative to potential GDP.",
+    RCONS = "Real personal consumption expenditure (PCE divided by PCEPI).",
+    dc = "Log real-consumption growth over the dataset frequency.",
+    cpi = "Consumer price index.",
+    stir = "Short-term interest rate, percent per year.",
+    eq_tr = "Equity total return.",
+    rconsbarro = "Real consumption measure used in the Macrohistory data.",
+    CPI1 = "One-year CPI forecast.",
+    CPI10 = "Ten-year CPI forecast.",
+    GDP1 = "One-year real-GDP growth forecast.",
+    GDP10 = "Ten-year real-GDP growth forecast.",
+    BILL1 = "One-year Treasury-bill-rate forecast.",
+    BILL10 = "Ten-year Treasury-bill-rate forecast."
+  )
+  if (variable %in% names(exact)) {
+    return(unname(exact[[variable]]))
+  }
+  if (grepl("^ACMY[0-9]{2}$", variable)) {
+    return("ACM fitted nominal Treasury yield, percent per year.")
+  }
+  if (grepl("^ACMTP[0-9]{2}$", variable)) {
+    return("ACM Treasury term premium, percentage points per year.")
+  }
+  if (grepl("^ACMRNY[0-9]{2}$", variable)) {
+    return("ACM risk-neutral nominal Treasury yield, percent per year.")
+  }
+  if (grepl("^SVENY[0-9]{2}$", variable)) {
+    return("GSW nominal zero-coupon Treasury yield, percent per year.")
+  }
+  if (grepl("^TIPSY[0-9]{2}$", variable)) {
+    return("GSW real zero-coupon Treasury yield, percent per year.")
+  }
+  if (grepl("^yld_", variable)) {
+    return("Liu-Wu zero-coupon Treasury yield, percent per year; maturity is encoded in the variable name.")
+  }
+  if (identical(dataset, "YC_Euro") && grepl("^Y[0-9]+$", variable)) {
+    return("ECB euro-area zero-coupon yield, percent per year; maturity is encoded in the variable name.")
+  }
+  if (identical(dataset, "Shiller")) {
+    return("Upstream Shiller/FRED field; see the source documentation linked in the metadata.")
+  }
+  if (dataset %in% c("Data_Macro_US_monthly", "Data_Macro_US_quarterly", "YC_US", "YC_US_weekly")) {
+    return("FRED series; the variable name is the FRED series identifier.")
+  }
+  "See the source documentation linked in the dataset metadata."
 }
 
 .dtam_dataset_summary <- function(name) {
@@ -184,8 +262,8 @@
 #'   coverage by loading each dataset.
 #'
 #' @return A data frame with object names, underlying data names, broad
-#'   frequency, source, description, source URL, reference, and upstream
-#'   licence/terms note. With \code{details = TRUE}, the data frame also
+#'   frequency, source, description, source URL, reference, redistribution
+#'   status, and upstream licence/terms note. With \code{details = TRUE}, the data frame also
 #'   includes the number of observations, number of variables, and start/end
 #'   sample markers when a date-like column is available.
 #' @export
@@ -235,7 +313,8 @@ dtam_dataset <- function(name) {
 #'
 #' @return A list with two elements: \code{metadata}, a one-row data frame with
 #'   dataset-level information, and \code{variables}, a data frame with variable
-#'   names, classes, and missing-value counts.
+#'   names, descriptions, classes, complete-value counts, missing-value counts,
+#'   and missing-value percentages.
 #' @export
 #'
 #' @examples
@@ -249,17 +328,29 @@ dtam_dataset_info <- function(name) {
 
   x <- dtam_dataset(name)
   if (is.data.frame(x)) {
+    n_missing <- vapply(x, function(z) sum(is.na(z)), integer(1L))
     variables <- data.frame(
       variable = names(x),
+      description = vapply(
+        names(x),
+        function(variable) .dtam_variable_description(name, variable),
+        character(1L)
+      ),
       class = vapply(x, function(z) paste(class(z), collapse = "/"), character(1L)),
-      n_missing = vapply(x, function(z) sum(is.na(z)), integer(1L)),
+      n_complete = nrow(x) - n_missing,
+      n_missing = n_missing,
+      pct_missing = round(100 * n_missing / nrow(x), 2L),
       stringsAsFactors = FALSE
     )
   } else {
+    n_missing <- sum(is.na(x))
     variables <- data.frame(
       variable = name,
+      description = .dtam_variable_description(name, name),
       class = paste(class(x), collapse = "/"),
-      n_missing = sum(is.na(x)),
+      n_complete = length(x) - n_missing,
+      n_missing = n_missing,
+      pct_missing = round(100 * n_missing / length(x), 2L),
       stringsAsFactors = FALSE
     )
   }

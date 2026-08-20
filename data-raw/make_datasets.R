@@ -53,10 +53,17 @@ if (!nzchar(fred_api_key)) {
 fredr_set_key(fred_api_key)
 rm(fred_api_key)
 
-f <- function(ticker,freq){
-  fredr(series_id = ticker,
-        observation_start = start_date,observation_end = end_date,
-        frequency = freq,aggregation_method = "avg")
+.fetch_fred_series <- function(ticker, frequency, start_date, end_date) {
+  values <- fredr(
+    series_id = ticker,
+    observation_start = start_date,
+    observation_end = end_date,
+    frequency = frequency,
+    aggregation_method = "avg"
+  )
+  output <- data.frame(date = values$date, value = values$value)
+  names(output)[2L] <- ticker
+  output
 }
 
 list.variables <- c("DTB4WK","DTB3","DTB6",
@@ -68,15 +75,14 @@ end_date   <- as.Date("2025-06-01")
 
 freq <- "d"
 
-for(i in 1:length(list.variables)){
-  data.var <- f(list.variables[i],freq)
-  eval(parse(text = gsub(" ","",paste("data.var.frame = data.frame(date=data.var$date,",
-                                      list.variables[i],"=data.var$value)",
-                                      sep=""))))
-  if(i==1){
-    YC_US = data.var.frame
-  }else{
-    YC_US = merge(YC_US,data.var.frame,by="date",all=TRUE)
+for (i in seq_along(list.variables)) {
+  data.var.frame <- .fetch_fred_series(
+    list.variables[i], freq, start_date, end_date
+  )
+  if (i == 1L) {
+    YC_US <- data.var.frame
+  } else {
+    YC_US <- merge(YC_US, data.var.frame, by = "date", all = TRUE)
   }
 }
 save(YC_US,file="data/YC_US.rda")
@@ -85,12 +91,6 @@ save(YC_US,file="data/YC_US.rda")
 #===============================================================================
 # Zero-coupon yields from FRED (weekly)
 #===============================================================================
-
-f <- function(ticker,freq){
-  fredr(series_id = ticker,
-        observation_start = start_date,observation_end = end_date,
-        frequency = freq,aggregation_method = "avg")
-}
 
 list.variables <- c("DFF",
                     "DFEDTAR","DFEDTARU","DFEDTARL",
@@ -103,15 +103,14 @@ end_date   <- as.Date("2025-06-01")
 
 freq <- "w"
 
-for(i in 1:length(list.variables)){
-  data.var <- f(list.variables[i],freq)
-  eval(parse(text = gsub(" ","",paste("data.var.frame = data.frame(date=data.var$date,",
-                                      list.variables[i],"=data.var$value)",
-                                      sep=""))))
-  if(i==1){
-    YC_US_weekly = data.var.frame
-  }else{
-    YC_US_weekly = merge(YC_US_weekly,data.var.frame,by="date",all=TRUE)
+for (i in seq_along(list.variables)) {
+  data.var.frame <- .fetch_fred_series(
+    list.variables[i], freq, start_date, end_date
+  )
+  if (i == 1L) {
+    YC_US_weekly <- data.var.frame
+  } else {
+    YC_US_weekly <- merge(YC_US_weekly, data.var.frame, by = "date", all = TRUE)
   }
 }
 save(YC_US_weekly,file="data/YC_US_weekly.rda")
@@ -229,17 +228,15 @@ maturities <- apply(maturities_in_month,1,function(x){ifelse(x<12,
                                                              paste(x/12,"y",sep=""))})
 YC_LW <- cbind(YC_LW_raw[,c("date",
                             paste("X",maturities_in_month,".m",sep=""))])
-names(YC_LW) <- paste("yld_",maturities,sep="")
 names(YC_LW) <- c("date",
                   paste("yld_",maturities,sep=""))
 
 save(YC_LW,file="data/DAT_LW.rda")
 
-# All maturities:
-maturities_in_month <- matrix(1:360,ncol=1)
+# Dense monthly maturities used by the book (one month through ten years):
+maturities_in_month <- matrix(1:120,ncol=1)
 YC_LW_FULL <- cbind(YC_LW_raw[,c("date",
                                  paste("X",maturities_in_month,".m",sep=""))])
-names(YC_LW_FULL) <- paste("yld_",maturities,sep="")
 names(YC_LW_FULL) <- c("date",
                        paste("yld_",maturities_in_month,"m",sep=""))
 
@@ -323,32 +320,30 @@ end_date   <- as.Date(end.date)
 list.variables <- c("DTB4WK","DTB3","DTB6","CPIAUCSL","BBKMGDP","PCE","PCEPI",
                     "THREEFYTP1","THREEFYTP2","THREEFYTP3","THREEFYTP5","THREEFYTP7","THREEFYTP10",
                     "THREEFY1",  "THREEFY2",  "THREEFY3",  "THREEFY5",   "THREEFY7" ,  "THREEFY10")
-for(i in 1:length(list.variables)){
-  data.var <- f(list.variables[i],"m")
-  eval(parse(text = gsub(" ","",paste("data.var.frame = data.frame(date=data.var$date,",
-                                      list.variables[i],"=data.var$value)",
-                                      sep=""))))
-  if(i==1){
-    DATA = data.var.frame
-  }else{
-    DATA = merge(DATA,data.var.frame,by="date",all=TRUE)
+for (i in seq_along(list.variables)) {
+  data.var.frame <- .fetch_fred_series(
+    list.variables[i], "m", start_date, end_date
+  )
+  if (i == 1L) {
+    DATA <- data.var.frame
+  } else {
+    DATA <- merge(DATA, data.var.frame, by = "date", all = TRUE)
   }
 }
 
 # Quarterly data:
 
 list.q.variables <- c("GDPPOT","GDPC1")
-for(i in 1:length(list.q.variables)){
-  data.var <- f(list.q.variables[i],"q")
-  eval(parse(text = gsub(" ","",paste("data.var.frame = data.frame(date=data.var$date,",
-                                      list.q.variables[i],"=data.var$value)",
-                                      sep=""))))
-  data.var.frame$date <- as.Date(paste(format(data.var$date,"%Y"),"-",
-                                       as.numeric(format(data.var$date,"%m"))+2,"-01",sep=""))
-  if(i==1){
-    DATA_Q = data.var.frame
-  }else{
-    DATA_Q = merge(DATA_Q,data.var.frame,by="date",all=TRUE)
+for (i in seq_along(list.q.variables)) {
+  data.var.frame <- .fetch_fred_series(
+    list.q.variables[i], "q", start_date, end_date
+  )
+  data.var.frame$date <- as.Date(paste(format(data.var.frame$date,"%Y"),"-",
+                                       as.numeric(format(data.var.frame$date,"%m"))+2,"-01",sep=""))
+  if (i == 1L) {
+    DATA_Q <- data.var.frame
+  } else {
+    DATA_Q <- merge(DATA_Q, data.var.frame, by = "date", all = TRUE)
   }
 }
 
@@ -385,21 +380,20 @@ list.q.variables <- c("DTB4WK","DTB3","DTB6","CPIAUCSL","GDPPOT","GDPC1","PCE","
                       "THREEFYTP1","THREEFYTP2","THREEFYTP3","THREEFYTP5","THREEFYTP7","THREEFYTP10",
                       "THREEFY1",  "THREEFY2",  "THREEFY3",  "THREEFY5",   "THREEFY7" ,  "THREEFY10")
 
-for(i in 1:length(list.q.variables)){
-  data.var <- f(list.q.variables[i],"q")
-  eval(parse(text = gsub(" ","",paste("data.var.frame = data.frame(date=data.var$date,",
-                                      list.q.variables[i],"=data.var$value)",
-                                      sep=""))))
+for (i in seq_along(list.q.variables)) {
+  data.var.frame <- .fetch_fred_series(
+    list.q.variables[i], "q", start_date, end_date
+  )
   # data.var.frame$date <- as.Date(paste(format(data.var$date,"%Y"),"-",
   #                                      as.numeric(format(data.var$date,"%m")),"-01",sep=""))
-  if(i==1){
-    DATA = data.var.frame
-  }else{
-    DATA = merge(DATA,data.var.frame,by="date",all=TRUE)
+  if (i == 1L) {
+    DATA <- data.var.frame
+  } else {
+    DATA <- merge(DATA, data.var.frame, by = "date", all = TRUE)
   }
 }
 
-DATA$z <- log(DATA$GDPC1/DATA_Q$GDPPOT)
+DATA$z <- log(DATA$GDPC1/DATA$GDPPOT)
 
 # Inflation:
 lag <- 1
@@ -496,5 +490,18 @@ download.file("https://www.macrohistory.net/app/download/9834512569/JSTdatasetR6
               "data-raw/JSTdatasetR6.xlsx")
 
 JSTdataset <- readxl::read_excel("data-raw/JSTdatasetR6.xlsx")
+
+# Retain only the observations and variables used in the book. Canada and
+# Ireland are excluded because the required equity-return series are absent.
+jst_countries <- c(
+  "AUS", "BEL", "CHE", "DEU", "DNK", "ESP", "FIN", "FRA",
+  "GBR", "ITA", "JPN", "NLD", "NOR", "PRT", "SWE", "USA"
+)
+jst_variables <- c("year", "iso", "cpi", "stir", "eq_tr", "rconsbarro")
+JSTdataset <- JSTdataset[
+  JSTdataset$iso %in% jst_countries,
+  jst_variables,
+  drop = FALSE
+]
 
 save(JSTdataset,file="data/JSTdataset.rda")
