@@ -7,12 +7,10 @@
 solve_Learning_RE(model, max.iter = 1000, tol = 1e-10, damping = 0.15)
 }
 \arguments{
-\item{model}{A list describing the model. It must contain:
-\code{mu}, \code{Phi}, \code{Sigma12}, \code{Omega12}, \code{A}, \code{B}, \code{Lambda0}, \code{Lambda1},
-\code{Psi0}, \code{Psi1}, \code{Gamma0}, and \code{Gamma1}. Here \code{Lambda0} and \code{Lambda1}
-capture feedback from filtered beliefs, while \code{Psi0}, \code{Psi1}, \code{Gamma0},
-and \code{Gamma1} govern the effects of forward-looking expectations formed
-under rational expectations.}
+\item{model}{A list containing \code{mu}, \code{Phi}, \code{Sigma12}, \code{Omega12}, \code{A},
+\code{Lambda0}, \code{Lambda1}, \code{Psi0}, \code{Psi1}, \code{Gamma0}, and \code{Gamma1}. The optional
+measurement intercept \code{B} is kept in the returned list but does not affect
+the centered solution.}
 
 \item{max.iter}{Maximum number of iterations used in the fixed-point and
 filtering loops.}
@@ -25,11 +23,8 @@ transition/filter fixed point. Smaller values are slower but can improve
 convergence in models with strong expectational feedback.}
 }
 \value{
-A list containing the original model inputs together with the solved
-objects \code{R}, \code{P}, \code{K}, \code{S}, \code{mu_ww}, \code{Phi_ww}, \code{Sigma_ww}, and
-\code{Sigma12_ww}. The element \code{structural_residuals} reports the maximum
-absolute residual obtained by substituting the solution back into the
-original intercept, transition, and shock equations.
+The model list augmented with filter and stacked-process solutions,
+convergence diagnostics, and direct-substitution \code{structural_residuals}.
 }
 \description{
 Solves an imperfect-information linear model in which state dynamics depend
@@ -41,13 +36,14 @@ The transition equation is
 \deqn{
 w_t = \mu + \Phi w_{t-1}
       + \Lambda_0 w_{t|t} + \Lambda_1 w_{t-1|t-1}
-      + \Psi_0 E(w_{t+1}|w_t) + \Psi_1 E(w_t|w_{t-1})
-      + \Gamma_0 E(w_{t+1}|y_t) + \Gamma_1 E(w_t|y_{t-1})
+      + \Psi_0 E_t(w_{t+1}) + \Psi_1 E_{t-1}(w_t)
+      + \Gamma_0 E(w_{t+1}|\mathcal Y_t)
+      + \Gamma_1 E(w_t|\mathcal Y_{t-1})
       + \Sigma^{1/2}\varepsilon_t,
 }{
 w_t = mu + Phi w_{t-1} + Lambda0 w_{t|t} + Lambda1 w_{t-1|t-1} +
-  Psi0 E(w_{t+1}|w_t) + Psi1 E(w_t|w_{t-1}) +
-  Gamma0 E(w_{t+1}|y_t) + Gamma1 E(w_t|y_{t-1}) +
+  Psi0 E_t(w_{t+1}) + Psi1 E_{t-1}(w_t) +
+  Gamma0 E(w_{t+1}|Y_t) + Gamma1 E(w_t|Y_{t-1}) +
   Sigma^{1/2} eps_t,
 }
 
@@ -57,6 +53,9 @@ y_t = B + A w_t + \Omega^{1/2}\eta_t.
 }{
 y_t = B + A w_t + Omega^{1/2} eta_t.
 }
+
+Here \eqn{\mathcal Y_t}{Y_t} denotes information from observations through
+date \eqn{t}.
 
 \code{Sigma12} and \code{Omega12} are interpreted as square-root matrices:
 \code{Sigma = Sigma12 \%*\% t(Sigma12)} and
@@ -68,10 +67,6 @@ equations. The function therefore solves them as a coupled damped fixed
 point and then builds the joint dynamics of the stacked vector
 \eqn{(w_t^\prime, w_{t|t}^\prime)^\prime}{(w_t', w_{t|t}')'}.
 
-The returned list contains the original model inputs together with the
-solved objects \code{R}, \code{P}, \code{K}, \code{S}, \code{mu_ww}, \code{Phi_ww}, \code{Sigma_ww}, and
-\code{Sigma12_ww}.
-
 Warnings are issued if the coupled iteration or filter does not converge,
 if direct substitution produces non-negligible structural residuals, or if
 the resulting stacked transition matrix is non-stationary. Convergence of
@@ -81,7 +76,7 @@ the numerical iteration alone is not treated as an equilibrium check.
 model <- list(
   mu = matrix(0), Phi = matrix(0.7),
   Sigma12 = matrix(0.1), Omega12 = matrix(0.2),
-  A = matrix(1), B = matrix(0),
+  A = matrix(1),
   Lambda0 = matrix(0.02), Lambda1 = matrix(0.01),
   Psi0 = matrix(0.05), Psi1 = matrix(0.02),
   Gamma0 = matrix(0.02), Gamma1 = matrix(0.01)

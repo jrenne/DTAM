@@ -34,6 +34,8 @@ rational-expectations solution.
 The solution is obtained through a generalized Schur decomposition
 (QZ decomposition) using \code{\link[geigen:gqz]{geigen::gqz()}}. The function selects the stable
 generalized eigenvalues and reconstructs the law of motion for \code{w_t}.
+A small numerical regularization is applied to the companion pencil to
+handle singular augmented systems.
 
 \code{Sigma12} is interpreted as a square-root matrix, so that
 \code{Sigma = Sigma12 \%*\% t(Sigma12)}.

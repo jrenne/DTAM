@@ -7,12 +7,9 @@
 solve_learning(model, max.iter = 200, tol = 1e-10)
 }
 \arguments{
-\item{model}{A list describing the model. It must contain:
-\code{mu} (state intercept), \code{Phi} (state-transition matrix), \code{Sigma12}
-(square root of the state-shock covariance matrix), \code{A} and \code{B}
-(measurement-equation matrices), \code{Omega12} (square root of the
-measurement-error covariance matrix), and \code{Lambda0}, \code{Lambda1}
-(feedback matrices from filtered beliefs to the transition equation).}
+\item{model}{A list containing \code{mu}, \code{Phi}, \code{Sigma12}, \code{A}, \code{Omega12},
+\code{Lambda0}, and \code{Lambda1}. The optional measurement intercept \code{B} is kept
+in the returned list but does not affect the centered solution.}
 
 \item{max.iter}{Maximum number of iterations used to compute the
 steady-state filtering covariance matrix.}
@@ -21,12 +18,10 @@ steady-state filtering covariance matrix.}
 to always run \code{max.iter} iterations.}
 }
 \value{
-A list containing the original model inputs and the solved objects:
-\code{R}, \code{P}, \code{K}, and \code{S} for the steady-state filter, as well as \code{mu_ww},
-\code{Phi_ww}, \code{Sigma_ww}, and \code{Sigma12_ww} for the stacked process
-\eqn{(w_t^\prime, w_{t|t}^\prime)^\prime}{(w_t', w_{t|t}')'}.
-\code{structural_residuals} reports the direct substitution residuals for the
-intercept, transition, and shock equations.
+The model list augmented with the steady-state filter (\code{P}, \code{K},
+\code{S}), the stacked process (\code{mu_ww}, \code{Phi_ww}, \code{Sigma_ww},
+\code{Sigma12_ww}), convergence diagnostics, and direct-substitution
+\code{structural_residuals}.
 }
 \description{
 Solves a linear state-space model with imperfect information, computes the
@@ -53,54 +48,19 @@ y_t = B + A w_t + Omega^{1/2} eta_t.
 \code{Sigma = Sigma12 \%*\% t(Sigma12)} and
 \code{Omega = Omega12 \%*\% t(Omega12)}.
 
-The function iterates on the steady-state Kalman covariance matrix, computes
-the associated Kalman gain, and then derives the law of motion for the
-stacked vector formed by the true state and its filtered estimate.
-
-The measurement intercept \code{B} is included in the input specification for
-consistency with the state-space notation, although the steady-state
-covariance recursion itself depends only on \code{A} and \code{Omega12}.
+The function iterates the steady-state Kalman covariance and derives the law
+of motion of \eqn{(w_t^\prime, w_{t|t}^\prime)^\prime}{(w_t', w_{t|t}')'}.
 }
 \examples{
-# Example adapted from the imperfect-information chapter of the companion
-# Bookdown project. The latent state is two-dimensional and the observation
-# is noisy consumption growth.
-set.seed(123)
-
-mu_c <- 0
-phi <- 0.979
-sigma <- 0.0078
-varphi_e <- 0.044
-
-mu <- matrix(c(0, mu_c), 2, 1)
-Phi <- matrix(0, 2, 2)
-Phi[1, 1] <- phi
-Phi[2, 1] <- 1
-
-Sigma12 <- matrix(0, 2, 2)
-Sigma12[1, 1] <- varphi_e * sigma
-Sigma12[2, 2] <- sigma
-
-A <- matrix(c(0, 1), 1, 2)
-B <- 0
-Omega12 <- 1e-7
-
 model <- list(
-  mu = mu,
-  Phi = Phi,
-  Sigma12 = Sigma12,
-  A = A,
-  B = B,
-  Omega12 = Omega12,
-  Lambda0 = 0 * Phi,
-  Lambda1 = 0 * Phi
+  mu = matrix(0), Phi = matrix(0.7),
+  Sigma12 = matrix(0.1), A = matrix(1), Omega12 = matrix(0.2),
+  Lambda0 = matrix(0.02), Lambda1 = matrix(0.01)
 )
 
 model_sol <- solve_learning(model)
-
-# Steady-state filter objects:
 model_sol$K
-model_sol$P
+model_sol$Phi_ww
 
 }
 \references{

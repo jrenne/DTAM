@@ -19,81 +19,41 @@
 #' y_t = B + A w_t + Omega^{1/2} eta_t.
 #' }
 #'
-#' @param model A list describing the model. It must contain:
-#'   `mu` (state intercept), `Phi` (state-transition matrix), `Sigma12`
-#'   (square root of the state-shock covariance matrix), `A` and `B`
-#'   (measurement-equation matrices), `Omega12` (square root of the
-#'   measurement-error covariance matrix), and `Lambda0`, `Lambda1`
-#'   (feedback matrices from filtered beliefs to the transition equation).
+#' @param model A list containing `mu`, `Phi`, `Sigma12`, `A`, `Omega12`,
+#'   `Lambda0`, and `Lambda1`. The optional measurement intercept `B` is kept
+#'   in the returned list but does not affect the centered solution.
 #' @param max.iter Maximum number of iterations used to compute the
 #'   steady-state filtering covariance matrix.
 #' @param tol Convergence tolerance for the covariance recursion. Set to zero
 #'   to always run `max.iter` iterations.
 #'
-#' @return A list containing the original model inputs and the solved objects:
-#'   `R`, `P`, `K`, and `S` for the steady-state filter, as well as `mu_ww`,
-#'   `Phi_ww`, `Sigma_ww`, and `Sigma12_ww` for the stacked process
-#'   \eqn{(w_t^\prime, w_{t|t}^\prime)^\prime}{(w_t', w_{t|t}')'}.
-#'   `structural_residuals` reports the direct substitution residuals for the
-#'   intercept, transition, and shock equations.
+#' @return The model list augmented with the steady-state filter (`P`, `K`,
+#'   `S`), the stacked process (`mu_ww`, `Phi_ww`, `Sigma_ww`,
+#'   `Sigma12_ww`), convergence diagnostics, and direct-substitution
+#'   `structural_residuals`.
 #'
 #' @details
 #' `Sigma12` and `Omega12` are interpreted as square-root matrices:
 #' `Sigma = Sigma12 %*% t(Sigma12)` and
 #' `Omega = Omega12 %*% t(Omega12)`.
 #'
-#' The function iterates on the steady-state Kalman covariance matrix, computes
-#' the associated Kalman gain, and then derives the law of motion for the
-#' stacked vector formed by the true state and its filtered estimate.
-#'
-#' The measurement intercept `B` is included in the input specification for
-#' consistency with the state-space notation, although the steady-state
-#' covariance recursion itself depends only on `A` and `Omega12`.
+#' The function iterates the steady-state Kalman covariance and derives the law
+#' of motion of \eqn{(w_t^\prime, w_{t|t}^\prime)^\prime}{(w_t', w_{t|t}')'}.
 #'
 #' @references
 #' Monfort, A., Pegoraro, F., Renne, J.-P., and Roussellet, G. (2026).
 #' *Asset Pricing with Discrete-Time Affine Processes*.
 #'
 #' @examples
-#' # Example adapted from the imperfect-information chapter of the companion
-#' # Bookdown project. The latent state is two-dimensional and the observation
-#' # is noisy consumption growth.
-#' set.seed(123)
-#'
-#' mu_c <- 0
-#' phi <- 0.979
-#' sigma <- 0.0078
-#' varphi_e <- 0.044
-#'
-#' mu <- matrix(c(0, mu_c), 2, 1)
-#' Phi <- matrix(0, 2, 2)
-#' Phi[1, 1] <- phi
-#' Phi[2, 1] <- 1
-#'
-#' Sigma12 <- matrix(0, 2, 2)
-#' Sigma12[1, 1] <- varphi_e * sigma
-#' Sigma12[2, 2] <- sigma
-#'
-#' A <- matrix(c(0, 1), 1, 2)
-#' B <- 0
-#' Omega12 <- 1e-7
-#'
 #' model <- list(
-#'   mu = mu,
-#'   Phi = Phi,
-#'   Sigma12 = Sigma12,
-#'   A = A,
-#'   B = B,
-#'   Omega12 = Omega12,
-#'   Lambda0 = 0 * Phi,
-#'   Lambda1 = 0 * Phi
+#'   mu = matrix(0), Phi = matrix(0.7),
+#'   Sigma12 = matrix(0.1), A = matrix(1), Omega12 = matrix(0.2),
+#'   Lambda0 = matrix(0.02), Lambda1 = matrix(0.01)
 #' )
 #'
 #' model_sol <- solve_learning(model)
-#'
-#' # Steady-state filter objects:
 #' model_sol$K
-#' model_sol$P
+#' model_sol$Phi_ww
 #'
 #' @export
 solve_learning <- function(model, max.iter = 200, tol = 1e-10) {
@@ -103,20 +63,25 @@ solve_learning <- function(model, max.iter = 200, tol = 1e-10) {
   Sigma12 <- as.matrix(model$Sigma12)
   Omega12 <- as.matrix(model$Omega12)
   A       <- as.matrix(model$A)
-  B       <- as.matrix(model$B, ncol = 1)
   Lambda0 <- as.matrix(model$Lambda0)
   Lambda1 <- as.matrix(model$Lambda1)
 
   Sigma <- Sigma12 %*% t(Sigma12)
   Omega <- Omega12 %*% t(Omega12)
 
-  m <- dim(A)[1]
   n <- dim(A)[2]
 
   Id_n <- diag(n)
 
-  P0 <- Id_n
-  P  <- P0
+  if (length(max.iter) != 1 || !is.finite(max.iter) || max.iter < 1 ||
+      max.iter != floor(max.iter)) {
+    stop("max.iter must be a positive integer.")
+  }
+  if (length(tol) != 1 || !is.finite(tol) || tol < 0) {
+    stop("tol must be a non-negative number.")
+  }
+
+  P <- Id_n
   converged <- FALSE
   P.change <- Inf
 
@@ -186,33 +151,7 @@ solve_learning <- function(model, max.iter = 200, tol = 1e-10) {
     shocks = max(abs(shock_residual))
   )
 
-  return(model_sol)
-}
-
-simul_model <- function(model_sol, H) {
-
-  mu_ww      <- model_sol$mu_ww
-  Phi_ww     <- model_sol$Phi_ww
-  Sigma12_ww <- t(chol(model_sol$Sigma_ww))
-
-  n_ww <- length(mu_ww)
-  n    <- n_ww / 2
-
-  x <- solve(diag(n_ww) - Phi_ww) %*% mu_ww
-  X <- matrix(x, ncol = 1)
-
-  for (t in 2:H) {
-    x <- mu_ww + Phi_ww %*% x + Sigma12_ww %*% rnorm(dim(Sigma12_ww)[2])
-    X <- cbind(X, x)
-  }
-
-  w_t  <- X[1:n, ]
-  w_tt <- X[(n + 1):(2 * n), ]
-
-  return(list(
-    w_t  = w_t,
-    w_tt = w_tt
-  ))
+  model_sol
 }
 
 #' Solve a learning model with rational-expectations feedback
@@ -225,13 +164,14 @@ simul_model <- function(model_sol, H) {
 #' \deqn{
 #' w_t = \mu + \Phi w_{t-1}
 #'       + \Lambda_0 w_{t|t} + \Lambda_1 w_{t-1|t-1}
-#'       + \Psi_0 E(w_{t+1}|w_t) + \Psi_1 E(w_t|w_{t-1})
-#'       + \Gamma_0 E(w_{t+1}|y_t) + \Gamma_1 E(w_t|y_{t-1})
+#'       + \Psi_0 E_t(w_{t+1}) + \Psi_1 E_{t-1}(w_t)
+#'       + \Gamma_0 E(w_{t+1}|\mathcal Y_t)
+#'       + \Gamma_1 E(w_t|\mathcal Y_{t-1})
 #'       + \Sigma^{1/2}\varepsilon_t,
 #' }{
 #' w_t = mu + Phi w_{t-1} + Lambda0 w_{t|t} + Lambda1 w_{t-1|t-1} +
-#'   Psi0 E(w_{t+1}|w_t) + Psi1 E(w_t|w_{t-1}) +
-#'   Gamma0 E(w_{t+1}|y_t) + Gamma1 E(w_t|y_{t-1}) +
+#'   Psi0 E_t(w_{t+1}) + Psi1 E_{t-1}(w_t) +
+#'   Gamma0 E(w_{t+1}|Y_t) + Gamma1 E(w_t|Y_{t-1}) +
 #'   Sigma^{1/2} eps_t,
 #' }
 #'
@@ -242,12 +182,13 @@ simul_model <- function(model_sol, H) {
 #' y_t = B + A w_t + Omega^{1/2} eta_t.
 #' }
 #'
-#' @param model A list describing the model. It must contain:
-#'   `mu`, `Phi`, `Sigma12`, `Omega12`, `A`, `B`, `Lambda0`, `Lambda1`,
-#'   `Psi0`, `Psi1`, `Gamma0`, and `Gamma1`. Here `Lambda0` and `Lambda1`
-#'   capture feedback from filtered beliefs, while `Psi0`, `Psi1`, `Gamma0`,
-#'   and `Gamma1` govern the effects of forward-looking expectations formed
-#'   under rational expectations.
+#' Here \eqn{\mathcal Y_t}{Y_t} denotes information from observations through
+#' date \eqn{t}.
+#'
+#' @param model A list containing `mu`, `Phi`, `Sigma12`, `Omega12`, `A`,
+#'   `Lambda0`, `Lambda1`, `Psi0`, `Psi1`, `Gamma0`, and `Gamma1`. The optional
+#'   measurement intercept `B` is kept in the returned list but does not affect
+#'   the centered solution.
 #' @param max.iter Maximum number of iterations used in the fixed-point and
 #'   filtering loops.
 #' @param tol Convergence tolerance for each fixed-point loop. Set to zero to
@@ -256,11 +197,8 @@ simul_model <- function(model_sol, H) {
 #'   transition/filter fixed point. Smaller values are slower but can improve
 #'   convergence in models with strong expectational feedback.
 #'
-#' @return A list containing the original model inputs together with the solved
-#'   objects `R`, `P`, `K`, `S`, `mu_ww`, `Phi_ww`, `Sigma_ww`, and
-#'   `Sigma12_ww`. The element `structural_residuals` reports the maximum
-#'   absolute residual obtained by substituting the solution back into the
-#'   original intercept, transition, and shock equations.
+#' @return The model list augmented with filter and stacked-process solutions,
+#'   convergence diagnostics, and direct-substitution `structural_residuals`.
 #'
 #' @details
 #' `Sigma12` and `Omega12` are interpreted as square-root matrices:
@@ -272,10 +210,6 @@ simul_model <- function(model_sol, H) {
 #' equations. The function therefore solves them as a coupled damped fixed
 #' point and then builds the joint dynamics of the stacked vector
 #' \eqn{(w_t^\prime, w_{t|t}^\prime)^\prime}{(w_t', w_{t|t}')'}.
-#'
-#' The returned list contains the original model inputs together with the
-#' solved objects `R`, `P`, `K`, `S`, `mu_ww`, `Phi_ww`, `Sigma_ww`, and
-#' `Sigma12_ww`.
 #'
 #' Warnings are issued if the coupled iteration or filter does not converge,
 #' if direct substitution produces non-negligible structural residuals, or if
@@ -290,7 +224,7 @@ simul_model <- function(model_sol, H) {
 #' model <- list(
 #'   mu = matrix(0), Phi = matrix(0.7),
 #'   Sigma12 = matrix(0.1), Omega12 = matrix(0.2),
-#'   A = matrix(1), B = matrix(0),
+#'   A = matrix(1),
 #'   Lambda0 = matrix(0.02), Lambda1 = matrix(0.01),
 #'   Psi0 = matrix(0.05), Psi1 = matrix(0.02),
 #'   Gamma0 = matrix(0.02), Gamma1 = matrix(0.01)
@@ -310,7 +244,6 @@ solve_Learning_RE <- function(model, max.iter = 1000, tol = 1e-10,
   Sigma12 <- as.matrix(model$Sigma12)
   Omega12 <- as.matrix(model$Omega12)
   A       <- as.matrix(model$A)
-  B       <- as.matrix(model$B, ncol = 1)
   Lambda0 <- as.matrix(model$Lambda0)
   Lambda1 <- as.matrix(model$Lambda1)
   Psi0    <- as.matrix(model$Psi0)
@@ -323,7 +256,8 @@ solve_Learning_RE <- function(model, max.iter = 1000, tol = 1e-10,
   n <- dim(A)[2]
   Id_n <- diag(n)
 
-  if (length(max.iter) != 1 || max.iter < 1) {
+  if (length(max.iter) != 1 || !is.finite(max.iter) || max.iter < 1 ||
+      max.iter != floor(max.iter)) {
     stop("max.iter must be a positive integer.")
   }
   if (length(tol) != 1 || !is.finite(tol) || tol < 0) {
@@ -334,9 +268,7 @@ solve_Learning_RE <- function(model, max.iter = 1000, tol = 1e-10,
     stop("damping must be a number in (0, 1].")
   }
 
-  # The full-information solution and the former sequential feedback update
-  # provide an effective warm start. The equilibrium is then solved from the
-  # coupled transition/filter equations below.
+  # Use the full-information solution and a feedback update as a warm start.
   Phi_1 <- Phi
   for (iter.init1 in seq_len(max.iter)) {
     old.Phi_1 <- Phi_1
@@ -349,9 +281,9 @@ solve_Learning_RE <- function(model, max.iter = 1000, tol = 1e-10,
   }
 
   Phi_2 <- matrix(0, n, n)
+  M_init <- solve(Id_n - Psi0 %*% Phi_1)
   for (iter.init2 in seq_len(max.iter)) {
     old.Phi_2 <- Phi_2
-    M_init <- solve(Id_n - Psi0 %*% Phi_1)
     Lambda0_init <- M_init %*%
       (Psi0 %*% Phi_2 + Lambda0 + Gamma0 %*% (Phi_1 + Phi_2))
     Lambda1_init <- M_init %*%
@@ -564,10 +496,10 @@ solve_Learning_RE <- function(model, max.iter = 1000, tol = 1e-10,
   }
 
   res_eig <- eigen(Phi_ww)
-  if (sum(abs(res_eig$values) >= 1) > 0) {
+  if (any(abs(res_eig$values) >= 1)) {
     warning(
-      "The resulting dynamics of w_t is not stationary ",
-      "(eigenvalues of Phi_tilde exceeding 1 in modulus)."
+      "The stacked dynamics are not stationary ",
+      "(an eigenvalue of Phi_ww has modulus at least one)."
     )
   }
 
@@ -576,5 +508,5 @@ solve_Learning_RE <- function(model, max.iter = 1000, tol = 1e-10,
   model_sol$Sigma_ww   <- Sigma_ww
   model_sol$Sigma12_ww <- Sigma12_ww
 
-  return(model_sol)
+  model_sol
 }
