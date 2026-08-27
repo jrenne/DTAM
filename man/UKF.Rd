@@ -40,7 +40,8 @@ Gaussian prior, \code{beta = 2} is conventional.}
 \value{
 A list containing filtered and predicted state means
 (\code{filtered.mean}, \code{predicted.mean}), the corresponding covariance arrays
-(\code{filtered.cov}, \code{predicted.cov}), innovations and their covariance arrays
+(\code{filtered.cov}, \code{predicted.cov}), predictive measurement means
+(\code{predicted.measurement}), innovations and their covariance arrays
 (\code{innovation}, \code{innovation.cov}), and the total and date-specific Gaussian
 quasi-log-likelihood (\code{loglik}, \code{loglik.vector}).
 }

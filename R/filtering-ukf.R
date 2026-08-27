@@ -45,7 +45,8 @@ make_sigma_points <- function(mean, covariance, alpha, beta, kappa) {
 #'
 #' @return A list containing filtered and predicted state means
 #'   (`filtered.mean`, `predicted.mean`), the corresponding covariance arrays
-#'   (`filtered.cov`, `predicted.cov`), innovations and their covariance arrays
+#'   (`filtered.cov`, `predicted.cov`), predictive measurement means
+#'   (`predicted.measurement`), innovations and their covariance arrays
 #'   (`innovation`, `innovation.cov`), and the total and date-specific Gaussian
 #'   quasi-log-likelihood (`loglik`, `loglik.vector`).
 #'
@@ -97,6 +98,7 @@ UKF <- function(Y, transition, measurement, Q, R, x0, P0,
 
   filtered.mean <- matrix(NA_real_, TT, n)
   predicted.mean <- matrix(NA_real_, TT, n)
+  predicted.measurement <- matrix(NA_real_, TT, m)
   innovation <- matrix(NA_real_, TT, m)
   filtered.cov <- array(NA_real_, c(n, n, TT))
   predicted.cov <- array(NA_real_, c(n, n, TT))
@@ -144,6 +146,7 @@ UKF <- function(Y, transition, measurement, Q, R, x0, P0,
 
     predicted.mean[t, ] <- x.pred
     predicted.cov[, , t] <- P.pred
+    predicted.measurement[t, ] <- y.pred
     filtered.mean[t, ] <- x.filtered
     filtered.cov[, , t] <- P.filtered
     innovation[t, ] <- innovation.t
@@ -161,6 +164,7 @@ UKF <- function(Y, transition, measurement, Q, R, x0, P0,
     filtered.cov = filtered.cov,
     predicted.mean = predicted.mean,
     predicted.cov = predicted.cov,
+    predicted.measurement = predicted.measurement,
     innovation = innovation,
     innovation.cov = innovation.cov,
     loglik = sum(loglik.vector),
