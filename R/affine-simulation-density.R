@@ -160,7 +160,7 @@ simul_MS_AR <- function(nb.sim,mu.1,mu.2,rho.1,rho.2,sigma.1,sigma.2,P,w0=NaN){
 #'
 #' @examples
 #' psi_exp <- function(u, model) {
-#'   -log(1 - model$mu * u)
+#'   1 / (1 - model$mu * u)
 #' }
 #' grid <- seq(0.01, 2, length.out = 50)
 #' dens <- make_pdf(list(mu = 1), values.of.variable = grid, psi = psi_exp,
@@ -198,7 +198,8 @@ make_pdf <- function(model,values.of.variable,
   tmp <- splinefun(x=values.of.variable, y=cdf, method="hyman")
 
   fitted.cdf.values <- tmp(scale.variable.values)
-  fitted.pdf.values <- diff(fitted.cdf.values)*mean(diff(values.of.variable,1))
+  # A density is a probability increment divided by the corresponding bin width.
+  fitted.pdf.values <- diff(fitted.cdf.values) / diff(scale.variable.values)
 
   return(fitted.pdf.values)
 }

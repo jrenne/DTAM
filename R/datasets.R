@@ -111,14 +111,14 @@
       "author permission recorded",
       "author permission recorded",
       "written permission received",
-      "constituent-series audit pending",
-      "constituent-series audit pending",
+      "documented upstream terms",
+      "documented upstream terms",
       "written clarification pending",
       "written clarification pending",
       "final terms check pending",
       "documented upstream terms",
-      "constituent-series audit pending",
-      "constituent-series audit pending"
+      "documented upstream terms",
+      "documented upstream terms"
     ),
     license = c(
       "Federal Reserve Bank of New York public research data; reuse is subject to the New York Fed website terms and attribution requirements.",
@@ -126,14 +126,14 @@
       "Cynthia Wu gave written permission on 2026-08-19 to include the requested book extract in correspondence copied to Yan Liu. Cite Liu and Wu (2021). The data are not covered by DTAM's MIT software licence.",
       "Cynthia Wu gave written permission on 2026-08-19 to include the requested book extract in correspondence copied to Yan Liu. Cite Liu and Wu (2021). The data are not covered by DTAM's MIT software licence.",
       "Written permission to redistribute the three-series extract was received from the database maintainers on 2026-08-19; they reported EABCN approval. Cite \u0130pek and K\u0131sac\u0131ko\u011flu (2026) and the EABCN page. The data are not covered by DTAM's MIT software licence.",
-      "FRED content is free to access subject to FRED terms; some series are owned by third parties and may carry additional restrictions.",
-      "FRED content is free to access subject to FRED terms; some series are owned by third parties and may carry additional restrictions.",
+      "All constituent FRED series were audited on 2026-09-27 and labelled Public Domain: Citation Requested. Cite FRED and each original source agency; recheck the labels if the bundled data are refreshed.",
+      "All constituent FRED series were audited on 2026-09-27 and labelled Public Domain: Citation Requested. Cite FRED and each original source agency; recheck the labels if the bundled data are refreshed.",
       "Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0), with required citation and no commercial resale/integration by data providers.",
       "Robert Shiller online data; cite the source page/book and check Yale/Shiller page terms before redistribution.",
       "Federal Reserve Bank of Philadelphia public survey data; reuse subject to Philadelphia Fed website terms and attribution.",
       "Publicly released ESCB/ECB statistics may be reused free of charge if the source is quoted and the statistics/metadata are not modified; third-party data are excluded.",
-      "FRED content is free to access subject to FRED terms; some series are owned by third parties and may carry additional restrictions.",
-      "FRED content is free to access subject to FRED terms; some series are owned by third parties and may carry additional restrictions."
+      "All constituent FRED series were audited on 2026-09-27 and labelled Public Domain: Citation Requested. Cite FRED and each original source agency; recheck the labels if the bundled data are refreshed.",
+      "All constituent FRED series were audited on 2026-09-27 and labelled Public Domain: Citation Requested. Cite FRED and each original source agency; recheck the labels if the bundled data are refreshed."
     ),
     stringsAsFactors = FALSE
   )

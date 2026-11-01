@@ -90,8 +90,10 @@ Main sources and terms:
   \item{\code{Data_Macro_US_monthly}, \code{Data_Macro_US_quarterly},
   \code{YC_US}, \code{YC_US_weekly}}{Federal Reserve Economic Data (FRED), with
   original source agencies as listed in each FRED series. URL:
-  \url{https://fred.stlouisfed.org/}. FRED content is free to access subject to
-  FRED terms; third-party series may carry additional restrictions.}
+  \url{https://fred.stlouisfed.org/}. All 29 constituent series were audited on
+  2026-09-27 and were labelled ``Public Domain: Citation Requested.'' Cite FRED
+  and each original source agency, and recheck the labels if the bundled data
+  are refreshed.}
   \item{\code{JSTdataset}}{Six-variable, 16-country extract from the
   Jorda-Schularick-Taylor Macrohistory Database used in the book.
   Reference: Jorda, Schularick, and Taylor (2017), NBER Macroeconomics Annual.

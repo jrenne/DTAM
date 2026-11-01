@@ -32,7 +32,7 @@ grid of values.
 }
 \examples{
 psi_exp <- function(u, model) {
-  -log(1 - model$mu * u)
+  1 / (1 - model$mu * u)
 }
 grid <- seq(0.01, 2, length.out = 50)
 dens <- make_pdf(list(mu = 1), values.of.variable = grid, psi = psi_exp,
